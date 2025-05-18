@@ -16,5 +16,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Select Xcode Version
+      uses: developer-tools/using-xcode-versions@v1
+      with:
+        version: '15.4' # Specify the required Xcode version
+
     - name: Build Xcode Project
       run: xcodebuild build -project Something.xcodeproj -scheme Something
