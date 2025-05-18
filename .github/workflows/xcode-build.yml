@@ -1,0 +1,20 @@
+name: Xcode Build
+
+on:
+  push:
+    branches:
+      - main # Or your default branch name
+  pull_request:
+    branches:
+      - main # Or your default branch name
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Xcode Project
+      run: xcodebuild build -project Something.xcodeproj -scheme Something
