@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F123A7902DDA7E1A007873D4 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = F123A78F2DDA7E1A007873D4 /* HotKey */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		F16ECD2A2DDA7A4700DCAD64 /* Something.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Something.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F123A7902DDA7E1A007873D4 /* HotKey in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Something;
 			packageProductDependencies = (
+				F123A78F2DDA7E1A007873D4 /* HotKey */,
 			);
 			productName = Something;
 			productReference = F16ECD2A2DDA7A4700DCAD64 /* Something.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = F16ECD212DDA7A4700DCAD64;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F123A78E2DDA7E1A007873D4 /* XCRemoteSwiftPackageReference "HotKey" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F16ECD2B2DDA7A4700DCAD64 /* Products */;
 			projectDirPath = "";
@@ -315,6 +324,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F123A78E2DDA7E1A007873D4 /* XCRemoteSwiftPackageReference "HotKey" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/soffes/HotKey";
+			requirement = {
+				kind = exactVersion;
+				version = 0.2.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F123A78F2DDA7E1A007873D4 /* HotKey */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F123A78E2DDA7E1A007873D4 /* XCRemoteSwiftPackageReference "HotKey" */;
+			productName = HotKey;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F16ECD222DDA7A4700DCAD64 /* Project object */;
 }
