@@ -11,8 +11,10 @@ import SwiftUI
 struct SomethingApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        // Use Settings to prevent a default visible window from appearing on launch.
+        // This makes the app behave more like a background utility.
+        Settings {
+            EmptyView() // No content for the settings window itself
         }
     }
 }
