@@ -1,0 +1,16 @@
+[tools]
+xcodegen = "2.46.0"
+
+[tasks.generate]
+description = "Generate Something.xcodeproj from project.yml"
+run = "xcodegen generate"
+
+[tasks.build]
+description = "Build the Debug configuration"
+depends = ["generate"]
+run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration Debug build"
+
+[tasks.build-release]
+description = "Build the Release configuration"
+depends = ["generate"]
+run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration Release build"

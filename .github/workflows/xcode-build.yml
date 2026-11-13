@@ -21,5 +21,8 @@ jobs:
       with:
         xcode-version: latest-stable
 
+    - name: Install tools with mise
+      uses: jdx/mise-action@v2
+
     - name: Build Xcode Project
-      run: xcodebuild build -project Something.xcodeproj -scheme Something
+      run: mise run build

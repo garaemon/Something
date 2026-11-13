@@ -1,0 +1,44 @@
+name: Something
+
+options:
+  bundleIdPrefix: com.garaemon
+  deploymentTarget:
+    macOS: "15.4"
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+
+packages:
+  HotKey:
+    url: https://github.com/soffes/HotKey
+    exactVersion: 0.2.1
+
+targets:
+  Something:
+    type: application
+    platform: macOS
+    sources:
+      - Something
+    dependencies:
+      - package: HotKey
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.garaemon.Something
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        CODE_SIGN_ENTITLEMENTS: Something/Something.entitlements
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_PREVIEWS: YES
+        REGISTER_APP_GROUPS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+    scheme: {}
