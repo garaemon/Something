@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let newWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered, defer: false)
         newWindow.center()
@@ -54,7 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.windowController = nil // Release the strong reference to the controller
         }
 
-        newWindow.contentView = NSHostingView(rootView: ContentView())
+        newWindow.contentView = NSHostingView(rootView: makeLauncherView(in: newWindow))
 
         newWindow.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
@@ -63,6 +63,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.windowController = newWindowController // Store strong reference to the controller
     }
 
-    // MARK: - NSWindowDelegate Methods (These are now handled by SomethingWindowController)
-    // Remove windowDidResignKey and windowWillClose from here.
+    private func makeLauncherView(in window: NSWindow) -> LauncherView {
+        // Rescan on every open so that newly installed applications show up.
+        let viewModel = LauncherViewModel(
+            applications: ApplicationCatalog.makeDefault().loadApplications(),
+            launchApplication: { application in
+                NSWorkspace.shared.openApplication(
+                    at: application.url, configuration: NSWorkspace.OpenConfiguration())
+            })
+        return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
+    }
 }
