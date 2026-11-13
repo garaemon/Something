@@ -32,10 +32,12 @@ Build for release:
 mise run build-release
 ```
 
-Run the app from command line (after building):
+Build and launch the app:
 ```bash
-open Something.xcodeproj/build/Debug/Something.app
+mise run run
 ```
+
+Build products go to `build/` (ignored by git).
 
 ## Architecture
 
