@@ -32,6 +32,11 @@ Build for release:
 mise run build-release
 ```
 
+Run the unit tests (`SomethingTests`):
+```bash
+mise run test
+```
+
 Build and launch the app:
 ```bash
 mise run run

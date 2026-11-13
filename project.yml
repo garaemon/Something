@@ -45,4 +45,19 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
     # Generate a shared scheme. Without this key XcodeGen writes none, and
     # xcodebuild in CI would rely on schemes Xcode auto-creates per user.
-    scheme: {}
+    scheme:
+      testTargets:
+        - SomethingTests
+
+  SomethingTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - SomethingTests
+    dependencies:
+      - target: Something
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.garaemon.SomethingTests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
