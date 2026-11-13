@@ -23,7 +23,10 @@ struct LauncherView: View {
         // NSHostingView shrinks the window to the view's minimum size, which
         // is tiny for a lazy list, so pin a usable minimum.
         .frame(minWidth: 600, minHeight: 400)
-        .onAppear { isQueryFieldFocused = true }
+        .defaultFocus($isQueryFieldFocused, true)
+        // SwiftUI ignores a focus change while the window is not key yet, and
+        // onAppear runs before the window becomes key. Defer to the next loop.
+        .onAppear { DispatchQueue.main.async { isQueryFieldFocused = true } }
     }
 
     private var candidateList: some View {

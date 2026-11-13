@@ -23,8 +23,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func openWindow() {
         if let existingWindow = window, existingWindow.isVisible {
+            NSApplication.shared.activate()
             existingWindow.makeKeyAndOrderFront(nil)
-            NSApplication.shared.activate(ignoringOtherApps: true)
             return
         }
 
@@ -56,8 +56,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         newWindow.contentView = NSHostingView(rootView: makeLauncherView(in: newWindow))
 
+        // Activate before ordering the window front so that the window becomes
+        // key and the query field can take keyboard focus.
+        NSApplication.shared.activate()
         newWindow.makeKeyAndOrderFront(nil)
-        NSApplication.shared.activate(ignoringOtherApps: true)
 
         self.window = newWindow // Store reference to the new window
         self.windowController = newWindowController // Store strong reference to the controller
