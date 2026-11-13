@@ -1,3 +1,5 @@
+# Settings are ported from the Xcode 16.3 template pbxproj that this file
+# replaced. Edit this file, not the generated Something.xcodeproj.
 name: Something
 
 options:
@@ -41,4 +43,6 @@ targets:
         ENABLE_PREVIEWS: YES
         REGISTER_APP_GROUPS: YES
         SWIFT_EMIT_LOC_STRINGS: YES
+    # Generate a shared scheme. Without this key XcodeGen writes none, and
+    # xcodebuild in CI would rely on schemes Xcode auto-creates per user.
     scheme: {}
