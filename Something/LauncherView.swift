@@ -26,9 +26,10 @@ struct LauncherView: View {
         // NSHostingView shrinks the window to the view's minimum size, which
         // is tiny for a lazy list, so pin a usable minimum.
         .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
+        // Focus on open was verified only with both mechanisms in place. The
+        // onAppear assignment is deferred because SwiftUI ignores a focus change
+        // before the window becomes key, and onAppear runs earlier than that.
         .defaultFocus($isQueryFieldFocused, true)
-        // SwiftUI ignores a focus change while the window is not key yet, and
-        // onAppear runs before the window becomes key. Defer to the next loop.
         .onAppear { DispatchQueue.main.async { isQueryFieldFocused = true } }
     }
 
