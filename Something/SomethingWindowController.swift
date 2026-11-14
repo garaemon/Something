@@ -6,7 +6,6 @@
 //
 
 import Cocoa
-import SwiftUI // Required if ContentView is used directly here, though it's not in this delegate.
 
 class SomethingWindowController: NSObject, NSWindowDelegate {
     // A closure to be called when the window should be released (e.g., hidden or closed).
