@@ -50,6 +50,12 @@ final class ApplicationMatcherTests: XCTestCase {
         XCTAssertEqual(names, ["Monitor Tool", "Activity Monitor"])
     }
 
+    func test_should_rank_by_prefix_of_first_pattern_only() {
+        let names = filterNames(["Code Visualizer", "Visual Studio Code"], query: "vis code")
+
+        XCTAssertEqual(names, ["Visual Studio Code", "Code Visualizer"])
+    }
+
     func test_should_sort_prefix_matches_by_name() {
         let names = filterNames(["Mono", "Monitor Tool", "Money"], query: "mon")
 
