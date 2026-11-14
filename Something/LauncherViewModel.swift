@@ -14,9 +14,6 @@ final class LauncherViewModel: ObservableObject {
 
     /// Creates a view model that lists `applications`, all of them while the
     /// query is empty.
-    ///
-    /// `launchSelectedApplication()` calls `launchApplication` synchronously,
-    /// and only when a candidate is selected.
     init(
         applications: [LaunchableApplication],
         launchApplication: @escaping (LaunchableApplication) -> Void
@@ -37,6 +34,8 @@ final class LauncherViewModel: ObservableObject {
         selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
     }
 
+    /// Calls the `launchApplication` closure synchronously with the selected
+    /// candidate. Does nothing when no candidate matches the query.
     func launchSelectedApplication() {
         guard let application = selectedApplication else { return }
         launchApplication(application)
