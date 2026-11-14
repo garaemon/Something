@@ -9,7 +9,7 @@ final class LauncherViewModel: ObservableObject {
     @Published private(set) var candidates: [LaunchableApplication] = []
     @Published private(set) var selectedIndex = 0
 
-    private let applications: [LaunchableApplication]
+    private var applications: [LaunchableApplication]
     private let launchApplication: (LaunchableApplication) -> Void
 
     /// Creates a view model that lists `applications`, all of them while the
@@ -34,11 +34,31 @@ final class LauncherViewModel: ObservableObject {
         selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
     }
 
+    /// Highlights `application`. Keeps the current highlight when
+    /// `application` is not among the candidates.
+    func selectApplication(_ application: LaunchableApplication) {
+        guard let index = candidates.firstIndex(of: application) else { return }
+        selectedIndex = index
+    }
+
+    /// Swaps in a new set of applications, such as the result of a rescan,
+    /// keeping the query and the highlighted application when it still matches.
+    func replaceApplications(_ newApplications: [LaunchableApplication]) {
+        let previouslySelectedID = selectedApplication?.id
+        applications = newApplications
+        updateCandidates()
+        selectedIndex = candidates.firstIndex { $0.id == previouslySelectedID } ?? 0
+    }
+
     /// Calls the `launchApplication` closure synchronously with the selected
     /// candidate. Does nothing when no candidate matches the query.
-    func launchSelectedApplication() {
-        guard let application = selectedApplication else { return }
+    ///
+    /// - Returns: Whether a candidate was selected and handed to the closure.
+    @discardableResult
+    func launchSelectedApplication() -> Bool {
+        guard let application = selectedApplication else { return false }
         launchApplication(application)
+        return true
     }
 
     private func updateCandidates() {

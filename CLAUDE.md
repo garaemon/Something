@@ -51,11 +51,12 @@ Build products go to `build/` (ignored by git).
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
-- **ContentView.swift**: Main UI content displayed in the popup window.
-- **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for an application launcher.
+- **LauncherView.swift**: Application launcher UI in the style of Emacs anything.el. Lists every application and narrows the list on each keystroke. Keys: Up/Down or C-n/C-p move, Return launches, Esc or C-g closes. Clicking a row launches it.
+- **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
 - **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
+- **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
 
 ### Key Behavioral Patterns
@@ -64,6 +65,7 @@ Build products go to `build/` (ignored by git).
 - **Global Hotkey Activation**: Uses HotKey library for Cmd+Shift+X trigger
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open
+- **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
 
 ### Dependencies
 

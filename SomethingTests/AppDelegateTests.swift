@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 
 @testable import Something
@@ -8,6 +9,7 @@ final class AppDelegateTests: XCTestCase {
     // the crash, not the assertion, is what catches a regression.
     func test_should_not_crash_when_reopening_window_after_close() {
         let appDelegate = AppDelegate()
+        appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         addTeardownBlock { @MainActor in appDelegate.window?.close() }
         // Draining the pool is what triggers the over-release crash when a
         // closed window is released by both AppKit and ARC.
@@ -19,5 +21,30 @@ final class AppDelegateTests: XCTestCase {
         appDelegate.openWindow()
 
         XCTAssertNotNil(appDelegate.window)
+    }
+
+    func test_should_show_scanned_applications_in_open_launcher() throws {
+        let applicationsDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: applicationsDirectory.appendingPathComponent("Fake.app"),
+            withIntermediateDirectories: true)
+        let appDelegate = AppDelegate()
+        appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [applicationsDirectory])
+        addTeardownBlock { @MainActor in
+            appDelegate.window?.close()
+            try? FileManager.default.removeItem(at: applicationsDirectory)
+        }
+        let scanDelivered = expectation(description: "scan reaches the open launcher")
+        scanDelivered.assertForOverFulfill = false
+
+        appDelegate.openWindow()
+        let launcherViewModel = try XCTUnwrap(appDelegate.launcherViewModel)
+        let candidatesSubscription = launcherViewModel.$candidates.sink { candidates in
+            if candidates.map(\.name) == ["Fake"] { scanDelivered.fulfill() }
+        }
+
+        wait(for: [scanDelivered], timeout: 5)
+        candidatesSubscription.cancel()
     }
 }
