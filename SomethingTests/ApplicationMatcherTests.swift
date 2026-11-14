@@ -50,6 +50,18 @@ final class ApplicationMatcherTests: XCTestCase {
         XCTAssertEqual(names, ["Monitor Tool", "Activity Monitor"])
     }
 
+    func test_should_sort_prefix_matches_by_name() {
+        let names = filterNames(["Mono", "Monitor Tool", "Money"], query: "mon")
+
+        XCTAssertEqual(names, ["Money", "Monitor Tool", "Mono"])
+    }
+
+    func test_should_sort_numbers_in_names_numerically() {
+        let names = filterNames(["App 10", "App 2"], query: "")
+
+        XCTAssertEqual(names, ["App 2", "App 10"])
+    }
+
     func test_should_return_empty_when_nothing_matches() {
         let names = filterNames(["Safari", "Mail"], query: "zzz")
 
