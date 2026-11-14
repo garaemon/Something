@@ -3,10 +3,6 @@ import XCTest
 @testable import Something
 
 final class ApplicationMatcherTests: XCTestCase {
-    private func makeApplication(_ name: String) -> LaunchableApplication {
-        LaunchableApplication(name: name, url: URL(fileURLWithPath: "/Applications/\(name).app"))
-    }
-
     private func filterNames(_ names: [String], query: String) -> [String] {
         let applications = names.map(makeApplication)
         return ApplicationMatcher.filterApplications(applications, matching: query).map(\.name)
@@ -52,6 +48,24 @@ final class ApplicationMatcherTests: XCTestCase {
         let names = filterNames(["Activity Monitor", "Monitor Tool", "Mail"], query: "mon")
 
         XCTAssertEqual(names, ["Monitor Tool", "Activity Monitor"])
+    }
+
+    func test_should_rank_by_prefix_of_first_pattern_only() {
+        let names = filterNames(["Code Visualizer", "Visual Studio Code"], query: "vis code")
+
+        XCTAssertEqual(names, ["Visual Studio Code", "Code Visualizer"])
+    }
+
+    func test_should_sort_prefix_matches_by_name() {
+        let names = filterNames(["Mono", "Monitor Tool", "Money"], query: "mon")
+
+        XCTAssertEqual(names, ["Money", "Monitor Tool", "Mono"])
+    }
+
+    func test_should_sort_numbers_in_names_numerically() {
+        let names = filterNames(["App 10", "App 2"], query: "")
+
+        XCTAssertEqual(names, ["App 2", "App 10"])
     }
 
     func test_should_return_empty_when_nothing_matches() {

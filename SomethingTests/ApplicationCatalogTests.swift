@@ -67,6 +67,23 @@ final class ApplicationCatalogTests: XCTestCase {
         XCTAssertEqual(names, ["Mail"])
     }
 
+    func test_should_list_individual_applications_outside_search_directories() throws {
+        try createDirectory("CoreServices/Finder.app")
+        let finderURL = rootDirectory.appendingPathComponent("CoreServices/Finder.app")
+
+        let catalog = ApplicationCatalog(searchDirectories: [], individualApplications: [finderURL])
+
+        XCTAssertEqual(catalog.loadApplications().map(\.name), ["Finder"])
+    }
+
+    func test_should_skip_missing_individual_applications() throws {
+        let missingURL = rootDirectory.appendingPathComponent("CoreServices/Finder.app")
+
+        let catalog = ApplicationCatalog(searchDirectories: [], individualApplications: [missingURL])
+
+        XCTAssertEqual(catalog.loadApplications(), [])
+    }
+
     func test_should_combine_apps_from_all_directories() throws {
         try createDirectory("A/Safari.app")
         try createDirectory("B/Calendar.app")
