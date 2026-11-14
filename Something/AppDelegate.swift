@@ -14,7 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
-    private var launcherViewModel: LauncherViewModel?
+    private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
     // older scan never overwrites a newer result.
     private let applicationScanQueue = DispatchQueue(
