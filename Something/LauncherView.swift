@@ -36,9 +36,10 @@ struct LauncherView: View {
         ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(Array(viewModel.candidates.enumerated()), id: \.element.id) { index, application in
-                        CandidateRow(application: application, isSelected: index == viewModel.selectedIndex)
-                            .id(application.id)
+                    ForEach(viewModel.candidates) { application in
+                        CandidateRow(
+                            application: application,
+                            isSelected: application == viewModel.selectedApplication)
                     }
                 }
             }
