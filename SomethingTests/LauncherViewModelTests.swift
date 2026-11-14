@@ -81,19 +81,19 @@ final class LauncherViewModelTests: XCTestCase {
     }
 
     func test_should_keep_selected_application_when_applications_are_replaced() {
-        let viewModel = makeViewModel(["Safari", "Mail"])
+        let viewModel = makeViewModel(["Mail", "Safari"])
         viewModel.moveSelection(by: 1)
 
-        viewModel.replaceApplications(["Safari", "Mail", "Calendar"].map(makeApplication))
+        viewModel.replaceApplications(["Calendar", "Mail", "Safari"].map(makeApplication))
 
         XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
     }
 
     func test_should_select_first_candidate_when_selected_application_disappears() {
-        let viewModel = makeViewModel(["Safari", "Mail"])
+        let viewModel = makeViewModel(["Mail", "Safari"])
         viewModel.moveSelection(by: 1)
 
-        viewModel.replaceApplications(["Mail", "Calendar"].map(makeApplication))
+        viewModel.replaceApplications(["Calendar", "Mail"].map(makeApplication))
 
         XCTAssertEqual(viewModel.selectedApplication?.name, "Calendar")
     }
