@@ -32,6 +32,11 @@ Build for release:
 mise run build-release
 ```
 
+Run the unit tests (`SomethingTests`):
+```bash
+mise run test
+```
+
 Build and launch the app:
 ```bash
 mise run run
@@ -47,6 +52,10 @@ Build products go to `build/` (ignored by git).
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
 - **ContentView.swift**: Main UI content displayed in the popup window.
+- **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for an application launcher.
+- **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
+- **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
+- **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
 
 ### Key Behavioral Patterns

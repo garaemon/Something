@@ -26,3 +26,6 @@ jobs:
 
     - name: Build Xcode Project
       run: mise run build
+
+    - name: Run unit tests
+      run: mise run test

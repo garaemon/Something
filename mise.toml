@@ -23,3 +23,8 @@ run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration 
 description = "Build and launch the Debug app"
 depends = ["build"]
 run = "open $DERIVED_DATA_PATH/Build/Products/Debug/Something.app"
+
+[tasks.test]
+description = "Run the unit tests"
+depends = ["generate"]
+run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration Debug -derivedDataPath $DERIVED_DATA_PATH test"
