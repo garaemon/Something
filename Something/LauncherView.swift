@@ -4,6 +4,8 @@ import SwiftUI
 /// Shows every application under a query field and narrows the list on each
 /// keystroke, in the style of Emacs anything.el.
 struct LauncherView: View {
+    static let minimumSize = CGSize(width: 600, height: 400)
+
     @StateObject var viewModel: LauncherViewModel
     let dismiss: () -> Void
     @FocusState private var isQueryFieldFocused: Bool
@@ -22,7 +24,7 @@ struct LauncherView: View {
         }
         // NSHostingView shrinks the window to the view's minimum size, which
         // is tiny for a lazy list, so pin a usable minimum.
-        .frame(minWidth: 600, minHeight: 400)
+        .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
         .defaultFocus($isQueryFieldFocused, true)
         // SwiftUI ignores a focus change while the window is not key yet, and
         // onAppear runs before the window becomes key. Defer to the next loop.
