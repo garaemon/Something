@@ -39,11 +39,12 @@ final class AppDelegateTests: XCTestCase {
         scanDelivered.assertForOverFulfill = false
 
         appDelegate.openWindow()
-        let candidatesSubscription = appDelegate.launcherViewModel?.$candidates.sink { candidates in
+        let launcherViewModel = try XCTUnwrap(appDelegate.launcherViewModel)
+        let candidatesSubscription = launcherViewModel.$candidates.sink { candidates in
             if candidates.map(\.name) == ["Fake"] { scanDelivered.fulfill() }
         }
 
         wait(for: [scanDelivered], timeout: 5)
-        candidatesSubscription?.cancel()
+        candidatesSubscription.cancel()
     }
 }
