@@ -2,11 +2,8 @@ import XCTest
 
 @testable import Something
 
+@MainActor
 final class LauncherViewModelTests: XCTestCase {
-    private func makeApplication(_ name: String) -> LaunchableApplication {
-        LaunchableApplication(name: name, url: URL(fileURLWithPath: "/Applications/\(name).app"))
-    }
-
     private func makeViewModel(
         _ names: [String], onLaunch: @escaping (LaunchableApplication) -> Void = { _ in }
     ) -> LauncherViewModel {
@@ -99,6 +96,15 @@ final class LauncherViewModelTests: XCTestCase {
         viewModel.replaceApplications(["Mail", "Calendar"].map(makeApplication))
 
         XCTAssertEqual(viewModel.selectedApplication?.name, "Calendar")
+    }
+
+    func test_should_keep_selection_index_when_moving_without_candidates() {
+        let viewModel = makeViewModel(["Safari"])
+        viewModel.query = "zzz"
+
+        viewModel.moveSelection(by: 1)
+
+        XCTAssertEqual(viewModel.selectedIndex, 0)
     }
 
     func test_should_launch_selected_application() {

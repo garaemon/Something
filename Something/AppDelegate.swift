@@ -3,6 +3,7 @@ import Cocoa
 import SwiftUI
 
 // Remove NSWindowDelegate conformance from AppDelegate
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     var myHotKey: HotKey?
     var window: NSWindow? // Keep a reference to the window

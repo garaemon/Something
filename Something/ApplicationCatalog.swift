@@ -3,23 +3,39 @@ import Foundation
 /// Finds application bundles installed under a set of directories.
 struct ApplicationCatalog {
     let searchDirectories: [URL]
+    /// Bundles listed one by one because their folders hold many apps that
+    /// users never launch directly.
+    let individualApplications: [URL]
 
-    /// Returns a catalog of the standard macOS application folders.
-    static func makeDefault() -> ApplicationCatalog {
-        ApplicationCatalog(searchDirectories: [
-            URL(fileURLWithPath: "/Applications"),
-            URL(fileURLWithPath: "/System/Applications"),
-            findRealHomeDirectory().appendingPathComponent("Applications"),
-        ])
+    init(searchDirectories: [URL], individualApplications: [URL] = []) {
+        self.searchDirectories = searchDirectories
+        self.individualApplications = individualApplications
     }
 
-    /// Returns every `.app` bundle under the search directories, in no
-    /// particular order.
+    /// Returns a catalog of the standard macOS application folders and Finder.
+    static func makeDefault() -> ApplicationCatalog {
+        ApplicationCatalog(
+            searchDirectories: [
+                URL(fileURLWithPath: "/Applications"),
+                URL(fileURLWithPath: "/System/Applications"),
+                findRealHomeDirectory().appendingPathComponent("Applications"),
+            ],
+            individualApplications: [
+                URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
+            ])
+    }
+
+    /// Returns every `.app` bundle under the search directories plus the
+    /// individual applications that exist, in no particular order.
     ///
     /// Subfolders such as `/Applications/Utilities` are searched, but bundles
-    /// nested inside another bundle are not. Unreadable directories are skipped.
+    /// nested inside another bundle are not. Unreadable directories and
+    /// missing individual applications are skipped.
     func loadApplications() -> [LaunchableApplication] {
-        searchDirectories.flatMap(findApplications(in:))
+        let existingIndividualApplications = individualApplications
+            .filter { FileManager.default.fileExists(atPath: $0.path) }
+            .map(makeApplication(at:))
+        return searchDirectories.flatMap(findApplications(in:)) + existingIndividualApplications
     }
 
     private func findApplications(in directory: URL) -> [LaunchableApplication] {
@@ -34,8 +50,12 @@ struct ApplicationCatalog {
             guard let url = element as? URL, url.pathExtension == "app" else {
                 return nil
             }
-            return LaunchableApplication(name: url.deletingPathExtension().lastPathComponent, url: url)
+            return makeApplication(at: url)
         }
+    }
+
+    private func makeApplication(at url: URL) -> LaunchableApplication {
+        LaunchableApplication(name: url.deletingPathExtension().lastPathComponent, url: url)
     }
 
     // The sandbox makes NSHomeDirectory() point at the app container, so read

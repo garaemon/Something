@@ -54,7 +54,7 @@ Build products go to `build/` (ignored by git).
 - **LauncherView.swift**: Application launcher UI in the style of Emacs anything.el. Lists every application and narrows the list on each keystroke. Keys: Up/Down or C-n/C-p move, Return launches, Esc or C-g closes.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
-- **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles.
+- **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
 - **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
