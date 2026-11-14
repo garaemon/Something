@@ -2,6 +2,7 @@ import XCTest
 
 @testable import Something
 
+@MainActor
 final class AppDelegateTests: XCTestCase {
     func test_should_reopen_window_after_closing_it() {
         let appDelegate = AppDelegate()
