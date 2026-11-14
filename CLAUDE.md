@@ -44,6 +44,19 @@ mise run run
 
 Build products go to `build/` (ignored by git).
 
+### Code Signing
+
+Without extra setup, builds are signed ad hoc.
+macOS ties the Accessibility permission of an ad hoc build to its exact binary, so every rebuild loses the permission.
+To keep the permission across rebuilds, sign with your team:
+
+```bash
+echo 'DEVELOPMENT_TEAM = <your team ID>' > Configs/Local.xcconfig
+mise run build
+```
+
+`Configs/Signing.xcconfig` includes `Configs/Local.xcconfig` when the file exists. Git ignores `Configs/Local.xcconfig`.
+
 ## Architecture
 
 ### Core Components
