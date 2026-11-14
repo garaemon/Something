@@ -73,7 +73,7 @@ private struct CandidateRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: application.url.path))
+            Image(nsImage: ApplicationIconCache.shared.loadIcon(for: application))
                 .resizable()
                 .frame(width: 20, height: 20)
             Text(application.name)

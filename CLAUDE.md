@@ -55,6 +55,7 @@ Build products go to `build/` (ignored by git).
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles.
+- **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
 
 ### Key Behavioral Patterns
