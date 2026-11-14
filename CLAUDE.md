@@ -54,7 +54,7 @@ Build products go to `build/` (ignored by git).
 - **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, and narrows the list on each keystroke. Picking a window brings it to the front; picking an application launches it. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
 - **LauncherCandidate.swift**: One launcher row, either an application or a window.
-- **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
+- **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first. The generic `filterItems` narrows any candidate by a name closure, such as windows by app name and title.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
 - **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
 - **SwitchableWindow.swift**: Application name, title, and Accessibility element of one window that the launcher lists.

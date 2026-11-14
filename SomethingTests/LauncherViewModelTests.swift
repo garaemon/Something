@@ -107,21 +107,21 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedIndex, 0)
     }
 
-    func test_should_report_launch_when_a_candidate_is_selected() {
+    func test_should_report_activation_when_a_candidate_is_selected() {
         let viewModel = makeViewModel(["Safari"])
 
-        let didLaunch = viewModel.activateSelectedCandidate()
+        let didActivate = viewModel.activateSelectedCandidate()
 
-        XCTAssertTrue(didLaunch)
+        XCTAssertTrue(didActivate)
     }
 
-    func test_should_report_no_launch_when_nothing_is_selected() {
+    func test_should_report_no_activation_when_nothing_is_selected() {
         let viewModel = makeViewModel(["Safari"])
         viewModel.query = "zzz"
 
-        let didLaunch = viewModel.activateSelectedCandidate()
+        let didActivate = viewModel.activateSelectedCandidate()
 
-        XCTAssertFalse(didLaunch)
+        XCTAssertFalse(didActivate)
     }
 
     func test_should_select_clicked_candidate() {

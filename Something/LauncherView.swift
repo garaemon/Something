@@ -2,8 +2,9 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Shows every application under a query field and narrows the list on each
-/// keystroke, in the style of Emacs anything.el.
+/// Shows the windows of running applications and then every application under
+/// a query field, and narrows the list on each keystroke, in the style of Emacs
+/// anything.el.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
