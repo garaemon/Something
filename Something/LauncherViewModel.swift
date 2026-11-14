@@ -12,6 +12,11 @@ final class LauncherViewModel: ObservableObject {
     private let applications: [LaunchableApplication]
     private let launchApplication: (LaunchableApplication) -> Void
 
+    /// Creates a view model that lists `applications`, all of them while the
+    /// query is empty.
+    ///
+    /// `launchSelectedApplication()` calls `launchApplication` synchronously,
+    /// and only when a candidate is selected.
     init(
         applications: [LaunchableApplication],
         launchApplication: @escaping (LaunchableApplication) -> Void
