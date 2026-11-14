@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Shows every application under a query field and narrows the list on each
 /// keystroke, in the style of Emacs anything.el.
@@ -102,6 +103,9 @@ private struct CandidateRow: View {
         switch candidate {
         case .application(let application):
             return ApplicationIconCache.shared.loadIcon(for: application)
+        case .window(let window):
+            return NSRunningApplication(processIdentifier: window.processIdentifier)?.icon
+                ?? NSWorkspace.shared.icon(for: .application)
         }
     }
 }

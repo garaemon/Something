@@ -10,16 +10,22 @@ final class LauncherViewModel: ObservableObject {
     @Published private(set) var selectedIndex = 0
 
     private var applications: [LaunchableApplication]
+    private var windows: [SwitchableWindow]
     private let launchApplication: (LaunchableApplication) -> Void
+    private let raiseWindow: (SwitchableWindow) -> Void
 
-    /// Creates a view model that lists `applications`, all of them while the
-    /// query is empty.
+    /// Creates a view model that lists `windows` and then `applications`,
+    /// all of them while the query is empty.
     init(
         applications: [LaunchableApplication],
-        launchApplication: @escaping (LaunchableApplication) -> Void
+        windows: [SwitchableWindow] = [],
+        launchApplication: @escaping (LaunchableApplication) -> Void,
+        raiseWindow: @escaping (SwitchableWindow) -> Void = { _ in }
     ) {
         self.applications = applications
+        self.windows = windows
         self.launchApplication = launchApplication
+        self.raiseWindow = raiseWindow
         updateCandidates()
     }
 
@@ -44,10 +50,13 @@ final class LauncherViewModel: ObservableObject {
     /// Swaps in a new set of applications, such as the result of a rescan,
     /// keeping the query and the highlighted candidate when it still matches.
     func replaceApplications(_ newApplications: [LaunchableApplication]) {
-        let previouslySelectedCandidate = selectedCandidate
-        applications = newApplications
-        updateCandidates()
-        selectedIndex = candidates.firstIndex { $0 == previouslySelectedCandidate } ?? 0
+        updateCandidatesKeepingSelection { applications = newApplications }
+    }
+
+    /// Swaps in a new set of windows, such as a fresh window list, keeping the
+    /// query and the highlighted candidate when it still matches.
+    func replaceWindows(_ newWindows: [SwitchableWindow]) {
+        updateCandidatesKeepingSelection { windows = newWindows }
     }
 
     /// Hands the selected candidate synchronously to the matching closure.
@@ -60,13 +69,25 @@ final class LauncherViewModel: ObservableObject {
         switch candidate {
         case .application(let application):
             launchApplication(application)
+        case .window(let window):
+            raiseWindow(window)
         }
         return true
     }
 
+    private func updateCandidatesKeepingSelection(afterReplacing replaceSource: () -> Void) {
+        let previouslySelectedCandidate = selectedCandidate
+        replaceSource()
+        updateCandidates()
+        selectedIndex = candidates.firstIndex { $0 == previouslySelectedCandidate } ?? 0
+    }
+
     private func updateCandidates() {
-        candidates = ApplicationMatcher.filterApplications(applications, matching: query)
+        let windowCandidates = ApplicationMatcher.filterItems(windows, matching: query, name: \.name)
+            .map(LauncherCandidate.window)
+        let applicationCandidates = ApplicationMatcher.filterApplications(applications, matching: query)
             .map(LauncherCandidate.application)
+        candidates = windowCandidates + applicationCandidates
         selectedIndex = 0
     }
 }

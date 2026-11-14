@@ -159,4 +159,66 @@ final class LauncherViewModelTests: XCTestCase {
 
         XCTAssertEqual(launchCount, 0)
     }
+
+    private func makeViewModel(
+        applications applicationNames: [String], windows: [SwitchableWindow],
+        onRaise: @escaping (SwitchableWindow) -> Void = { _ in }
+    ) -> LauncherViewModel {
+        LauncherViewModel(
+            applications: applicationNames.map(makeApplication), windows: windows,
+            launchApplication: { _ in }, raiseWindow: onRaise)
+    }
+
+    func test_should_list_windows_before_applications() {
+        let viewModel = makeViewModel(applications: ["Mail"], windows: [makeWindow("Safari", "GitHub")])
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari — GitHub", "Mail"])
+    }
+
+    func test_should_narrow_windows_by_title() {
+        let viewModel = makeViewModel(
+            applications: [], windows: [makeWindow("Safari", "GitHub"), makeWindow("Safari", "News")])
+
+        viewModel.query = "git"
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari — GitHub"])
+    }
+
+    func test_should_narrow_windows_by_application_name() {
+        let viewModel = makeViewModel(
+            applications: [], windows: [makeWindow("Safari", "GitHub"), makeWindow("Mail", "Inbox")])
+
+        viewModel.query = "saf"
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari — GitHub"])
+    }
+
+    func test_should_show_replaced_windows_narrowed_by_current_query() {
+        let viewModel = makeViewModel(applications: [], windows: [])
+        viewModel.query = "git"
+
+        viewModel.replaceWindows([makeWindow("Safari", "GitHub"), makeWindow("Mail", "Inbox")])
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari — GitHub"])
+    }
+
+    func test_should_keep_selected_candidate_when_windows_are_replaced() {
+        let viewModel = makeViewModel(applications: ["Mail"], windows: [makeWindow("Safari", "GitHub")])
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceWindows([makeWindow("Safari", "News")])
+
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
+    }
+
+    func test_should_raise_selected_window() {
+        var raisedTitle: String?
+        let viewModel = makeViewModel(
+            applications: ["Mail"], windows: [makeWindow("Safari", "GitHub")],
+            onRaise: { raisedTitle = $0.title })
+
+        viewModel.activateSelectedCandidate()
+
+        XCTAssertEqual(raisedTitle, "GitHub")
+    }
 }
