@@ -48,7 +48,8 @@ Build products go to `build/` (ignored by git).
 
 Without extra setup, builds are signed ad hoc.
 macOS ties the Accessibility permission of an ad hoc build to its exact binary, so every rebuild loses the permission.
-To keep the permission across rebuilds, sign with your team:
+To keep the permission across rebuilds, create `Configs/Local.xcconfig` with your team ID and build.
+The following command overwrites the file if it already exists:
 
 ```bash
 echo 'DEVELOPMENT_TEAM = <your team ID>' > Configs/Local.xcconfig
