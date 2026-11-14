@@ -8,12 +8,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow? // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
+    // Tests replace the catalog to avoid scanning the real application folders.
+    var applicationCatalog = ApplicationCatalog.makeDefault()
+    // The launcher shows the previous scan immediately, because scanning the
+    // folders on the main thread delays the window after the hotkey.
+    private var cachedApplications: [LaunchableApplication] = []
+    private var launcherViewModel: LauncherViewModel?
+    // A serial queue delivers scans in the order they started, so a slow
+    // older scan never overwrites a newer result.
+    private let applicationScanQueue = DispatchQueue(
+        label: "com.garaemon.Something.applicationScan", qos: .userInitiated)
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Change the activation policy to .accessory
         // This allows the app to become active and its windows to gain/lose focus,
         // while still keeping it out of the Dock.
         NSApplication.shared.setActivationPolicy(.accessory)
+        refreshApplicationsInBackground()
 
         myHotKey = HotKey(key: .x, modifiers: [.command, .shift])
         myHotKey?.keyDownHandler = { [weak self] in
@@ -52,9 +63,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.window?.orderOut(nil) // Ensure it's hidden if not already
             self?.window = nil
             self?.windowController = nil // Release the strong reference to the controller
+            self?.launcherViewModel = nil
         }
 
         newWindow.contentView = NSHostingView(rootView: makeLauncherView(in: newWindow))
+        // Rescan on every open so that newly installed applications reach the
+        // open launcher when the scan finishes.
+        refreshApplicationsInBackground()
 
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
@@ -66,13 +81,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
-        // Rescan on every open so that newly installed applications show up.
         let viewModel = LauncherViewModel(
-            applications: ApplicationCatalog.makeDefault().loadApplications(),
-            launchApplication: { application in
-                NSWorkspace.shared.openApplication(
-                    at: application.url, configuration: NSWorkspace.OpenConfiguration())
-            })
+            applications: cachedApplications, launchApplication: launchApplication)
+        launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
+    }
+
+    private func refreshApplicationsInBackground() {
+        let catalog = applicationCatalog
+        applicationScanQueue.async { [weak self] in
+            let applications = catalog.loadApplications()
+            DispatchQueue.main.async {
+                self?.cachedApplications = applications
+                self?.launcherViewModel?.replaceApplications(applications)
+            }
+        }
+    }
+
+    private func launchApplication(_ application: LaunchableApplication) {
+        NSWorkspace.shared.openApplication(
+            at: application.url, configuration: NSWorkspace.OpenConfiguration())
     }
 }

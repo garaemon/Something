@@ -74,6 +74,33 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.selectedApplication)
     }
 
+    func test_should_show_replaced_applications_narrowed_by_current_query() {
+        let viewModel = makeViewModel([])
+        viewModel.query = "saf"
+
+        viewModel.replaceApplications(["Safari", "Mail"].map(makeApplication))
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari"])
+    }
+
+    func test_should_keep_selected_application_when_applications_are_replaced() {
+        let viewModel = makeViewModel(["Safari", "Mail"])
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceApplications(["Safari", "Mail", "Calendar"].map(makeApplication))
+
+        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+    }
+
+    func test_should_select_first_candidate_when_selected_application_disappears() {
+        let viewModel = makeViewModel(["Safari", "Mail"])
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceApplications(["Mail", "Calendar"].map(makeApplication))
+
+        XCTAssertEqual(viewModel.selectedApplication?.name, "Calendar")
+    }
+
     func test_should_launch_selected_application() {
         var launchedName: String?
         let viewModel = makeViewModel(["Safari", "Mail"]) { launchedName = $0.name }

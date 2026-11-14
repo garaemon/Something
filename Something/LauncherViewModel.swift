@@ -8,7 +8,7 @@ final class LauncherViewModel: ObservableObject {
     @Published private(set) var candidates: [LaunchableApplication] = []
     @Published private(set) var selectedIndex = 0
 
-    private let applications: [LaunchableApplication]
+    private var applications: [LaunchableApplication]
     private let launchApplication: (LaunchableApplication) -> Void
 
     init(
@@ -29,6 +29,15 @@ final class LauncherViewModel: ObservableObject {
     func moveSelection(by offset: Int) {
         guard !candidates.isEmpty else { return }
         selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
+    }
+
+    /// Swaps in a new set of applications, such as the result of a rescan,
+    /// keeping the query and the highlighted application when it still matches.
+    func replaceApplications(_ newApplications: [LaunchableApplication]) {
+        let previouslySelectedID = selectedApplication?.id
+        applications = newApplications
+        updateCandidates()
+        selectedIndex = candidates.firstIndex { $0.id == previouslySelectedID } ?? 0
     }
 
     func launchSelectedApplication() {

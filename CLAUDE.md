@@ -64,6 +64,7 @@ Build products go to `build/` (ignored by git).
 - **Global Hotkey Activation**: Uses HotKey library for Cmd+Shift+X trigger
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open
+- **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
 
 ### Dependencies
 

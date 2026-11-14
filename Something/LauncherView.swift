@@ -6,7 +6,8 @@ import SwiftUI
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
-    @StateObject var viewModel: LauncherViewModel
+    // AppDelegate owns the view model and pushes rescans into it.
+    @ObservedObject var viewModel: LauncherViewModel
     let dismiss: () -> Void
     @FocusState private var isQueryFieldFocused: Bool
 
