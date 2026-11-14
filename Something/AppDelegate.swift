@@ -107,13 +107,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // Windows are not cached, because they open, close, and change titles
-    // far more often than applications are installed.
+    // far more often than applications are installed. A load that outlives
+    // its launcher is dropped, because its windows may have closed since.
     private func refreshWindowsInBackground() {
         let catalog = windowCatalog
+        let targetViewModel = launcherViewModel
         windowListQueue.async { [weak self] in
             let windows = catalog.loadWindows()
             DispatchQueue.main.async {
-                self?.launcherViewModel?.replaceWindows(windows)
+                guard let self, let targetViewModel,
+                    self.launcherViewModel === targetViewModel
+                else { return }
+                targetViewModel.replaceWindows(windows)
             }
         }
     }

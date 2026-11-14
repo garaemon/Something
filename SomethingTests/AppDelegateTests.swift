@@ -72,4 +72,32 @@ final class AppDelegateTests: XCTestCase {
         wait(for: [windowsDelivered], timeout: 5)
         candidatesSubscription.cancel()
     }
+
+    func test_should_not_show_windows_listed_for_a_closed_launcher() throws {
+        let appDelegate = makeAppDelegate()
+        let staleLoadRelease = DispatchSemaphore(value: 0)
+        appDelegate.windowCatalog = WindowCatalog(loadWindows: {
+            staleLoadRelease.wait()
+            return [makeWindow("Safari", "Stale")]
+        })
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+        appDelegate.openWindow()
+        appDelegate.window?.close()
+        appDelegate.windowCatalog = WindowCatalog(loadWindows: { [makeWindow("Safari", "Fresh")] })
+        appDelegate.openWindow()
+        let launcherViewModel = try XCTUnwrap(appDelegate.launcherViewModel)
+        var observedNames: [String] = []
+        let freshDelivered = expectation(description: "fresh windows reach the open launcher")
+        freshDelivered.assertForOverFulfill = false
+        let candidatesSubscription = launcherViewModel.$candidates.sink { candidates in
+            observedNames += candidates.map(\.name)
+            if candidates.map(\.name) == ["Safari — Fresh"] { freshDelivered.fulfill() }
+        }
+
+        staleLoadRelease.signal()
+        wait(for: [freshDelivered], timeout: 5)
+        candidatesSubscription.cancel()
+
+        XCTAssertFalse(observedNames.contains("Safari — Stale"))
+    }
 }
