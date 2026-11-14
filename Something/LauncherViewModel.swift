@@ -34,6 +34,13 @@ final class LauncherViewModel: ObservableObject {
         selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
     }
 
+    /// Highlights `application`. Keeps the current highlight when
+    /// `application` is not among the candidates.
+    func selectApplication(_ application: LaunchableApplication) {
+        guard let index = candidates.firstIndex(of: application) else { return }
+        selectedIndex = index
+    }
+
     /// Swaps in a new set of applications, such as the result of a rescan,
     /// keeping the query and the highlighted application when it still matches.
     func replaceApplications(_ newApplications: [LaunchableApplication]) {

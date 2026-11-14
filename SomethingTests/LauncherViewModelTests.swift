@@ -124,6 +124,22 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertFalse(didLaunch)
     }
 
+    func test_should_select_clicked_application() {
+        let viewModel = makeViewModel(["Mail", "Safari"])
+
+        viewModel.selectApplication(makeApplication("Safari"))
+
+        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+    }
+
+    func test_should_keep_selection_when_selecting_application_not_in_candidates() {
+        let viewModel = makeViewModel(["Mail", "Safari"])
+
+        viewModel.selectApplication(makeApplication("Calendar"))
+
+        XCTAssertEqual(viewModel.selectedApplication?.name, "Mail")
+    }
+
     func test_should_launch_selected_application() {
         var launchedName: String?
         let viewModel = makeViewModel(["Safari", "Mail"]) { launchedName = $0.name }

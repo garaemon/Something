@@ -51,7 +51,7 @@ Build products go to `build/` (ignored by git).
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
-- **LauncherView.swift**: Application launcher UI in the style of Emacs anything.el. Lists every application and narrows the list on each keystroke. Keys: Up/Down or C-n/C-p move, Return launches, Esc or C-g closes.
+- **LauncherView.swift**: Application launcher UI in the style of Emacs anything.el. Lists every application and narrows the list on each keystroke. Keys: Up/Down or C-n/C-p move, Return launches, Esc or C-g closes. Clicking a row launches it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.

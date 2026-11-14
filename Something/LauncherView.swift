@@ -40,7 +40,13 @@ struct LauncherView: View {
                     ForEach(viewModel.candidates) { application in
                         CandidateRow(
                             application: application,
-                            isSelected: application == viewModel.selectedApplication)
+                            isSelected: application == viewModel.selectedApplication
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.selectApplication(application)
+                            launchAndDismiss()
+                        }
                     }
                 }
             }
