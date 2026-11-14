@@ -100,6 +100,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func launchApplication(_ application: LaunchableApplication) {
         NSWorkspace.shared.openApplication(
-            at: application.url, configuration: NSWorkspace.OpenConfiguration())
+            at: application.url, configuration: NSWorkspace.OpenConfiguration()
+        ) { _, error in
+            guard let error else { return }
+            NSLog("Failed to launch %@: %@", application.url.path, error.localizedDescription)
+        }
     }
 }
