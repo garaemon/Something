@@ -41,10 +41,17 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
     }
 
-    func test_should_keep_selection_within_bounds() {
+    func test_should_stop_at_last_candidate_when_moving_past_the_end() {
         let viewModel = makeViewModel(["Safari", "Mail"])
 
         viewModel.moveSelection(by: 5)
+
+        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+    }
+
+    func test_should_stop_at_first_candidate_when_moving_before_the_start() {
+        let viewModel = makeViewModel(["Safari", "Mail"])
+
         viewModel.moveSelection(by: -10)
 
         XCTAssertEqual(viewModel.selectedApplication?.name, "Mail")
