@@ -71,6 +71,15 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.selectedApplication)
     }
 
+    func test_should_keep_selection_index_when_moving_without_candidates() {
+        let viewModel = makeViewModel(["Safari"])
+        viewModel.query = "zzz"
+
+        viewModel.moveSelection(by: 1)
+
+        XCTAssertEqual(viewModel.selectedIndex, 0)
+    }
+
     func test_should_launch_selected_application() {
         var launchedName: String?
         let viewModel = makeViewModel(["Safari", "Mail"]) { launchedName = $0.name }
