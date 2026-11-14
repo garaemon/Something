@@ -84,6 +84,6 @@ The app implements a sophisticated window lifecycle:
 
 ### Sandboxing
 
-App uses macOS App Sandbox with minimal permissions:
-- `com.apple.security.app-sandbox`: true
-- `com.apple.security.files.user-selected.read-only`: true
+The app does not use the App Sandbox.
+The Accessibility API, which lists and raises other applications' windows, does not work inside the sandbox.
+`Something.entitlements` is therefore empty.
