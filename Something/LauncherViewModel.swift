@@ -45,9 +45,13 @@ final class LauncherViewModel: ObservableObject {
 
     /// Calls the `launchApplication` closure synchronously with the selected
     /// candidate. Does nothing when no candidate matches the query.
-    func launchSelectedApplication() {
-        guard let application = selectedApplication else { return }
+    ///
+    /// - Returns: Whether a candidate was selected and handed to the closure.
+    @discardableResult
+    func launchSelectedApplication() -> Bool {
+        guard let application = selectedApplication else { return false }
         launchApplication(application)
+        return true
     }
 
     private func updateCandidates() {

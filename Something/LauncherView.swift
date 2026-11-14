@@ -66,8 +66,10 @@ struct LauncherView: View {
         return .handled
     }
 
+    // Keep the window and the query when nothing matches, so the user can
+    // fix a typo instead of retyping the whole query.
     private func launchAndDismiss() {
-        viewModel.launchSelectedApplication()
+        guard viewModel.launchSelectedApplication() else { return }
         dismiss()
     }
 }
