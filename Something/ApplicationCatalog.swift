@@ -5,7 +5,12 @@ struct ApplicationCatalog {
     let searchDirectories: [URL]
     /// Bundles listed one by one because their folders hold many apps that
     /// users never launch directly.
-    var individualApplications: [URL] = []
+    let individualApplications: [URL]
+
+    init(searchDirectories: [URL], individualApplications: [URL] = []) {
+        self.searchDirectories = searchDirectories
+        self.individualApplications = individualApplications
+    }
 
     /// Returns a catalog of the standard macOS application folders and Finder.
     static func makeDefault() -> ApplicationCatalog {
