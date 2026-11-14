@@ -4,7 +4,10 @@ import Foundation
 @MainActor
 final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
-        didSet { updateCandidates() }
+        didSet {
+            guard query != oldValue else { return }
+            updateCandidates()
+        }
     }
     @Published private(set) var candidates: [LaunchableApplication] = []
     @Published private(set) var selectedIndex = 0

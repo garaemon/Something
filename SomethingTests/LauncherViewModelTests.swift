@@ -159,4 +159,16 @@ final class LauncherViewModelTests: XCTestCase {
 
         XCTAssertEqual(launchCount, 0)
     }
+
+    // SwiftUI's TextField writes the unchanged text back to its binding, for
+    // example on Return, which used to send the highlight back to the top.
+    func test_should_keep_selection_when_query_is_set_to_the_same_value() {
+        let viewModel = makeViewModel(["Mail", "Safari"])
+        viewModel.query = "a"
+        viewModel.moveSelection(by: 1)
+
+        viewModel.query = "a"
+
+        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+    }
 }
