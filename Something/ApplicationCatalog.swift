@@ -13,15 +13,13 @@ struct ApplicationCatalog {
         ])
     }
 
-    /// Returns every `.app` bundle under the search directories, sorted by name.
+    /// Returns every `.app` bundle under the search directories, in no
+    /// particular order.
     ///
     /// Subfolders such as `/Applications/Utilities` are searched, but bundles
     /// nested inside another bundle are not. Unreadable directories are skipped.
     func loadApplications() -> [LaunchableApplication] {
-        let applications = searchDirectories.flatMap(findApplications(in:))
-        return applications.sorted {
-            $0.name.localizedStandardCompare($1.name) == .orderedAscending
-        }
+        searchDirectories.flatMap(findApplications(in:))
     }
 
     private func findApplications(in directory: URL) -> [LaunchableApplication] {

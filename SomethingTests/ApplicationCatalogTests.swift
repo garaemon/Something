@@ -21,9 +21,9 @@ final class ApplicationCatalogTests: XCTestCase {
             withIntermediateDirectories: true)
     }
 
-    private func loadNames(searching relativePaths: [String]) -> [String] {
+    private func loadNames(searching relativePaths: [String]) -> Set<String> {
         let directories = relativePaths.map { rootDirectory.appendingPathComponent($0) }
-        return ApplicationCatalog(searchDirectories: directories).loadApplications().map(\.name)
+        return Set(ApplicationCatalog(searchDirectories: directories).loadApplications().map(\.name))
     }
 
     func test_should_list_app_bundles_without_extension() throws {
@@ -67,12 +67,12 @@ final class ApplicationCatalogTests: XCTestCase {
         XCTAssertEqual(names, ["Mail"])
     }
 
-    func test_should_sort_apps_from_all_directories_by_name() throws {
+    func test_should_combine_apps_from_all_directories() throws {
         try createDirectory("A/Safari.app")
         try createDirectory("B/Calendar.app")
 
         let names = loadNames(searching: ["A", "B"])
 
-        XCTAssertEqual(names, ["Calendar", "Safari"])
+        XCTAssertEqual(names, ["Safari", "Calendar"])
     }
 }
