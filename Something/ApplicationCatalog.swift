@@ -18,7 +18,7 @@ struct ApplicationCatalog {
             searchDirectories: [
                 URL(fileURLWithPath: "/Applications"),
                 URL(fileURLWithPath: "/System/Applications"),
-                findRealHomeDirectory().appendingPathComponent("Applications"),
+                FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications"),
             ],
             individualApplications: [
                 URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
@@ -56,14 +56,5 @@ struct ApplicationCatalog {
 
     private func makeApplication(at url: URL) -> LaunchableApplication {
         LaunchableApplication(name: url.deletingPathExtension().lastPathComponent, url: url)
-    }
-
-    // The sandbox makes NSHomeDirectory() point at the app container, so read
-    // the account's home from the password database instead.
-    private static func findRealHomeDirectory() -> URL {
-        guard let passwordEntry = getpwuid(getuid()), let homePath = passwordEntry.pointee.pw_dir else {
-            return URL(fileURLWithPath: NSHomeDirectory())
-        }
-        return URL(fileURLWithPath: String(cString: homePath))
     }
 }
