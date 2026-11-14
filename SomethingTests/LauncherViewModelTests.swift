@@ -211,6 +211,16 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
     }
 
+    func test_should_keep_selected_window_when_windows_are_replaced() {
+        let viewModel = makeViewModel(
+            applications: [], windows: [makeWindow("Safari", "GitHub"), makeWindow("Safari", "News")])
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceWindows([makeWindow("Safari", "GitHub"), makeWindow("Safari", "News")])
+
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari — News")
+    }
+
     func test_should_raise_selected_window() {
         var raisedTitle: String?
         let viewModel = makeViewModel(
