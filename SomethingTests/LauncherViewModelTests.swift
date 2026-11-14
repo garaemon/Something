@@ -3,10 +3,6 @@ import XCTest
 @testable import Something
 
 final class LauncherViewModelTests: XCTestCase {
-    private func makeApplication(_ name: String) -> LaunchableApplication {
-        LaunchableApplication(name: name, url: URL(fileURLWithPath: "/Applications/\(name).app"))
-    }
-
     private func makeViewModel(
         _ names: [String], onLaunch: @escaping (LaunchableApplication) -> Void = { _ in }
     ) -> LauncherViewModel {

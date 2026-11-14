@@ -3,10 +3,6 @@ import XCTest
 @testable import Something
 
 final class ApplicationMatcherTests: XCTestCase {
-    private func makeApplication(_ name: String) -> LaunchableApplication {
-        LaunchableApplication(name: name, url: URL(fileURLWithPath: "/Applications/\(name).app"))
-    }
-
     private func filterNames(_ names: [String], query: String) -> [String] {
         let applications = names.map(makeApplication)
         return ApplicationMatcher.filterApplications(applications, matching: query).map(\.name)
