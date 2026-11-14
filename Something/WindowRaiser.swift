@@ -1,23 +1,21 @@
-import AppKit
 import ApplicationServices
 
 /// Brings windows of other applications to the front.
 enum WindowRaiser {
     /// Restores `window` if minimized, raises it above the other windows of
-    /// its application, and activates that application.
+    /// its application, and makes that application frontmost.
     ///
     /// Fails silently when the window has closed or the Accessibility
-    /// permission is missing; the application is still activated.
+    /// permission is missing.
     static func raiseWindow(_ window: SwitchableWindow) {
         AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
         AXUIElementSetAttributeValue(window.element, kAXMainAttribute as CFString, kCFBooleanTrue)
         AXUIElementPerformAction(window.element, kAXRaiseAction as CFString)
-        guard let application = NSRunningApplication(processIdentifier: window.processIdentifier) else {
-            return
-        }
-        // macOS 14 activation is cooperative: the active app must yield,
-        // or the target app may refuse to come to the front.
-        NSApplication.shared.yieldActivation(to: application)
-        application.activate()
+        // NSRunningApplication.activate() returns true but leaves the previous
+        // app in front under macOS 14 cooperative activation. Setting the AX
+        // frontmost attribute switches the app reliably.
+        let applicationElement = AXUIElementCreateApplication(window.processIdentifier)
+        AXUIElementSetAttributeValue(
+            applicationElement, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
     }
 }
