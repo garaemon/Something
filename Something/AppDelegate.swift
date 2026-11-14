@@ -34,7 +34,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered, defer: false)
         newWindow.center()
         newWindow.setFrameAutosaveName("SomethingWindow")
-        newWindow.isReleasedWhenClosed = true
+        // ARC owns the window through `window`. Letting AppKit also release it on
+        // close over-releases it and crashes when the autorelease pool drains.
+        newWindow.isReleasedWhenClosed = false
         
         // Add this line to disable window restoration for this window
         newWindow.restorationClass = nil 
