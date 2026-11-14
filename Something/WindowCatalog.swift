@@ -36,11 +36,15 @@ private final class AccessibilityPermissionPrompt {
     }
 }
 
-private enum AccessibilityWindowReader {
-    // An application that does not answer, such as one stuck in a long task,
-    // would otherwise block the list for the default 6 seconds.
-    private static let messagingTimeoutSeconds: Float = 0.25
+/// Limits how long an Accessibility call waits for another application.
+enum AccessibilityMessaging {
+    /// The timeout to give every AX element of another application. An
+    /// application that does not answer, such as one stuck in a long task,
+    /// would otherwise block the caller for the default 6 seconds.
+    static let timeoutSeconds: Float = 0.25
+}
 
+private enum AccessibilityWindowReader {
     static func loadWindows() -> [SwitchableWindow] {
         let ownProcessIdentifier = ProcessInfo.processInfo.processIdentifier
         return NSWorkspace.shared.runningApplications
@@ -50,7 +54,7 @@ private enum AccessibilityWindowReader {
 
     private static func loadWindows(of application: NSRunningApplication) -> [SwitchableWindow] {
         let applicationElement = AXUIElementCreateApplication(application.processIdentifier)
-        AXUIElementSetMessagingTimeout(applicationElement, messagingTimeoutSeconds)
+        AXUIElementSetMessagingTimeout(applicationElement, AccessibilityMessaging.timeoutSeconds)
         guard
             let windowElements = copyAttribute(kAXWindowsAttribute, of: applicationElement)
                 as? [AXUIElement]
@@ -62,7 +66,7 @@ private enum AccessibilityWindowReader {
         let applicationName = application.bundleURL?.deletingPathExtension().lastPathComponent
             ?? application.localizedName ?? ""
         return windowElements.compactMap { windowElement in
-            AXUIElementSetMessagingTimeout(windowElement, messagingTimeoutSeconds)
+            AXUIElementSetMessagingTimeout(windowElement, AccessibilityMessaging.timeoutSeconds)
             guard
                 copyAttribute(kAXSubroleAttribute, of: windowElement) as? String
                     == kAXStandardWindowSubrole,

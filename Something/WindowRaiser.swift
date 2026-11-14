@@ -15,6 +15,7 @@ enum WindowRaiser {
         // app in front under macOS 14 cooperative activation. Setting the AX
         // frontmost attribute switches the app reliably.
         let applicationElement = AXUIElementCreateApplication(window.processIdentifier)
+        AXUIElementSetMessagingTimeout(applicationElement, AccessibilityMessaging.timeoutSeconds)
         AXUIElementSetAttributeValue(
             applicationElement, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
     }
