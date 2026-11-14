@@ -25,8 +25,8 @@ struct ApplicationCatalog {
             ])
     }
 
-    /// Returns every `.app` bundle under the search directories, in no
-    /// particular order.
+    /// Returns every `.app` bundle under the search directories plus the
+    /// individual applications that exist, in no particular order.
     ///
     /// Subfolders such as `/Applications/Utilities` are searched, but bundles
     /// nested inside another bundle are not. Unreadable directories and
