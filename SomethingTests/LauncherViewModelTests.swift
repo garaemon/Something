@@ -27,7 +27,7 @@ final class LauncherViewModelTests: XCTestCase {
     func test_should_select_first_candidate_initially() {
         let viewModel = makeViewModel(["Safari", "Mail"])
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Mail")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
     }
 
     func test_should_move_selection_down() {
@@ -35,7 +35,7 @@ final class LauncherViewModelTests: XCTestCase {
 
         viewModel.moveSelection(by: 1)
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari")
     }
 
     func test_should_stop_at_last_candidate_when_moving_past_the_end() {
@@ -43,7 +43,7 @@ final class LauncherViewModelTests: XCTestCase {
 
         viewModel.moveSelection(by: 5)
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari")
     }
 
     func test_should_stop_at_first_candidate_when_moving_before_the_start() {
@@ -51,7 +51,7 @@ final class LauncherViewModelTests: XCTestCase {
 
         viewModel.moveSelection(by: -10)
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Mail")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
     }
 
     func test_should_reset_selection_to_first_when_query_changes() {
@@ -60,7 +60,7 @@ final class LauncherViewModelTests: XCTestCase {
 
         viewModel.query = "m"
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Mail")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
     }
 
     func test_should_have_no_selection_when_nothing_matches() {
@@ -68,7 +68,7 @@ final class LauncherViewModelTests: XCTestCase {
 
         viewModel.query = "zzz"
 
-        XCTAssertNil(viewModel.selectedApplication)
+        XCTAssertNil(viewModel.selectedCandidate)
     }
 
     func test_should_show_replaced_applications_narrowed_by_current_query() {
@@ -80,22 +80,22 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari"])
     }
 
-    func test_should_keep_selected_application_when_applications_are_replaced() {
+    func test_should_keep_selected_candidate_when_applications_are_replaced() {
         let viewModel = makeViewModel(["Mail", "Safari"])
         viewModel.moveSelection(by: 1)
 
         viewModel.replaceApplications(["Calendar", "Mail", "Safari"].map(makeApplication))
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari")
     }
 
-    func test_should_select_first_candidate_when_selected_application_disappears() {
+    func test_should_select_first_candidate_when_selected_candidate_disappears() {
         let viewModel = makeViewModel(["Mail", "Safari"])
         viewModel.moveSelection(by: 1)
 
         viewModel.replaceApplications(["Calendar", "Mail"].map(makeApplication))
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Calendar")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Calendar")
     }
 
     func test_should_keep_selection_index_when_moving_without_candidates() {
@@ -110,7 +110,7 @@ final class LauncherViewModelTests: XCTestCase {
     func test_should_report_launch_when_a_candidate_is_selected() {
         let viewModel = makeViewModel(["Safari"])
 
-        let didLaunch = viewModel.launchSelectedApplication()
+        let didLaunch = viewModel.activateSelectedCandidate()
 
         XCTAssertTrue(didLaunch)
     }
@@ -119,25 +119,25 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(["Safari"])
         viewModel.query = "zzz"
 
-        let didLaunch = viewModel.launchSelectedApplication()
+        let didLaunch = viewModel.activateSelectedCandidate()
 
         XCTAssertFalse(didLaunch)
     }
 
-    func test_should_select_clicked_application() {
+    func test_should_select_clicked_candidate() {
         let viewModel = makeViewModel(["Mail", "Safari"])
 
-        viewModel.selectApplication(makeApplication("Safari"))
+        viewModel.selectCandidate(.application(makeApplication("Safari")))
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Safari")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari")
     }
 
-    func test_should_keep_selection_when_selecting_application_not_in_candidates() {
+    func test_should_keep_selection_when_selecting_candidate_not_in_candidates() {
         let viewModel = makeViewModel(["Mail", "Safari"])
 
-        viewModel.selectApplication(makeApplication("Calendar"))
+        viewModel.selectCandidate(.application(makeApplication("Calendar")))
 
-        XCTAssertEqual(viewModel.selectedApplication?.name, "Mail")
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
     }
 
     func test_should_launch_selected_application() {
@@ -145,7 +145,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(["Safari", "Mail"]) { launchedName = $0.name }
         viewModel.moveSelection(by: 1)
 
-        viewModel.launchSelectedApplication()
+        viewModel.activateSelectedCandidate()
 
         XCTAssertEqual(launchedName, "Safari")
     }
@@ -155,7 +155,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(["Safari"]) { _ in launchCount += 1 }
         viewModel.query = "zzz"
 
-        viewModel.launchSelectedApplication()
+        viewModel.activateSelectedCandidate()
 
         XCTAssertEqual(launchCount, 0)
     }

@@ -6,7 +6,7 @@ final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
         didSet { updateCandidates() }
     }
-    @Published private(set) var candidates: [LaunchableApplication] = []
+    @Published private(set) var candidates: [LauncherCandidate] = []
     @Published private(set) var selectedIndex = 0
 
     private var applications: [LaunchableApplication]
@@ -24,7 +24,7 @@ final class LauncherViewModel: ObservableObject {
     }
 
     /// The highlighted candidate, or nil when no candidate matches the query.
-    var selectedApplication: LaunchableApplication? {
+    var selectedCandidate: LauncherCandidate? {
         candidates.indices.contains(selectedIndex) ? candidates[selectedIndex] : nil
     }
 
@@ -34,35 +34,39 @@ final class LauncherViewModel: ObservableObject {
         selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
     }
 
-    /// Highlights `application`. Keeps the current highlight when
-    /// `application` is not among the candidates.
-    func selectApplication(_ application: LaunchableApplication) {
-        guard let index = candidates.firstIndex(of: application) else { return }
+    /// Highlights `candidate`. Keeps the current highlight when `candidate`
+    /// is not among the candidates.
+    func selectCandidate(_ candidate: LauncherCandidate) {
+        guard let index = candidates.firstIndex(of: candidate) else { return }
         selectedIndex = index
     }
 
     /// Swaps in a new set of applications, such as the result of a rescan,
-    /// keeping the query and the highlighted application when it still matches.
+    /// keeping the query and the highlighted candidate when it still matches.
     func replaceApplications(_ newApplications: [LaunchableApplication]) {
-        let previouslySelectedID = selectedApplication?.id
+        let previouslySelectedCandidate = selectedCandidate
         applications = newApplications
         updateCandidates()
-        selectedIndex = candidates.firstIndex { $0.id == previouslySelectedID } ?? 0
+        selectedIndex = candidates.firstIndex { $0 == previouslySelectedCandidate } ?? 0
     }
 
-    /// Calls the `launchApplication` closure synchronously with the selected
-    /// candidate. Does nothing when no candidate matches the query.
+    /// Hands the selected candidate synchronously to the matching closure.
+    /// Does nothing when no candidate matches the query.
     ///
-    /// - Returns: Whether a candidate was selected and handed to the closure.
+    /// - Returns: Whether a candidate was selected and handed to a closure.
     @discardableResult
-    func launchSelectedApplication() -> Bool {
-        guard let application = selectedApplication else { return false }
-        launchApplication(application)
+    func activateSelectedCandidate() -> Bool {
+        guard let candidate = selectedCandidate else { return false }
+        switch candidate {
+        case .application(let application):
+            launchApplication(application)
+        }
         return true
     }
 
     private func updateCandidates() {
         candidates = ApplicationMatcher.filterApplications(applications, matching: query)
+            .map(LauncherCandidate.application)
         selectedIndex = 0
     }
 }
