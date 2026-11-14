@@ -1,6 +1,7 @@
 import Foundation
 
 /// Holds the launcher's query, the narrowed candidates, and the selection.
+@MainActor
 final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
         didSet { updateCandidates() }

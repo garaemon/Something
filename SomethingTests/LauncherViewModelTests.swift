@@ -2,6 +2,7 @@ import XCTest
 
 @testable import Something
 
+@MainActor
 final class LauncherViewModelTests: XCTestCase {
     private func makeViewModel(
         _ names: [String], onLaunch: @escaping (LaunchableApplication) -> Void = { _ in }
