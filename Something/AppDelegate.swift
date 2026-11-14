@@ -11,6 +11,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var windowController: SomethingWindowController?
     // Tests replace the catalog to avoid scanning the real application folders.
     var applicationCatalog = ApplicationCatalog.makeDefault()
+    var windowCatalog = WindowCatalog.makeDefault()
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
@@ -19,6 +20,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // older scan never overwrites a newer result.
     private let applicationScanQueue = DispatchQueue(
         label: "com.garaemon.Something.applicationScan", qos: .userInitiated)
+    // Windows get their own queue so that a slow folder scan does not delay
+    // the window list, which the user expects right after the hotkey.
+    private let windowListQueue = DispatchQueue(
+        label: "com.garaemon.Something.windowList", qos: .userInitiated)
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Change the activation policy to .accessory
@@ -71,6 +76,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Rescan on every open so that newly installed applications reach the
         // open launcher when the scan finishes.
         refreshApplicationsInBackground()
+        refreshWindowsInBackground()
 
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
@@ -83,7 +89,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
         let viewModel = LauncherViewModel(
-            applications: cachedApplications, launchApplication: launchApplication)
+            applications: cachedApplications, launchApplication: launchApplication,
+            raiseWindow: WindowRaiser.raiseWindow)
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
     }
@@ -95,6 +102,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async {
                 self?.cachedApplications = applications
                 self?.launcherViewModel?.replaceApplications(applications)
+            }
+        }
+    }
+
+    // Windows are not cached, because they open, close, and change titles
+    // far more often than applications are installed.
+    private func refreshWindowsInBackground() {
+        let catalog = windowCatalog
+        windowListQueue.async { [weak self] in
+            let windows = catalog.loadWindows()
+            DispatchQueue.main.async {
+                self?.launcherViewModel?.replaceWindows(windows)
             }
         }
     }

@@ -14,7 +14,7 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Application", text: $viewModel.query)
+            TextField("Window or Application", text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(.title2)
                 .padding(12)
