@@ -75,6 +75,15 @@ mise run build
 - **WindowCatalog.swift**: Lists standard windows of running regular applications through the Accessibility API, and asks for the Accessibility permission on first use.
 - **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
+- **BalanceSimulation.swift**: Pure two-wheeled inverted pendulum with pole-placed state feedback, a small constant disturbance, and a fixed 1/240 s step. The launcher state only sends it a target position and kicks.
+- **MascotState.swift**: Mascot state (`appearing`, `idle`, `typing`, `noMatch`) derived from the query, the candidate count, and whether the window just opened, plus the screen text for each state.
+- **MascotChoreography.swift**: Per-state target position, yaw, head, and hand motion, ported from the approved three.js prototype.
+- **MascotMailbox.swift**: Lock-protected handoff of state and query from SwiftUI to the SceneKit render thread.
+- **MascotAnimator.swift**: Steps the simulation with a fixed-step accumulator and maps it to a `MascotFrame` (pose, wheel roll, screen text). No SceneKit, so it is testable.
+- **MascotModel.swift**: The robot's parts as `Codable` data, with the prototype robot as the default, so that skins can later be loaded from a file.
+- **MascotToon.swift**: Toon-shading and outline shader modifiers with their tunable numbers in one place.
+- **MascotSceneBuilder.swift**: Builds the SceneKit nodes from `MascotModel` with toon materials, inverted-hull outlines, a shadow, and the camera.
+- **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
 
 ### Key Behavioral Patterns

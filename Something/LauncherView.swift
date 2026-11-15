@@ -6,21 +6,30 @@ import SwiftUI
 /// anything.el.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
+    static let mascotSize: CGFloat = 96
 
     // AppDelegate owns the view model and pushes rescans into it.
     @ObservedObject var viewModel: LauncherViewModel
     let dismiss: () -> Void
     @FocusState private var isQueryFieldFocused: Bool
+    // Plays the mascot's entrance until it ends or the user types.
+    @State private var justOpened = true
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Window or Application", text: $viewModel.query)
-                .textFieldStyle(.plain)
-                .font(.title2)
-                .padding(12)
-                .focused($isQueryFieldFocused)
-                .onSubmit(activateAndDismiss)
-                .onKeyPress(phases: .down, action: handleKeyPress)
+            HStack(spacing: 0) {
+                TextField("Window or Application", text: $viewModel.query)
+                    .textFieldStyle(.plain)
+                    .font(.title2)
+                    .padding(12)
+                    .focused($isQueryFieldFocused)
+                    .onSubmit(activateAndDismiss)
+                    .onKeyPress(phases: .down, action: handleKeyPress)
+                MascotView(state: mascotState, query: viewModel.query)
+                    .frame(width: Self.mascotSize, height: Self.mascotSize)
+                    .allowsHitTesting(false)
+                    .padding(.trailing, 8)
+            }
             Divider()
             candidateList
         }
@@ -32,6 +41,17 @@ struct LauncherView: View {
         // before the window becomes key, and onAppear runs earlier than that.
         .defaultFocus($isQueryFieldFocused, true)
         .onAppear { DispatchQueue.main.async { isQueryFieldFocused = true } }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + MascotChoreography.appearDuration) {
+                justOpened = false
+            }
+        }
+        .onChange(of: viewModel.query) { justOpened = false }
+    }
+
+    private var mascotState: MascotState {
+        MascotState.derive(
+            query: viewModel.query, candidateCount: viewModel.candidates.count, justOpened: justOpened)
     }
 
     private var candidateList: some View {
