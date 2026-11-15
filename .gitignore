@@ -106,3 +106,6 @@ Something.xcodeproj/
 
 # Per-developer signing settings included by Configs/Signing.xcconfig
 Configs/Local.xcconfig
+
+# Finder metadata
+.DS_Store
