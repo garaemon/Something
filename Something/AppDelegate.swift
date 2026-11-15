@@ -21,32 +21,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var applicationCatalog = ApplicationCatalog.makeDefault()
     var windowCatalog = WindowCatalog.makeDefault()
     var repositoryCatalog = RepositoryCatalog.makeDefault()
-    var fileCatalog: FileCatalog {
-        get { fileListLoader.catalog }
-        set { fileListLoader.catalog = newValue }
-    }
+    var fileCatalog = FileCatalog.makeDefault()
     // Tests replace the random pick to get a fixed placement.
     var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = { $0.randomElement() ?? .top }
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
-    // Walking the repositories folder touches many directories, which would
-    // delay the window on the main thread.
-    private var cachedRepositories: [GhqRepository] = []
-    // A scan of a large repositories folder can outlast a hotkey press, so
-    // repeated presses would otherwise pile up stale scans on the serial queue.
-    private var isLoadingRepositories = false
-    // The file folders, such as ~/Documents, can be as slow to walk as the
-    // repositories folder, so files follow the same caching.
-    private lazy var fileListLoader: FileListLoader = {
-        let loader = FileListLoader(catalog: .makeDefault()) { [weak self] in
-            self?.settings.fileFolderPaths ?? []
-        }
-        loader.onFilesLoaded = { [weak self] files in
-            self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
-        }
-        return loader
-    }()
+    // Walking the repositories folder or a file folder, such as ~/Documents,
+    // touches many directories, which would delay the window on the main
+    // thread. Each list loads on its own queue so that a slow walk does not
+    // delay the other lists.
+    private lazy var repositoryLoader = makeRepositoryLoader()
+    private lazy var fileLoader = makeFileLoader()
     private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
     // older scan never overwrites a newer result.
@@ -56,11 +42,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // the window list, which the user expects right after the hotkey.
     private let windowListQueue = DispatchQueue(
         label: "com.garaemon.Something.windowList", qos: .userInitiated)
-    // isLoadingRepositories already keeps scans one at a time; the queue is
-    // separate so that a slow repositories folder walk does not delay the
-    // other lists.
-    private let repositoryListQueue = DispatchQueue(
-        label: "com.garaemon.Something.repositoryList", qos: .userInitiated)
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Change the activation policy to .accessory
@@ -68,8 +49,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // while still keeping it out of the Dock.
         NSApplication.shared.setActivationPolicy(.accessory)
         refreshApplicationsInBackground()
-        refreshRepositoriesInBackground()
-        fileListLoader.refresh()
+        repositoryLoader.refresh()
+        fileLoader.refresh()
         startObservingSettings()
     }
 
@@ -91,12 +72,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.$repositoryRootPath
             .removeDuplicates()
             .dropFirst()
-            .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(pendingRootPath: rootPath) }
+            .sink { [weak self] rootPath in self?.repositoryLoader.refresh(pendingKey: rootPath) }
             .store(in: &settingsSubscriptions)
         settings.$fileFolderPaths
             .removeDuplicates()
             .dropFirst()
-            .sink { [weak self] folderPaths in self?.fileListLoader.refresh(pendingFolderPaths: folderPaths) }
+            .sink { [weak self] folderPaths in self?.fileLoader.refresh(pendingKey: folderPaths) }
             .store(in: &settingsSubscriptions)
     }
 
@@ -186,8 +167,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // open launcher when the scan finishes.
         refreshApplicationsInBackground()
         refreshWindowsInBackground()
-        refreshRepositoriesInBackground()
-        fileListLoader.refresh()
+        repositoryLoader.refresh()
+        fileLoader.refresh()
 
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
@@ -233,8 +214,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = LauncherViewModel(sources: [
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
-            Self.makeRepositorySource(cachedRepositories),
-            Self.makeFileSource(fileListLoader.cachedFiles),
+            Self.makeRepositorySource(repositoryLoader.cachedItems),
+            Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             WebSearchSource(engines: WebSearchEngine.launcherEngines, openURL: { NSWorkspace.shared.open($0) }),
         ])
@@ -253,32 +234,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // The settings sink passes pendingRootPath, because @Published emits
-    // before the setting holds the new folder.
-    private func refreshRepositoriesInBackground(pendingRootPath: String? = nil) {
-        guard !isLoadingRepositories else { return }
-        isLoadingRepositories = true
-        let catalog = repositoryCatalog
-        let scannedRootPath = pendingRootPath ?? settings.repositoryRootPath
-        let rootDirectory = URL(fileURLWithPath: scannedRootPath, isDirectory: true)
-        repositoryListQueue.async { [weak self] in
-            let repositories = catalog.loadRepositories(rootDirectory)
-            DispatchQueue.main.async {
-                self?.finishRepositoryRefresh(repositories, scannedRootPath: scannedRootPath)
-            }
+    private func makeRepositoryLoader() -> BackgroundListLoader<String, GhqRepository> {
+        let loader = BackgroundListLoader<String, GhqRepository>(
+            queueLabel: "com.garaemon.Something.repositoryList",
+            readKey: { [weak self] in self?.settings.repositoryRootPath ?? "" },
+            readLoad: { [weak self] in
+                let catalog = self?.repositoryCatalog
+                return { rootPath in
+                    catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true)) ?? []
+                }
+            })
+        loader.onItemsLoaded = { [weak self] repositories in
+            self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
         }
+        return loader
     }
 
-    // A root change during a scan was skipped by the isLoadingRepositories
-    // guard, so the stale result is dropped and the new root is scanned.
-    private func finishRepositoryRefresh(_ repositories: [GhqRepository], scannedRootPath: String) {
-        isLoadingRepositories = false
-        guard scannedRootPath == settings.repositoryRootPath else {
-            refreshRepositoriesInBackground()
-            return
+    private func makeFileLoader() -> BackgroundListLoader<[String], LocalFile> {
+        let loader = BackgroundListLoader<[String], LocalFile>(
+            queueLabel: "com.garaemon.Something.fileList",
+            readKey: { [weak self] in self?.settings.fileFolderPaths ?? [] },
+            readLoad: { [weak self] in
+                let catalog = self?.fileCatalog
+                return { folderPaths in
+                    catalog?.loadFiles(folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }) ?? []
+                }
+            })
+        loader.onItemsLoaded = { [weak self] files in
+            self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
         }
-        cachedRepositories = repositories
-        launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
+        return loader
     }
 
     // Windows are not cached, because they open, close, and change titles
