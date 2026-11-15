@@ -42,6 +42,13 @@ Lint the app sources with [SwiftLint](https://github.com/realm/SwiftLint) (`.swi
 mise run lint
 ```
 
+Run the linter on every commit that stages a Swift file under `Something/` (once per clone; worktrees share the setting):
+```bash
+mise run install-hooks
+```
+
+The hook lives in `.githooks/pre-commit`. `git commit --no-verify` skips it.
+
 Build and launch the app:
 ```bash
 mise run run
