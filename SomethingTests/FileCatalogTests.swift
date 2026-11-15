@@ -92,6 +92,15 @@ final class FileCatalogTests: XCTestCase {
         XCTAssertTrue(files.isEmpty)
     }
 
+    func test_should_list_file_of_nested_folders_once() throws {
+        try createFile("papers/a.pdf")
+        let nestedFolder = folder.appendingPathComponent("papers", isDirectory: true)
+
+        let files = FileCatalog.scanFiles(in: [folder, nestedFolder])
+
+        XCTAssertEqual(files.map(\.name), ["Downloads/papers/a.pdf"])
+    }
+
     func test_should_return_no_files_when_folder_is_missing() {
         let missingFolder = folder.appendingPathComponent("missing", isDirectory: true)
 

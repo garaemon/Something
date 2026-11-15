@@ -17,13 +17,17 @@ struct FileCatalog {
     ///
     /// Skips hidden files and build output folders such as `node_modules`,
     /// and lists a package, such as a Keynote document, as one file. Returns
-    /// no files for a missing folder. Stops a folder at
+    /// no files for a missing folder. Lists a file under two of the folders,
+    /// such as a folder and its subfolder, once, under the earlier folder.
+    /// Stops a folder at
     /// `maximumFileCountPerFolder` files in directory order, so a folder past
     /// that count can lose recent files.
     static func scanFiles(
         in folders: [URL], maximumFileCountPerFolder: Int = defaultMaximumFileCountPerFolder
     ) -> [LocalFile] {
-        folders.flatMap { collectFiles(in: $0, maximumFileCount: maximumFileCountPerFolder) }
+        let collectedFiles = folders.flatMap { collectFiles(in: $0, maximumFileCount: maximumFileCountPerFolder) }
+        var seenPaths: Set<String> = []
+        return collectedFiles.filter { seenPaths.insert($0.resolvedPath).inserted }
             .sorted { $0.modificationDate > $1.modificationDate }
             .map(\.file)
     }
@@ -47,6 +51,9 @@ struct FileCatalog {
     private struct DatedFile {
         let file: LocalFile
         let modificationDate: Date
+        /// The path with symbolic links resolved, which tells apart the same
+        /// file reached through two folders.
+        let resolvedPath: String
     }
 
     private static func collectFiles(in folder: URL, maximumFileCount: Int) -> [DatedFile] {
@@ -82,7 +89,8 @@ struct FileCatalog {
         let file = LocalFile(
             name: "\(folder.lastPathComponent)/\(relativePath)",
             url: folder.appendingPathComponent(relativePath))
-        return DatedFile(file: file, modificationDate: values.contentModificationDate ?? .distantPast)
+        return DatedFile(
+            file: file, modificationDate: values.contentModificationDate ?? .distantPast, resolvedPath: itemPath)
     }
 
     // A folder that macOS denies, such as ~/Documents before the user grants
