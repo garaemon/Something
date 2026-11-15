@@ -81,9 +81,3 @@ The app implements a sophisticated window lifecycle:
 3. Window automatically hides on focus loss (windowDidResignKey)
 4. Strong references maintained in AppDelegate during window lifetime
 5. Cleanup handled via closure-based callback system (onWindowRelease)
-
-### Sandboxing
-
-App uses macOS App Sandbox with minimal permissions:
-- `com.apple.security.app-sandbox`: true
-- `com.apple.security.files.user-selected.read-only`: true
