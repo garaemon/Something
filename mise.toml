@@ -33,3 +33,7 @@ run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration 
 [tasks.lint]
 description = "Lint the app sources with SwiftLint"
 run = "swiftlint lint --strict"
+
+[tasks.install-hooks]
+description = "Run the linter on every commit through the Git hooks in .githooks"
+run = "git config core.hooksPath .githooks"
