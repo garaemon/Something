@@ -6,14 +6,14 @@ import Foundation
 /// (power, right-associative), unary minus, and parentheses.
 enum Calculator {
     /// Returns the value of `expression`, or nil when `expression` is not
-    /// arithmetic, holds no operator, or has a non-finite value such as a
-    /// division by zero.
+    /// arithmetic, applies no binary operator (as in `-5` or `(2024)`), looks
+    /// like a date, or has a non-finite value such as a division by zero.
     static func evaluate(_ expression: String) -> Double? {
-        guard let tokens = tokenize(expression),
-            tokens.contains(where: { if case .symbol = $0 { true } else { false } })
-        else { return nil }
+        guard !isSeparatedNumberChain(expression), let tokens = tokenize(expression) else { return nil }
         var parser = CalculatorParser(tokens: tokens)
-        guard let value = parser.parseExpression(), parser.isAtEnd, value.isFinite else { return nil }
+        guard let value = parser.parseExpression(), parser.isAtEnd, parser.hasAppliedBinaryOperator,
+            value.isFinite
+        else { return nil }
         return value
     }
 
@@ -21,11 +21,20 @@ enum Calculator {
     /// point, and fractions rounded to 12 significant digits so that
     /// `0.1 + 0.2` reads `0.3`.
     static func formatResult(_ value: Double) -> String {
-        // Doubles hold every integer exactly up to 2^53, about 9e15.
-        if value == value.rounded(), abs(value) < 1e15 {
+        // Doubles hold every integer exactly up to 2^53. Larger values fall
+        // back to %g, so that the row shows no digits the value lacks.
+        if value == value.rounded(), abs(value) <= 0x1p53 {
             return String(Int64(value))
         }
         return String(format: "%.12g", value)
+    }
+
+    // Matches dates such as 2026-11-15 or 11/15/2026 and phone numbers such
+    // as 090-1234-5678, which the user more likely searches for than
+    // computes. A single separator, as in 10-3 or 10/4, still computes.
+    private static func isSeparatedNumberChain(_ expression: String) -> Bool {
+        expression.trimmingCharacters(in: .whitespacesAndNewlines)
+            .wholeMatch(of: #/[0-9]+(-[0-9]+){2,}|[0-9]+(/[0-9]+){2,}/#) != nil
     }
 
     private static func tokenize(_ expression: String) -> [CalculatorToken]? {
@@ -59,7 +68,7 @@ enum Calculator {
     }
 }
 
-private enum CalculatorToken: Equatable {
+private enum CalculatorToken {
     case number(Double)
     case symbol(Character)
 }
@@ -74,6 +83,9 @@ private enum CalculatorToken: Equatable {
 private struct CalculatorParser {
     let tokens: [CalculatorToken]
     private var position = 0
+    /// Whether the parse combined two operands, which tells `1 + 2` apart
+    /// from a bare number such as `-5`.
+    private(set) var hasAppliedBinaryOperator = false
 
     init(tokens: [CalculatorToken]) {
         self.tokens = tokens
@@ -85,6 +97,7 @@ private struct CalculatorParser {
         guard var value = parseTerm() else { return nil }
         while let symbol = consumeSymbol(in: "+-") {
             guard let rightValue = parseTerm() else { return nil }
+            hasAppliedBinaryOperator = true
             value = symbol == "+" ? value + rightValue : value - rightValue
         }
         return value
@@ -94,6 +107,7 @@ private struct CalculatorParser {
         guard var value = parseUnary() else { return nil }
         while let symbol = consumeSymbol(in: "*/%") {
             guard let rightValue = parseUnary() else { return nil }
+            hasAppliedBinaryOperator = true
             switch symbol {
             case "*": value *= rightValue
             case "/": value /= rightValue
@@ -115,7 +129,9 @@ private struct CalculatorParser {
     private mutating func parsePower() -> Double? {
         guard let base = parsePrimary() else { return nil }
         guard consumeSymbol(in: "^") != nil else { return base }
-        return parseUnary().map { pow(base, $0) }
+        guard let exponent = parseUnary() else { return nil }
+        hasAppliedBinaryOperator = true
+        return pow(base, exponent)
     }
 
     private mutating func parsePrimary() -> Double? {

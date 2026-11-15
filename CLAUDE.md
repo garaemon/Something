@@ -101,7 +101,7 @@ mise run build
 - **SettingsView.swift**: The settings window content: hot key recorder, repositories folder picker, a live mascot preview, mascot color pickers, and Restore Defaults.
 - **HotKeyRecorderView.swift**: Button that records the next key press as the hot key through a local key monitor. Esc cancels.
 - **HotKeyRecording.swift**: Turns a key press into a `KeyCombo`, and rejects a press without Command, Option, or Control.
-- **Calculator.swift**: Recursive descent evaluator of `+ - * / % ^`, unary minus, and parentheses (`×` and `÷` too). Rejects a lone number, so that "2024" stays a search. Formats integers without a decimal point and rounds fractions to 12 significant digits.
+- **Calculator.swift**: Recursive descent evaluator of `+ - * / % ^`, unary minus, and parentheses (`×` and `÷` too). Rejects an expression without a binary operator, such as "2024" or "-5", and numbers chained by two or more hyphens or slashes, so that "2026-11-15" stays a search. Formats integers without a decimal point and rounds fractions to 12 significant digits.
 - **CalculatorSource.swift**: Launcher source that lists `= <result>` for an arithmetic query, and copies the result on pick.
 - **SettingsSource.swift**: Launcher source that lists "Something Settings" for queries such as "settings" or "pref", and opens the settings window.
 

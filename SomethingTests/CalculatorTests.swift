@@ -31,6 +31,10 @@ final class CalculatorTests: XCTestCase {
         XCTAssertEqual(Calculator.evaluate("2 ^ 3 ^ 2"), 512)
     }
 
+    func test_should_raise_power_before_negating() {
+        XCTAssertEqual(Calculator.evaluate("-2 ^ 2"), -4)
+    }
+
     func test_should_take_remainder() {
         XCTAssertEqual(Calculator.evaluate("10 % 4"), 2)
     }
@@ -60,6 +64,43 @@ final class CalculatorTests: XCTestCase {
         XCTAssertNil(Calculator.evaluate("safari"))
     }
 
+    // A date or a phone number is more likely a search than a subtraction.
+    func test_should_reject_a_hyphenated_date() {
+        XCTAssertNil(Calculator.evaluate("2026-11-15"))
+    }
+
+    func test_should_reject_a_hyphenated_date_with_a_trailing_newline() {
+        XCTAssertNil(Calculator.evaluate("2026-11-15\n"))
+    }
+
+    func test_should_reject_a_slashed_date() {
+        XCTAssertNil(Calculator.evaluate("2026/11/15"))
+    }
+
+    func test_should_divide_a_number_without_spaces() {
+        XCTAssertEqual(Calculator.evaluate("10/4"), 2.5)
+    }
+
+    func test_should_reject_a_negated_lone_number() {
+        XCTAssertNil(Calculator.evaluate("-5"))
+    }
+
+    func test_should_reject_a_parenthesized_lone_number() {
+        XCTAssertNil(Calculator.evaluate("(2024)"))
+    }
+
+    func test_should_subtract_a_number_without_spaces() {
+        XCTAssertEqual(Calculator.evaluate("10-3"), 7)
+    }
+
+    func test_should_raise_to_a_negative_power() {
+        XCTAssertEqual(Calculator.evaluate("2 ^ -1"), 0.5)
+    }
+
+    func test_should_reject_remainder_by_zero() {
+        XCTAssertNil(Calculator.evaluate("10 % 0"))
+    }
+
     func test_should_reject_division_by_zero() {
         XCTAssertNil(Calculator.evaluate("1 / 0"))
     }
@@ -70,6 +111,14 @@ final class CalculatorTests: XCTestCase {
 
     func test_should_format_a_fraction_without_float_noise() {
         XCTAssertEqual(Calculator.formatResult(0.1 + 0.2), "0.3")
+    }
+
+    func test_should_format_a_large_integer_without_exponent() {
+        XCTAssertEqual(Calculator.formatResult(1e15), "1000000000000000")
+    }
+
+    func test_should_format_an_integer_beyond_double_precision_with_exponent() {
+        XCTAssertEqual(Calculator.formatResult(1e17), "1e+17")
     }
 
     func test_should_format_a_negative_result() {
