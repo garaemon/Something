@@ -105,6 +105,9 @@ private struct CandidateRow: View {
             return ApplicationIconCache.shared.loadIcon(for: application)
         case .window(let window):
             return ApplicationIconCache.shared.loadIcon(forProcess: window.processIdentifier)
+        case .webSearch(let search):
+            return NSImage(systemSymbolName: search.engine.symbolName, accessibilityDescription: nil)
+                ?? NSImage()
         }
     }
 }
