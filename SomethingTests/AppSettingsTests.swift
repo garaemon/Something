@@ -29,6 +29,34 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(restoredSettings.hotKeyCombo, savedCombo)
     }
 
+    func test_should_restore_saved_head_color() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).mascotHeadColor = "#3366CC"
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.mascotHeadColor, "#3366CC")
+    }
+
+    func test_should_restore_saved_body_color() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).mascotBodyColor = "#112233"
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.mascotBodyColor, "#112233")
+    }
+
+    func test_should_return_default_colors_after_reset() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.mascotHeadColor = "#000000"
+        settings.mascotBodyColor = "#000000"
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.mascotModel, MascotModel.default)
+    }
+
     func test_should_return_default_hot_key_after_reset() {
         let settings = AppSettings(userDefaults: makeUserDefaults())
         settings.hotKeyCombo = KeyCombo(key: .space, modifiers: [.option])

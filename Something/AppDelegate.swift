@@ -165,7 +165,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } ?? MascotPlacement.allCases
         let panel = MascotPanel.make(
             viewModel: viewModel, launcherFrame: launcher.frame,
-            placement: chooseMascotPlacement(candidates))
+            placement: chooseMascotPlacement(candidates), model: settings.mascotModel)
         launcher.addChildWindow(panel, ordered: .above)
         mascotPanel = panel
         controller.onWindowResize = { [weak self, weak launcher] in

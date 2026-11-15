@@ -9,9 +9,11 @@ struct MascotView: NSViewRepresentable {
     let state: MascotState
     let query: String
     let placement: MascotPlacement
+    /// Read once, when the scene is built.
+    let model: MascotModel
 
     func makeCoordinator() -> MascotRenderer {
-        MascotRenderer(model: .default, placement: placement)
+        MascotRenderer(model: model, placement: placement)
     }
 
     func makeNSView(context: Context) -> SCNView {

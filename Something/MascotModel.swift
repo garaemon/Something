@@ -63,11 +63,21 @@ struct MascotModel: Codable, Equatable {
             Double((value >> 8) & 0xFF) / 255,
             Double(value & 0xFF) / 255)
     }
+
+    /// Formats components of 0...1 as "#RRGGBB". Components outside the range are clamped.
+    static func hex(red: Double, green: Double, blue: Double) -> String {
+        let bytes = [red, green, blue].map { Int((min(max($0, 0), 1) * 255).rounded()) }
+        return String(format: "#%02X%02X%02X", bytes[0], bytes[1], bytes[2])
+    }
 }
 
 extension MascotModel {
-    private static let head = "#FF9A4D"
-    private static let cream = "#F4EDE0"
+    /// The skin color of the head box and the chest stripe.
+    static let defaultHeadColor = "#FF9A4D"
+    /// The skin color of the body, the hands, the wheel caps, and the ears.
+    static let defaultBodyColor = "#F4EDE0"
+    private static let head = defaultHeadColor
+    private static let cream = defaultBodyColor
     private static let wheel = "#3A2E1F"
     private static let screenBody = "#2B2A33"
     private static let neck = "#8A8478"
@@ -122,4 +132,22 @@ extension MascotModel {
         ],
         screen: Screen(
             group: .head, position: vec(0, 0.5, 0.534), width: 0.9, height: 0.5, textColor: "#FFE66D"))
+}
+
+extension MascotModel {
+    /// Returns a copy whose head-colored and body-colored parts take the given
+    /// "#RRGGBB" colors. Parts of other colors, such as the wheels, are kept.
+    func recolored(headColor: String, bodyColor: String) -> MascotModel {
+        var recoloredModel = self
+        recoloredModel.parts = parts.map { part in
+            var recoloredPart = part
+            switch part.color {
+            case Self.defaultHeadColor: recoloredPart.color = headColor
+            case Self.defaultBodyColor: recoloredPart.color = bodyColor
+            default: break
+            }
+            return recoloredPart
+        }
+        return recoloredModel
+    }
 }
