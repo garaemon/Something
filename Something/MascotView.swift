@@ -62,7 +62,8 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
 
     private func apply(_ frame: MascotFrame) {
         rig.root.position = SCNVector3(
-            CGFloat(sin(frame.yaw) * frame.position), 0, CGFloat(cos(frame.yaw) * frame.position))
+            CGFloat(sin(frame.yaw) * frame.position), CGFloat(frame.lift),
+            CGFloat(cos(frame.yaw) * frame.position))
         rig.root.eulerAngles = SCNVector3(0, CGFloat(frame.yaw), 0)
         rig.groups[.tilt]?.eulerAngles = SCNVector3(CGFloat(frame.lean), 0, 0)
         rig.groups[.head]?.eulerAngles = SCNVector3(CGFloat(frame.headPitch), 0, CGFloat(frame.headTilt))

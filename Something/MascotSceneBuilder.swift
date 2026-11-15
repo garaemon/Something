@@ -14,10 +14,7 @@ struct MascotRig {
 /// Turns a `MascotModel` into SceneKit nodes with toon shading and outlines.
 enum MascotSceneBuilder {
     static let cameraPosition = (x: 0.0, y: 2.9, z: 7.6)
-    static let cameraTarget = (x: 0.0, y: 1.02, z: 0.0)
     static let verticalFieldOfView = 24.0
-    static let shadowRadius = 1.15
-    static let shadowOpacity = 0.13
 
     static func build(_ model: MascotModel) -> MascotRig {
         let scene = SCNScene()
@@ -26,7 +23,6 @@ enum MascotSceneBuilder {
 
         let root = SCNNode()
         scene.rootNode.addChildNode(root)
-        root.addChildNode(makeShadow())
 
         var groups: [MascotModel.Group: SCNNode] = [:]
         var basePositions: [MascotModel.Group: SCNVector3] = [:]
@@ -126,19 +122,6 @@ enum MascotSceneBuilder {
         return material
     }
 
-    private static func makeShadow() -> SCNNode {
-        let disc = SCNCylinder(radius: CGFloat(shadowRadius), height: 0.002)
-        let material = SCNMaterial()
-        material.lightingModel = .constant
-        material.diffuse.contents = NSColor(srgbRed: 0.17, green: 0.16, blue: 0.2, alpha: 1)
-        material.transparency = CGFloat(shadowOpacity)
-        material.writesToDepthBuffer = false
-        disc.firstMaterial = material
-        let node = SCNNode(geometry: disc)
-        node.position.y = 0.001
-        return node
-    }
-
     private static func makeCamera() -> SCNNode {
         let camera = SCNCamera()
         camera.fieldOfView = CGFloat(verticalFieldOfView)
@@ -147,9 +130,13 @@ enum MascotSceneBuilder {
         let node = SCNNode()
         node.camera = camera
         node.position = SCNVector3(CGFloat(cameraPosition.x), CGFloat(cameraPosition.y), CGFloat(cameraPosition.z))
-        // Looks down -Z by default; a negative turn about X tilts it toward the target.
-        let drop = cameraPosition.y - cameraTarget.y
-        node.eulerAngles.x = CGFloat(-atan2(drop, cameraPosition.z - cameraTarget.z))
+        // Looks down -Z by default; a negative turn about X tilts it downward. The aim
+        // puts the ground line on the panel's `groundLineFraction`, where the launcher's
+        // top edge is.
+        let pitch = MascotPanelLayout.cameraPitch(
+            cameraHeight: cameraPosition.y, cameraDistance: cameraPosition.z,
+            verticalFieldOfViewDegrees: verticalFieldOfView)
+        node.eulerAngles.x = CGFloat(-pitch)
         return node
     }
 }

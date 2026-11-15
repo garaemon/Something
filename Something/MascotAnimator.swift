@@ -3,6 +3,7 @@ import Foundation
 /// Everything the renderer needs for one frame, already in scene units and radians.
 struct MascotFrame: Equatable {
     var position = 0.0
+    var lift = 0.0
     var yaw = MascotChoreography.restingYaw
     var lean = 0.0
     var headPitch = 0.0
@@ -53,7 +54,14 @@ struct MascotAnimator {
             simulation.step(dt: dt, command: .init(target: pose.target, kick: pendingKick))
             pendingKick = 0
             approachYaw(pose.yaw, dt: dt)
+            let previousTime = stateTime
             stateTime += dt
+            if state == .appearing && previousTime < MascotChoreography.landingTime
+                && stateTime >= MascotChoreography.landingTime
+            {
+                // The landing jolt makes the robot wobble instead of landing dead still.
+                pendingKick += MascotChoreography.landingKick
+            }
             sinceInput += dt
             accumulator -= dt
         }
@@ -68,9 +76,9 @@ struct MascotAnimator {
             state = snapshot.state
             stateTime = 0
             if state == .appearing {
-                // Start off-screen to the right, facing left.
-                simulation = BalanceSimulation(position: MascotChoreography.startPosition)
-                yaw = -Double.pi / 2
+                // Start upright and still, hidden behind the window edge.
+                simulation = BalanceSimulation()
+                simulation.settle(seconds: 2)
             }
         }
         if snapshot.inputCount != appliedInputCount {
@@ -101,6 +109,7 @@ struct MascotAnimator {
         let textElapsed = state == .typing ? sinceInput : stateTime
         return MascotFrame(
             position: simulation.position,
+            lift: pose.lift,
             yaw: yaw,
             lean: simulation.lean * Self.leanExaggeration,
             headPitch: pose.headNod - simulation.lean * Self.headCounterTilt,

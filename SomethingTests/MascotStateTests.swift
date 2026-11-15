@@ -30,7 +30,7 @@ final class MascotStateTests: XCTestCase {
 
     func test_should_show_nothing_before_cursor_appears() {
         XCTAssertEqual(MascotScreen.text(for: .appearing, query: "", elapsed: 1.0), "")
-        XCTAssertEqual(MascotScreen.text(for: .appearing, query: "", elapsed: 2.6), "_")
+        XCTAssertEqual(MascotScreen.text(for: .appearing, query: "", elapsed: 1.1), "_")
     }
 
     func test_should_show_query_and_cursor_when_typing() {
@@ -63,18 +63,29 @@ final class MascotStateTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(MascotModel.self, from: data), MascotModel.default)
     }
 
-    func test_should_start_off_screen_when_appearing() {
+    func test_should_start_hidden_below_the_ground_line_when_appearing() {
         let pose = MascotChoreography.pose(state: .appearing, elapsed: 0, sinceInput: 9, inputCount: 0)
 
-        XCTAssertEqual(pose.target, MascotChoreography.startPosition, accuracy: 0.001)
-        XCTAssertEqual(pose.yaw, -Double.pi / 2, accuracy: 0.001)
+        XCTAssertEqual(pose.lift, MascotChoreography.hiddenDepth, accuracy: 0.001)
+        XCTAssertEqual(pose.yaw, MascotChoreography.restingYaw, accuracy: 0.001)
     }
 
-    func test_should_rest_at_the_resting_yaw_after_appearing() {
-        let pose = MascotChoreography.pose(state: .appearing, elapsed: 3, sinceInput: 9, inputCount: 0)
+    func test_should_rise_above_the_edge_then_land() {
+        XCTAssertEqual(MascotChoreography.entranceLift(0.4), 0.3, accuracy: 0.001)
+        XCTAssertEqual(MascotChoreography.entranceLift(0.65), 0, accuracy: 0.001)
+        XCTAssertEqual(MascotChoreography.entranceLift(2), 0, accuracy: 0.001)
+    }
 
-        XCTAssertEqual(pose.target, 0, accuracy: 0.001)
-        XCTAssertEqual(pose.yaw, MascotChoreography.restingYaw, accuracy: 0.001)
+    func test_should_lift_the_robot_in_the_first_frames_and_rest_when_the_entrance_is_over() {
+        var animator = MascotAnimator()
+        let snapshot = MascotSnapshot()
+
+        let early = animator.advance(by: 1.0 / 60, snapshot: snapshot)
+        var last = early
+        for _ in 0..<90 { last = animator.advance(by: 1.0 / 60, snapshot: snapshot) }
+
+        XCTAssertLessThan(early.lift, -1.5)
+        XCTAssertEqual(last.lift, 0, accuracy: 0.001)
     }
 
     func test_should_kick_and_nod_once_per_query_change() {

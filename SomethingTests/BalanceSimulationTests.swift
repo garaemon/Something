@@ -68,13 +68,4 @@ final class BalanceSimulationTests: XCTestCase {
 
         XCTAssertEqual(first, second)
     }
-
-    func test_should_drive_in_from_the_start_position() {
-        var simulation = BalanceSimulation(position: MascotChoreography.startPosition)
-
-        run(&simulation, seconds: 6)
-
-        XCTAssertEqual(simulation.position, 0, accuracy: 0.2)
-        XCTAssertLessThan(abs(simulation.lean), 0.1)
-    }
 }

@@ -6,6 +6,7 @@ Use it to try changes to the robot's shape, colors, and motion before porting th
 `index.html` holds the model, the inverted-pendulum simulation, and the per-state scripts.
 The Swift port lives in `Something/Mascot*.swift` and `Something/BalanceSimulation.swift`.
 Keep the constants in both places equal when you change one.
+The entrance differs on purpose: the prototype drives in from the right, and the app pops up from behind the launcher's top edge, because the app shows the robot outside the launcher window.
 
 ## Render frames
 

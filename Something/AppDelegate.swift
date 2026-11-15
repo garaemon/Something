@@ -9,6 +9,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow? // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
+    // The mascot stands on the launcher's top edge in a window of its own.
+    private(set) var mascotPanel: MascotPanel?
     // Tests replace the catalog to avoid scanning the real application folders.
     var applicationCatalog = ApplicationCatalog.makeDefault()
     var windowCatalog = WindowCatalog.makeDefault()
@@ -65,6 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Set the closure for when the window should be released
         newWindowController.onWindowRelease = { [weak self] in
+            self?.closeMascotPanel()
             // When the window is released (hidden/closed), nil out the references
             self?.window?.orderOut(nil) // Ensure it's hidden if not already
             self?.window = nil
@@ -82,9 +85,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // key and the query field can take keyboard focus.
         NSApplication.shared.activate()
         newWindow.makeKeyAndOrderFront(nil)
+        attachMascotPanel(to: newWindow, controller: newWindowController)
 
         self.window = newWindow // Store reference to the new window
         self.windowController = newWindowController // Store strong reference to the controller
+    }
+
+    // Attached after the launcher is ordered front so that the panel never competes
+    // for key status; it also cannot become key by itself.
+    private func attachMascotPanel(to launcher: NSWindow, controller: SomethingWindowController) {
+        guard let viewModel = launcherViewModel else { return }
+        let panel = MascotPanel.make(viewModel: viewModel, launcherFrame: launcher.frame)
+        launcher.addChildWindow(panel, ordered: .above)
+        mascotPanel = panel
+        controller.onWindowResize = { [weak self, weak launcher] in
+            guard let launcher else { return }
+            self?.mascotPanel?.reposition(forLauncherFrame: launcher.frame)
+        }
+    }
+
+    // Safe to call twice, because both close and resign-key release the window.
+    private func closeMascotPanel() {
+        guard let panel = mascotPanel else { return }
+        mascotPanel = nil
+        window?.removeChildWindow(panel)
+        // Dropping the content stops the SceneKit view from rendering.
+        panel.contentView = nil
+        panel.orderOut(nil)
+        panel.close()
     }
 
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
