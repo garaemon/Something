@@ -86,6 +86,8 @@ extension MascotModel {
         Vector(x: x, y: y, z: z)
     }
 
+    // The positional arguments mirror the prototype's box() calls one to one.
+    // swiftlint:disable:next function_parameter_count
     private static func box(
         _ group: Group, _ width: Double, _ height: Double, _ depth: Double, _ color: String,
         at position: Vector, radius: Double = 0.07
@@ -113,21 +115,26 @@ extension MascotModel {
             GroupSpec(group: .handRight, parent: .body, position: vec(0.48, 0.55, 0.12)),
         ],
         parts: [
-            Part(group: .wheelLeft, shape: .cylinder(radius: 0.2, height: 0.14, axis: .x), position: vec(0, 0, 0), color: wheel),
+            Part(group: .wheelLeft, shape: .cylinder(radius: 0.2, height: 0.14, axis: .x),
+                 position: vec(0, 0, 0), color: wheel),
             box(.wheelLeft, 0.16, 0.3, 0.06, cream, at: vec(0, 0, 0), radius: 0.02),
-            Part(group: .wheelRight, shape: .cylinder(radius: 0.2, height: 0.14, axis: .x), position: vec(0, 0, 0), color: wheel),
+            Part(group: .wheelRight, shape: .cylinder(radius: 0.2, height: 0.14, axis: .x),
+                 position: vec(0, 0, 0), color: wheel),
             box(.wheelRight, 0.16, 0.3, 0.06, cream, at: vec(0, 0, 0), radius: 0.02),
 
             box(.body, 0.7, 0.55, 0.6, cream, at: vec(0, 0.55, 0)),
             box(.body, 0.3, 0.06, 0.03, head, at: vec(0, 0.62, 0.31), radius: 0.01),
             box(.body, 0.18, 0.06, 0.03, "#D8CFBE", at: vec(-0.06, 0.5, 0.31), radius: 0.01),
-            Part(group: .body, shape: .cylinder(radius: 0.12, height: 0.14, axis: .y), position: vec(0, 0.87, 0), color: neck),
+            Part(group: .body, shape: .cylinder(radius: 0.12, height: 0.14, axis: .y),
+                 position: vec(0, 0.87, 0), color: neck),
             Part(group: .handLeft, shape: .sphere(radius: 0.1), position: vec(0, 0, 0), color: cream),
             Part(group: .handRight, shape: .sphere(radius: 0.1), position: vec(0, 0, 0), color: cream),
 
             box(.head, 1.4, 1.0, 1.0, head, at: vec(0, 0.48, 0), radius: 0.1),
-            Part(group: .head, shape: .cylinder(radius: 0.13, height: 0.1, axis: .x), position: vec(-0.74, 0.51, 0), color: cream),
-            Part(group: .head, shape: .cylinder(radius: 0.13, height: 0.1, axis: .x), position: vec(0.74, 0.51, 0), color: cream),
+            Part(group: .head, shape: .cylinder(radius: 0.13, height: 0.1, axis: .x),
+                 position: vec(-0.74, 0.51, 0), color: cream),
+            Part(group: .head, shape: .cylinder(radius: 0.13, height: 0.1, axis: .x),
+                 position: vec(0.74, 0.51, 0), color: cream),
             box(.head, 1.0, 0.62, 0.06, screenBody, at: vec(0, 0.5, 0.5), radius: 0.03),
         ],
         screen: Screen(

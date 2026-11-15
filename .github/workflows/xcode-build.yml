@@ -9,6 +9,19 @@ on:
       - main # Or your default branch name
 
 jobs:
+  lint:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install tools with mise
+      uses: jdx/mise-action@v2
+
+    - name: Lint with SwiftLint
+      run: mise run lint
+
   build:
     runs-on: macos-latest
 

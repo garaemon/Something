@@ -30,7 +30,9 @@ enum MascotToon {
         float3 worldLight = normalize(float3(\(lightDirection.x), \(lightDirection.y), \(lightDirection.z)));
         float3 viewLight = normalize((scn_frame.viewTransform * float4(worldLight, 0.0)).xyz);
         float d = dot(normalize(_surface.normal), viewLight);
-        float band = d > \(lightThreshold) ? \(lightBrightness) : (d > \(midThreshold) ? \(midBrightness) : \(shadowBrightness));
+        float band = d > \(lightThreshold)
+            ? \(lightBrightness)
+            : (d > \(midThreshold) ? \(midBrightness) : \(shadowBrightness));
         _surface.diffuse.rgb *= band;
         """
     }
