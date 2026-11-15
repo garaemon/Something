@@ -167,4 +167,14 @@ final class AppDelegateTests: XCTestCase {
 
         XCTAssertFalse(observedNames.contains("Safari — Stale"))
     }
+
+    func test_should_place_the_mascot_where_the_chooser_picks() throws {
+        let appDelegate = makeAppDelegate()
+        appDelegate.chooseMascotPlacement = { _ in .left }
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+
+        appDelegate.openWindow()
+
+        XCTAssertEqual(try XCTUnwrap(appDelegate.mascotPanel).placement, .left)
+    }
 }

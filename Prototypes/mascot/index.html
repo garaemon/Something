@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#fff}canvas{display:block}</style>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const SIZE = 900;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(SIZE, SIZE);
+document.body.appendChild(renderer.domElement);
+const effect = new OutlineEffect(renderer, { defaultThickness: 0.0055, defaultColor: [0.16, 0.13, 0.12] });
+
+const grad = new THREE.DataTexture(new Uint8Array([150, 215, 255]), 3, 1, THREE.RedFormat);
+grad.minFilter = grad.magFilter = THREE.NearestFilter;
+grad.needsUpdate = true;
+
+const DARK = '#2B2A33';
+const M = (color) => new THREE.MeshToonMaterial({ color, gradientMap: grad });
+const glow = (color) => {
+  const m = new THREE.MeshBasicMaterial({ color });
+  m.userData.outlineParameters = { visible: false };
+  return m;
+};
+const add = (g, geo, mat, x, y, z) => {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  g.add(m);
+  return m;
+};
+const box = (g, w, h, d, mat, x, y, z, r = 0.07) =>
+  add(g, new RoundedBoxGeometry(w, h, d, 5, Math.min(r, w / 2.01, h / 2.01, d / 2.01)), mat, x, y, z);
+const cyl = (g, rad, h, mat, x, y, z, axis) => {
+  const m = add(g, new THREE.CylinderGeometry(rad, rad, h, 32), mat, x, y, z);
+  if (axis === 'x') m.rotation.z = Math.PI / 2;
+  if (axis === 'z') m.rotation.x = Math.PI / 2;
+  return m;
+};
+const sph = (g, rad, mat, x, y, z) => add(g, new THREE.SphereGeometry(rad, 32, 20), mat, x, y, z);
+const pill = (g, rad, len, mat, x, y, z, horizontal = false, flat = 0.3) => {
+  const m = add(g, new THREE.CapsuleGeometry(rad, len, 8, 24), mat, x, y, z);
+  if (horizontal) m.rotation.z = Math.PI / 2;
+  m.scale.z = flat;
+  return m;
+};
+const arc = (g, r, tube, mat, x, y, z, smile = false) => {
+  const m = add(g, new THREE.TorusGeometry(r, tube, 10, 24, Math.PI), mat, x, y, z);
+  if (smile) m.rotation.z = Math.PI;
+  return m;
+};
+
+const INK = '#2B2A33', MAIN = '#FF9A4D';
+const S = 400;
+renderer.setSize(S, S);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#FFE8D4');
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb0a8a0, 1.3));
+const sun = new THREE.DirectionalLight(0xffffff, 2.4); sun.position.set(-3, 5, 4); scene.add(sun);
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.15, 48), new THREE.MeshBasicMaterial({ color: 0x2b2a33, transparent: true, opacity: 0.13 }));
+shadow.material.userData.outlineParameters = { visible: false };
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.001; scene.add(shadow);
+const cam = new THREE.PerspectiveCamera(24, 1, 0.1, 50);
+cam.position.set(0, 2.9, 7.6); cam.lookAt(0, 1.02, 0);
+
+const root = new THREE.Group(); scene.add(root);
+const cream = M('#F4EDE0'), dark = M('#3A2E1F'), mainM = M(MAIN);
+const wheels = [-.32, .32].map((x) => {
+  const w = new THREE.Group(); w.position.set(x, .2, 0); root.add(w);
+  cyl(w, .2, .14, dark, 0, 0, 0, 'x');
+  box(w, .16, .3, .06, cream, 0, 0, 0, .02);
+  return w;
+});
+const tilt = new THREE.Group(); tilt.position.y = .2; root.add(tilt);
+const body = new THREE.Group(); body.position.y = -.2; tilt.add(body);
+box(body, .7, .55, .6, cream, 0, .55, 0);
+box(body, .3, .06, .03, mainM, 0, .62, .31, .01); box(body, .18, .06, .03, M('#D8CFBE'), -.06, .5, .31, .01);
+cyl(body, .12, .14, M('#8A8478'), 0, .87, 0);
+const hands = [sph(body, .1, cream, -.48, .55, .12), sph(body, .1, cream, .48, .55, .12)];
+const head = new THREE.Group(); head.position.set(0, .94, 0); body.add(head);
+box(head, 1.4, 1.0, 1.0, mainM, 0, .48, 0, .1);
+cyl(head, .13, .1, cream, -.74, .51, 0, 'x'); cyl(head, .13, .1, cream, .74, .51, 0, 'x');
+box(head, 1.0, .62, .06, M(INK), 0, .5, .5, .03);
+const cv = document.createElement('canvas'); cv.width = 360; cv.height = 200;
+const ctx = cv.getContext('2d');
+const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+const sm = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+sm.userData.outlineParameters = { visible: false };
+add(head, new THREE.PlaneGeometry(.9, .5), sm, 0, .5, .534);
+const setText = (t) => {
+  ctx.clearRect(0, 0, 360, 200);
+  ctx.fillStyle = '#FFE66D'; ctx.font = 'bold 84px "DejaVu Sans Mono", monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(t, 26, 104); tex.needsUpdate = true;
+};
+const TAU = Math.PI * 2, sin = Math.sin;
+const ease = (u) => u * u * (3 - 2 * u);
+const clamp = (u) => Math.max(0, Math.min(1, u));
+const YAW = -0.5, G = 25, KX = 7.5, KV = 7.9, KT = 109, KW = 21.4, FPS = 20, DUR = 3;
+const noise = (t) => .5 * sin(2.3 * t) + .35 * sin(5.1 * t + 1) + .25 * sin(8.7 * t + 2);
+const blink = (t) => ((t * 2) % 1 < .6 ? '_' : '');
+// Each script returns the command for time t (seconds): target position along the heading,
+// one-off pushes (kick, rad/s), and the pose of the parts that are not simulated.
+const scripts = {
+  appear: { s0: -3.3, cmd(t) {
+    const u = clamp(t / 1.3), v = clamp((t - 1.7) / .6);
+    return { target: -3.3 * (1 - ease(u)), yaw: -Math.PI / 2 + (YAW + Math.PI / 2) * ease(v), text: t > 2.3 ? blink(t) : '' };
+  } },
+  idle: { cmd(t) { return { text: blink(t) }; } },
+  typing: { cmd(t) {
+    const keys = [.3, .75, 1.2], n = keys.filter((k) => t >= k).length;
+    const since = Math.min(...keys.map((k) => (t >= k ? t - k : 9)));
+    const tap = Math.max(0, 1 - since / .18);
+    return { kicks: keys, kick: .3, headX: .09 * tap, hl: n % 2 ? .08 * tap : 0, hr: n % 2 ? 0 : .08 * tap,
+      text: ['', 'o', 'or', 'org'][n] + (n < 3 || (t * 2) % 1 < .6 ? '_' : '') };
+  } },
+  report: { cmd(t) {
+    return { target: t > .2 && t < 1.1 ? .5 : 0, hr: .36 + .05 * sin(TAU * 3 * t), hrx: .1, headZ: -.05,
+      text: Math.floor(t * 5) % 2 ? '  3' : '! 3' };
+  } },
+  none: { cmd(t) {
+    const e = sin(Math.PI * clamp(t / 2.6));
+    return { target: .22 * sin(TAU * t / 1.3) * e, headZ: .2 * e, hl: .08 * e, hr: .08 * e, text: '?' };
+  } },
+  done: { cmd(t) {
+    const u = clamp((t - .3) / 1.3);
+    return { kicks: [.25], kick: -1.2, yaw: YAW + TAU * ease(u), hl: .3 * sin(Math.PI * clamp(t / 2.2)), hr: .3 * sin(Math.PI * clamp(t / 2.2)), text: 'OK' };
+  } },
+};
+let st = null, cur = null, simT = 0;
+const step = (sc, dt) => {
+  const c = sc.cmd(simT);
+  const target = c.target ?? 0;
+  let a = KX * (st.s - target) + KV * st.v + KT * st.th + KW * st.w;
+  a = Math.max(-40, Math.min(40, a));
+  for (const k of c.kicks ?? []) if (simT >= k && simT - dt < k) st.w += c.kick;
+  st.v += a * dt; st.s += st.v * dt;
+  st.w += (G * Math.sin(st.th) - a * Math.cos(st.th) + (simT > 0 || cur !== 'appear' ? .35 * noise(simT + 10) : 0)) * dt;
+  st.th += st.w * dt;
+  simT += dt;
+};
+window.animNames = Object.keys(scripts);
+window.frameCount = FPS * DUR;
+window.renderFrame = (name, f) => {
+  const sc = scripts[name];
+  if (f === 0) {
+    cur = name; st = { s: sc.s0 ?? 0, v: 0, th: 0, w: 0 };
+    simT = sc.s0 ? 0 : -2;                       // settle into the balancing wobble first
+    while (simT < 0) step({ cmd: () => ({}) }, 1 / 240);
+    simT = 0;
+  }
+  const until = f / FPS;
+  while (simT < until) step(sc, 1 / 240);
+  const c = sc.cmd(until);
+  const yaw = c.yaw ?? YAW;
+  root.position.set(Math.sin(yaw) * st.s, 0, Math.cos(yaw) * st.s);
+  root.rotation.set(0, yaw, 0);
+  tilt.rotation.x = st.th * 1.4;
+  head.rotation.set((c.headX ?? 0) - st.th * .4, 0, c.headZ ?? 0);
+  hands[0].position.set(-.48, .55 + (c.hl ?? 0), .12);
+  hands[1].position.set(.48 + (c.hrx ?? 0), .55 + (c.hr ?? 0), .12);
+  const roll = st.s / .2, turn = (yaw - YAW) * .32 / .2;
+  wheels[0].rotation.x = roll + turn; wheels[1].rotation.x = roll - turn;
+  shadow.position.copy(root.position).setY(.001);
+  setText(c.text ?? '');
+  effect.render(scene, cam);
+  return renderer.domElement.toDataURL('image/png');
+};
+window.ready = true;
+</script>
+</body>
+</html>

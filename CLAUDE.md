@@ -64,7 +64,7 @@ mise run build
 
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
-- **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
+- **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus, and reports resizes so that AppDelegate can reposition the mascot panel.
 - **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, then the ghq repositories, and narrows the list on each keystroke. A non-empty query also lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a repository opens its directory in Finder; picking a web search opens it in the default browser. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
 - **LauncherCandidate.swift**: One launcher row: an application, a window, a repository, or a web search.
@@ -78,6 +78,18 @@ mise run build
 - **RepositoryCatalog.swift**: Scans `~/ghq` for directories that hold a `.git` entry, up to six levels deep and through symbolic links, without running ghq or a shell. A custom `ghq.root` is not read. An injectable `loadRepositories` closure keeps tests off the real tree.
 - **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
+- **BalanceSimulation.swift**: Pure two-wheeled inverted pendulum with pole-placed state feedback, a small constant disturbance, and a fixed 1/240 s step. The launcher state only sends it a target position and kicks.
+- **MascotState.swift**: Mascot state (`appearing`, `idle`, `typing`, `noMatch`) derived from the query, the candidate count, and whether the window just opened, plus the screen text for each state.
+- **MascotChoreography.swift**: Per-state target position, lift, yaw, head, and hand motion from the approved three.js prototype. The entrance rises from behind the launcher's top edge, or drops in from above beside it, and lands with a kick.
+- **MascotMailbox.swift**: Lock-protected handoff of state and query from SwiftUI to the SceneKit render thread.
+- **MascotAnimator.swift**: Steps the simulation with a fixed-step accumulator and maps it to a `MascotFrame` (pose, wheel roll, screen text). No SceneKit, so it is testable.
+- **MascotModel.swift**: The robot's parts as `Codable` data, with the prototype robot as the default, so that skins can later be loaded from a file.
+- **MascotToon.swift**: Toon-shading and outline shader modifiers with their tunable numbers in one place.
+- **MascotSceneBuilder.swift**: Builds the SceneKit nodes from `MascotModel` with toon materials, inverted-hull outlines, a ground shadow for the side placements, and the camera, which is aimed so that the ground line lands on the placement's `groundLineFraction` of the view height.
+- **MascotPanelLayout.swift**: `MascotPlacement` (top, left, right) and the pure geometry of the mascot panel (220x220 pt; on the launcher's top edge, or beside it with a 30 pt overlap and the ground line level with the launcher's bottom edge). Also picks the placements that fit the screen, and the camera pitch that matches the placement.
+- **MascotPanel.swift**: Borderless, transparent, click-through `NSPanel` that never becomes key or main, with an `NSHostingView` of `MascotOverlayView`.
+- **MascotOverlayView.swift**: Observes `LauncherViewModel`, derives the mascot state, and owns the entrance timer.
+- **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
 
 ### Key Behavioral Patterns
@@ -85,7 +97,7 @@ mise run build
 - **Background Service Pattern**: App runs as accessory (.accessory activation policy) without Dock presence
 - **Global Hotkey Activation**: Uses HotKey library for Cmd+Shift+X trigger
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
-- **Single Window Management**: Only one popup window exists at a time, reuses existing if already open
+- **Single Window Management**: Only one popup window exists at a time, reuses existing if already open. The mascot panel is a child window of the launcher, created and closed with it. AppDelegate picks its placement at random on each open, among those that fit the screen.
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
 - **Cached Repository List**: AppDelegate shows the previous repository scan immediately and rescans `~/ghq` on a serial background queue at launch and on every open. An open skips the refresh while a previous one is still running.
 - **Fresh Window List**: AppDelegate lists windows on its own background queue on every open without caching. The Accessibility API returns only windows on the current Space.
