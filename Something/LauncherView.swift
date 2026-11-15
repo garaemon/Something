@@ -85,9 +85,9 @@ struct LauncherView: View {
 }
 
 private struct CandidateRow: View {
-    // Every repository shares the generic folder icon, because reading each
+    // Every folder row shares the generic folder icon, because reading each
     // directory's own icon would hit the disk on every render.
-    private static let repositoryIcon = NSWorkspace.shared.icon(for: .folder)
+    private static let folderIcon = NSWorkspace.shared.icon(for: .folder)
 
     let candidate: LauncherCandidate
     let isSelected: Bool
@@ -107,16 +107,15 @@ private struct CandidateRow: View {
     }
 
     private var icon: NSImage {
-        switch candidate {
-        case .application(let application):
+        switch candidate.icon {
+        case .applicationBundle(let application):
             return ApplicationIconCache.shared.loadIcon(for: application)
-        case .window(let window):
-            return ApplicationIconCache.shared.loadIcon(forProcess: window.processIdentifier)
-        case .repository:
-            return Self.repositoryIcon
-        case .webSearch(let search):
-            return NSImage(systemSymbolName: search.engine.symbolName, accessibilityDescription: nil)
-                ?? NSImage()
+        case .runningApplication(let processIdentifier):
+            return ApplicationIconCache.shared.loadIcon(forProcess: processIdentifier)
+        case .folder:
+            return Self.folderIcon
+        case .systemSymbol(let symbolName):
+            return NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) ?? NSImage()
         }
     }
 }
