@@ -137,11 +137,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
-        let viewModel = LauncherViewModel(
-            applications: cachedApplications, repositories: cachedRepositories,
-            launchApplication: launchApplication, raiseWindow: WindowRaiser.raiseWindow,
-            openRepository: openRepository, webSearchEngines: WebSearchEngine.launcherEngines,
-            openURL: { NSWorkspace.shared.open($0) })
+        let viewModel = LauncherViewModel(sources: [
+            Self.makeWindowSource([]),
+            Self.makeApplicationSource(cachedApplications),
+            Self.makeRepositorySource(cachedRepositories),
+            WebSearchSource(engines: WebSearchEngine.launcherEngines, openURL: { NSWorkspace.shared.open($0) }),
+        ])
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
     }
@@ -152,7 +153,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let applications = catalog.loadApplications()
             DispatchQueue.main.async {
                 self?.cachedApplications = applications
-                self?.launcherViewModel?.replaceApplications(applications)
+                self?.launcherViewModel?.replaceSource(Self.makeApplicationSource(applications))
             }
         }
     }
@@ -166,7 +167,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async {
                 self?.isLoadingRepositories = false
                 self?.cachedRepositories = repositories
-                self?.launcherViewModel?.replaceRepositories(repositories)
+                self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
             }
         }
     }
@@ -183,12 +184,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self, let targetViewModel,
                     self.launcherViewModel === targetViewModel
                 else { return }
-                targetViewModel.replaceWindows(windows)
+                targetViewModel.replaceSource(Self.makeWindowSource(windows))
             }
         }
     }
 
-    private func launchApplication(_ application: LaunchableApplication) {
+    private static func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
+        WindowSource(windows: windows, raiseWindow: WindowRaiser.raiseWindow)
+    }
+
+    private static func makeApplicationSource(_ applications: [LaunchableApplication]) -> ApplicationSource {
+        ApplicationSource(applications: applications, launchApplication: launchApplication)
+    }
+
+    private static func makeRepositorySource(_ repositories: [GhqRepository]) -> RepositorySource {
+        RepositorySource(repositories: repositories, openRepository: openRepository)
+    }
+
+    private static func launchApplication(_ application: LaunchableApplication) {
         NSWorkspace.shared.openApplication(
             at: application.url, configuration: NSWorkspace.OpenConfiguration()
         ) { _, error in
@@ -197,7 +210,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func openRepository(_ repository: GhqRepository) {
+    private static func openRepository(_ repository: GhqRepository) {
         guard !NSWorkspace.shared.open(repository.url) else { return }
         NSLog("Failed to open %@", repository.url.path)
     }

@@ -1,26 +1,50 @@
 import Foundation
 
 /// One row of the launcher: something that the user can narrow and pick.
-enum LauncherCandidate: Hashable, Identifiable {
-    case application(LaunchableApplication)
-    case window(SwitchableWindow)
-    case repository(GhqRepository)
-    case webSearch(WebSearch)
+///
+/// Two candidates are equal when their identifiers are equal, so that a
+/// rebuilt candidate with fresh action closures still keeps the highlight.
+struct LauncherCandidate: Hashable, Identifiable {
+    let id: LauncherCandidateID
+    /// The text that the row shows.
+    let name: String
+    let icon: LauncherCandidateIcon
+    /// The things the user can do with the candidate. The first action runs
+    /// on Return; an empty list makes the candidate impossible to pick.
+    let actions: [LauncherAction]
 
-    /// The text that the row shows. The query narrows applications, windows,
-    /// and repositories by this text, but not web searches.
-    var name: String {
-        switch self {
-        case .application(let application):
-            return application.name
-        case .window(let window):
-            return window.name
-        case .repository(let repository):
-            return repository.name
-        case .webSearch(let search):
-            return search.title
-        }
+    var defaultAction: LauncherAction? { actions.first }
+
+    static func == (lhs: LauncherCandidate, rhs: LauncherCandidate) -> Bool {
+        lhs.id == rhs.id
     }
 
-    var id: Self { self }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+/// Identifies a candidate across rebuilds. The source keeps an item of one
+/// source from colliding with an equal item of another source.
+struct LauncherCandidateID: Hashable {
+    let sourceID: CandidateSourceID
+    let item: AnyHashable
+}
+
+/// The picture that a launcher row shows. The view resolves the picture to an
+/// image, so that sources stay free of AppKit.
+enum LauncherCandidateIcon: Hashable {
+    case applicationBundle(LaunchableApplication)
+    case runningApplication(pid_t)
+    case folder
+    case systemSymbol(String)
+}
+
+// TODO(garaemon): Let the user pick a non-default action and show `title` in
+// that list, for example with Tab. https://github.com/garaemon/Something/issues/20
+/// One thing that the user can do with a candidate, such as opening it.
+struct LauncherAction {
+    /// The label of the action, such as "Open in Finder".
+    let title: String
+    let perform: () -> Void
 }
