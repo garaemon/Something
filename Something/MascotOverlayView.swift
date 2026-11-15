@@ -5,13 +5,14 @@ import SwiftUI
 struct MascotOverlayView: View {
     @ObservedObject var viewModel: LauncherViewModel
     let placement: MascotPlacement
+    let model: MascotModel
     // Plays the entrance until it ends or the user types.
     @State private var justOpened = true
 
     var body: some View {
         // No background on purpose: the panel is transparent, and the robot should
         // look like it stands beside or on the launcher.
-        MascotView(state: mascotState, query: viewModel.query, placement: placement)
+        MascotView(state: mascotState, query: viewModel.query, placement: placement, model: model)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + MascotChoreography.appearDuration) {
                     justOpened = false

@@ -13,7 +13,8 @@ final class MascotPanel: NSPanel {
 
     @MainActor
     static func make(
-        viewModel: LauncherViewModel, launcherFrame: CGRect, placement: MascotPlacement
+        viewModel: LauncherViewModel, launcherFrame: CGRect, placement: MascotPlacement,
+        model: MascotModel
     ) -> MascotPanel {
         let panel = MascotPanel(
             contentRect: MascotPanelLayout.frame(forLauncherFrame: launcherFrame, placement: placement),
@@ -26,7 +27,7 @@ final class MascotPanel: NSPanel {
         panel.hasShadow = false
         panel.ignoresMouseEvents = true
 
-        let hostingView = NSHostingView(rootView: MascotOverlayView(viewModel: viewModel, placement: placement))
+        let hostingView = NSHostingView(rootView: MascotOverlayView(viewModel: viewModel, placement: placement, model: model))
         // The panel's frame comes from the launcher layout, not from the SwiftUI content.
         hostingView.sizingOptions = []
         panel.contentView = hostingView
