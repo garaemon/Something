@@ -46,8 +46,16 @@ final class CandidateKindTests: XCTestCase {
         XCTAssertEqual(kinds, [.settings])
     }
 
+    func test_should_not_repeat_the_settings_row_icon_in_its_badge() throws {
+        let source = SettingsSource(openSettings: {})
+
+        let candidate = try XCTUnwrap(source.makeCandidates(matching: "settings").first)
+
+        XCTAssertNotEqual(candidate.icon, .systemSymbol(LauncherCandidateKind.settings.symbolName))
+    }
+
     func test_should_give_every_kind_a_distinct_label() {
-        let kinds: [LauncherCandidateKind] = [.window, .application, .repository, .webSearch, .settings]
+        let kinds = LauncherCandidateKind.allCases
 
         let labels = Set(kinds.map(\.label))
 

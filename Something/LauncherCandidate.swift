@@ -43,17 +43,35 @@ enum LauncherCandidateIcon: Hashable {
 
 /// The kind of thing that a row stands for, shown beside its name so that the
 /// user can tell a window of Safari from the Safari application.
-struct LauncherCandidateKind: Hashable {
-    /// The short text of the badge, such as "Window".
-    let label: String
-    /// The SF Symbol name of the badge.
-    let symbolName: String
+enum LauncherCandidateKind: CaseIterable {
+    case window
+    case application
+    case repository
+    case webSearch
+    case settings
 
-    static let window = LauncherCandidateKind(label: "Window", symbolName: "macwindow")
-    static let application = LauncherCandidateKind(label: "App", symbolName: "app.badge")
-    static let repository = LauncherCandidateKind(label: "Repo", symbolName: "arrow.triangle.branch")
-    static let webSearch = LauncherCandidateKind(label: "Web", symbolName: "globe")
-    static let settings = LauncherCandidateKind(label: "Settings", symbolName: "gearshape")
+    /// The short text of the badge, such as "Window".
+    var label: String {
+        switch self {
+        case .window: "Window"
+        case .application: "App"
+        case .repository: "Repo"
+        case .webSearch: "Web"
+        case .settings: "Settings"
+        }
+    }
+
+    /// The SF Symbol name of the badge. The settings badge avoids gearshape,
+    /// because the settings row already shows gearshape as its icon.
+    var symbolName: String {
+        switch self {
+        case .window: "macwindow"
+        case .application: "app.badge"
+        case .repository: "arrow.triangle.branch"
+        case .webSearch: "globe"
+        case .settings: "slider.horizontal.3"
+        }
+    }
 }
 
 // TODO(garaemon): Let the user pick a non-default action and show `title` in
