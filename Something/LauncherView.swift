@@ -1,9 +1,11 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// Shows the windows of running applications and then every application under
-/// a query field, and narrows the list on each keystroke, in the style of Emacs
-/// anything.el. A non-empty query also lists web searches for it at the end.
+/// Shows the windows of running applications, every application, and then the
+/// ghq repositories under a query field, and narrows the list on each
+/// keystroke, in the style of Emacs anything.el. A non-empty query also lists
+/// web searches for it at the end.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
@@ -14,7 +16,7 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Window, Application, or Web Search", text: $viewModel.query)
+            TextField("Window, Application, Repository, or Web Search", text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(.title2)
                 .padding(12)
@@ -83,6 +85,10 @@ struct LauncherView: View {
 }
 
 private struct CandidateRow: View {
+    // Every repository shares the generic folder icon, because reading each
+    // directory's own icon would hit the disk on every render.
+    private static let repositoryIcon = NSWorkspace.shared.icon(for: .folder)
+
     let candidate: LauncherCandidate
     let isSelected: Bool
 
@@ -106,6 +112,8 @@ private struct CandidateRow: View {
             return ApplicationIconCache.shared.loadIcon(for: application)
         case .window(let window):
             return ApplicationIconCache.shared.loadIcon(forProcess: window.processIdentifier)
+        case .repository:
+            return Self.repositoryIcon
         case .webSearch(let search):
             return NSImage(systemSymbolName: search.engine.symbolName, accessibilityDescription: nil)
                 ?? NSImage()

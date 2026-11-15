@@ -65,15 +65,17 @@ mise run build
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
-- **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, and narrows the list on each keystroke. A non-empty query also lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a web search opens it in the default browser. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
+- **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, then the ghq repositories, and narrows the list on each keystroke. A non-empty query also lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a repository opens its directory in Finder; picking a web search opens it in the default browser. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
-- **LauncherCandidate.swift**: One launcher row: an application, a window, or a web search.
+- **LauncherCandidate.swift**: One launcher row: an application, a window, a repository, or a web search.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first. The generic `filterItems` narrows any candidate by a name closure, such as windows by app name and title.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
 - **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
 - **SwitchableWindow.swift**: Application name, title, and Accessibility element of one window that the launcher lists.
 - **WindowCatalog.swift**: Lists standard windows of running regular applications through the Accessibility API, and asks for the Accessibility permission on first use.
 - **WebSearch.swift**: Search engines as data (`WebSearchEngine`: label, SF Symbol, base URL, fixed parameters) and the percent-encoded results URL for one query (`WebSearch`).
+- **GhqRepository.swift**: Path relative to the ghq root, such as `github.com/owner/name`, and URL of one repository that the launcher lists.
+- **RepositoryCatalog.swift**: Scans `~/ghq` for directories that hold a `.git` entry, up to six levels deep and through symbolic links, without running ghq or a shell. A custom `ghq.root` is not read. An injectable `loadRepositories` closure keeps tests off the real tree.
 - **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
@@ -85,6 +87,7 @@ mise run build
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
+- **Cached Repository List**: AppDelegate shows the previous repository scan immediately and rescans `~/ghq` on a serial background queue at launch and on every open. An open skips the refresh while a previous one is still running.
 - **Fresh Window List**: AppDelegate lists windows on its own background queue on every open without caching. The Accessibility API returns only windows on the current Space.
 
 ### Dependencies

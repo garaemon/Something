@@ -12,9 +12,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Tests replace the catalog to avoid scanning the real application folders.
     var applicationCatalog = ApplicationCatalog.makeDefault()
     var windowCatalog = WindowCatalog.makeDefault()
+    var repositoryCatalog = RepositoryCatalog.makeDefault()
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
+    // Walking the ~/ghq tree touches many directories, which would delay the
+    // window on the main thread.
+    private var cachedRepositories: [GhqRepository] = []
+    // A scan of a large ~/ghq can outlast a hotkey press, so repeated presses
+    // would otherwise pile up stale scans on the serial queue.
+    private var isLoadingRepositories = false
     private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
     // older scan never overwrites a newer result.
@@ -24,6 +31,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // the window list, which the user expects right after the hotkey.
     private let windowListQueue = DispatchQueue(
         label: "com.garaemon.Something.windowList", qos: .userInitiated)
+    // isLoadingRepositories already keeps scans one at a time; the queue is
+    // separate so that a slow ~/ghq walk does not delay the other lists.
+    private let repositoryListQueue = DispatchQueue(
+        label: "com.garaemon.Something.repositoryList", qos: .userInitiated)
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Change the activation policy to .accessory
@@ -31,6 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // while still keeping it out of the Dock.
         NSApplication.shared.setActivationPolicy(.accessory)
         refreshApplicationsInBackground()
+        refreshRepositoriesInBackground()
 
         myHotKey = HotKey(key: .x, modifiers: [.command, .shift])
         myHotKey?.keyDownHandler = { [weak self] in
@@ -77,6 +89,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // open launcher when the scan finishes.
         refreshApplicationsInBackground()
         refreshWindowsInBackground()
+        refreshRepositoriesInBackground()
 
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
@@ -89,8 +102,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
         let viewModel = LauncherViewModel(
-            applications: cachedApplications, launchApplication: launchApplication,
-            raiseWindow: WindowRaiser.raiseWindow, webSearchEngines: WebSearchEngine.launcherEngines,
+            applications: cachedApplications, repositories: cachedRepositories,
+            launchApplication: launchApplication, raiseWindow: WindowRaiser.raiseWindow,
+            openRepository: openRepository, webSearchEngines: WebSearchEngine.launcherEngines,
             openURL: { NSWorkspace.shared.open($0) })
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
@@ -103,6 +117,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async {
                 self?.cachedApplications = applications
                 self?.launcherViewModel?.replaceApplications(applications)
+            }
+        }
+    }
+
+    private func refreshRepositoriesInBackground() {
+        guard !isLoadingRepositories else { return }
+        isLoadingRepositories = true
+        let catalog = repositoryCatalog
+        repositoryListQueue.async { [weak self] in
+            let repositories = catalog.loadRepositories()
+            DispatchQueue.main.async {
+                self?.isLoadingRepositories = false
+                self?.cachedRepositories = repositories
+                self?.launcherViewModel?.replaceRepositories(repositories)
             }
         }
     }
@@ -131,5 +159,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let error else { return }
             NSLog("Failed to launch %@: %@", application.url.path, error.localizedDescription)
         }
+    }
+
+    private func openRepository(_ repository: GhqRepository) {
+        guard !NSWorkspace.shared.open(repository.url) else { return }
+        NSLog("Failed to open %@", repository.url.path)
     }
 }
