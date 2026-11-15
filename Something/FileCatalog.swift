@@ -55,7 +55,8 @@ struct FileCatalog {
         guard
             let enumerator = FileManager.default.enumerator(
                 at: folder.resolvingSymlinksInPath(), includingPropertiesForKeys: resourceKeys,
-                options: [.skipsHiddenFiles, .skipsPackageDescendants])
+                options: [.skipsHiddenFiles, .skipsPackageDescendants],
+                errorHandler: logEnumerationError)
         else { return [] }
         let folderPathPrefix = folder.resolvingSymlinksInPath().standardizedFileURL.path + "/"
         var collectedFiles: [DatedFile] = []
@@ -82,5 +83,13 @@ struct FileCatalog {
             name: "\(folder.lastPathComponent)/\(relativePath)",
             url: folder.appendingPathComponent(relativePath))
         return DatedFile(file: file, modificationDate: values.contentModificationDate ?? .distantPast)
+    }
+
+    // A folder that macOS denies, such as ~/Documents before the user grants
+    // access, otherwise lists no files without a trace. Returns true to keep
+    // walking the other items.
+    private static func logEnumerationError(_ url: URL, _ error: Error) -> Bool {
+        NSLog("Failed to list %@: %@", url.path, error.localizedDescription)
+        return true
     }
 }
