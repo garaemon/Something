@@ -51,11 +51,15 @@ Build products go to `build/` (ignored by git).
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
-- **LauncherView.swift**: Application launcher UI in the style of Emacs anything.el. Lists every application and narrows the list on each keystroke. Keys: Up/Down or C-n/C-p move, Return launches, Esc or C-g closes. Clicking a row launches it.
+- **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, and narrows the list on each keystroke. Picking a window brings it to the front; picking an application launches it. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
-- **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first.
+- **LauncherCandidate.swift**: One launcher row, either an application or a window.
+- **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first. The generic `filterItems` narrows any candidate by a name closure, such as windows by app name and title.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
 - **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
+- **SwitchableWindow.swift**: Application name, title, and Accessibility element of one window that the launcher lists.
+- **WindowCatalog.swift**: Lists standard windows of running regular applications through the Accessibility API, and asks for the Accessibility permission on first use.
+- **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).
 
@@ -66,6 +70,7 @@ Build products go to `build/` (ignored by git).
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
+- **Fresh Window List**: AppDelegate lists windows on its own background queue on every open without caching. The Accessibility API returns only windows on the current Space.
 
 ### Dependencies
 

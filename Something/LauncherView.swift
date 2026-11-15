@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// Shows every application under a query field and narrows the list on each
-/// keystroke, in the style of Emacs anything.el.
+/// Shows the windows of running applications and then every application under
+/// a query field, and narrows the list on each keystroke, in the style of Emacs
+/// anything.el.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
@@ -13,12 +14,12 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Application", text: $viewModel.query)
+            TextField("Window or Application", text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(.title2)
                 .padding(12)
                 .focused($isQueryFieldFocused)
-                .onSubmit(launchAndDismiss)
+                .onSubmit(activateAndDismiss)
                 .onKeyPress(phases: .down, action: handleKeyPress)
             Divider()
             candidateList
@@ -37,22 +38,22 @@ struct LauncherView: View {
         ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(viewModel.candidates) { application in
+                    ForEach(viewModel.candidates) { candidate in
                         CandidateRow(
-                            application: application,
-                            isSelected: application == viewModel.selectedApplication
+                            candidate: candidate,
+                            isSelected: candidate == viewModel.selectedCandidate
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            viewModel.selectApplication(application)
-                            launchAndDismiss()
+                            viewModel.selectCandidate(candidate)
+                            activateAndDismiss()
                         }
                     }
                 }
             }
-            .onChange(of: viewModel.selectedApplication) { _, application in
-                guard let application else { return }
-                scrollProxy.scrollTo(application.id)
+            .onChange(of: viewModel.selectedCandidate) { _, candidate in
+                guard let candidate else { return }
+                scrollProxy.scrollTo(candidate.id)
             }
         }
     }
@@ -74,27 +75,36 @@ struct LauncherView: View {
 
     // Keep the window and the query when nothing matches, so the user can
     // fix a typo instead of retyping the whole query.
-    private func launchAndDismiss() {
-        guard viewModel.launchSelectedApplication() else { return }
+    private func activateAndDismiss() {
+        guard viewModel.activateSelectedCandidate() else { return }
         dismiss()
     }
 }
 
 private struct CandidateRow: View {
-    let application: LaunchableApplication
+    let candidate: LauncherCandidate
     let isSelected: Bool
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(nsImage: ApplicationIconCache.shared.loadIcon(for: application))
+            Image(nsImage: icon)
                 .resizable()
                 .frame(width: 20, height: 20)
-            Text(application.name)
+            Text(candidate.name)
             Spacer()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
         .foregroundStyle(isSelected ? Color.white : Color.primary)
         .background(isSelected ? Color.accentColor : Color.clear)
+    }
+
+    private var icon: NSImage {
+        switch candidate {
+        case .application(let application):
+            return ApplicationIconCache.shared.loadIcon(for: application)
+        case .window(let window):
+            return ApplicationIconCache.shared.loadIcon(forProcess: window.processIdentifier)
+        }
     }
 }
