@@ -13,7 +13,7 @@ final class BackgroundListLoader<Key: Equatable, Item> {
     var onItemsLoaded: ([Item]) -> Void = { _ in }
 
     private let readKey: () -> Key
-    private let readLoad: () -> (Key) -> [Item]
+    private let makeLoadFunction: () -> (Key) -> [Item]
     // A walk of a large folder can outlast a hotkey press, so repeated
     // presses would otherwise pile up stale loads.
     private var isLoading = false
@@ -22,9 +22,12 @@ final class BackgroundListLoader<Key: Equatable, Item> {
     /// Creates a loader that reads the current key, and the function that
     /// loads it, on the main thread whenever a load starts. The function then
     /// runs on a background queue.
-    init(queueLabel: String, readKey: @escaping () -> Key, readLoad: @escaping () -> (Key) -> [Item]) {
+    init(
+        queueLabel: String, readKey: @escaping () -> Key,
+        makeLoadFunction: @escaping () -> (Key) -> [Item]
+    ) {
         self.readKey = readKey
-        self.readLoad = readLoad
+        self.makeLoadFunction = makeLoadFunction
         queue = DispatchQueue(label: queueLabel, qos: .userInitiated)
     }
 
@@ -34,7 +37,7 @@ final class BackgroundListLoader<Key: Equatable, Item> {
     func refresh(pendingKey: Key? = nil) {
         guard !isLoading else { return }
         isLoading = true
-        let load = readLoad()
+        let load = makeLoadFunction()
         let loadedKey = pendingKey ?? readKey()
         queue.async { [weak self] in
             let items = load(loadedKey)

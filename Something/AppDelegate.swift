@@ -238,7 +238,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let loader = BackgroundListLoader<String, GhqRepository>(
             queueLabel: "com.garaemon.Something.repositoryList",
             readKey: { [weak self] in self?.settings.repositoryRootPath ?? "" },
-            readLoad: { [weak self] in
+            makeLoadFunction: { [weak self] in
                 let catalog = self?.repositoryCatalog
                 return { rootPath in
                     catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true)) ?? []
@@ -254,7 +254,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let loader = BackgroundListLoader<[String], LocalFile>(
             queueLabel: "com.garaemon.Something.fileList",
             readKey: { [weak self] in self?.settings.fileFolderPaths ?? [] },
-            readLoad: { [weak self] in
+            makeLoadFunction: { [weak self] in
                 let catalog = self?.fileCatalog
                 return { folderPaths in
                     catalog?.loadFiles(folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }) ?? []
