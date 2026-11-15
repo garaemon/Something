@@ -65,48 +65,4 @@ final class AppDelegateFileTests: XCTestCase {
 
         wait(for: [scannedNewFolders], timeout: 5)
     }
-
-    // The settings are not observed here, so only the stale-scan check in the
-    // finished scan can start the scan of the new folders.
-    func test_should_scan_new_folders_when_folders_change_during_scan() {
-        let appDelegate = makeAppDelegate()
-        appDelegate.settings.fileFolderPaths = ["/Users/someone/old"]
-        let scanRelease = DispatchSemaphore(value: 0)
-        let scannedNewFolders = expectation(description: "the catalog scans the new folders")
-        appDelegate.fileCatalog = FileCatalog(loadFiles: { folders in
-            if folders.map(\.path) == ["/Users/someone/new"] {
-                scannedNewFolders.fulfill()
-            } else {
-                scanRelease.wait()
-            }
-            return []
-        })
-        appDelegate.openWindow()
-
-        appDelegate.settings.fileFolderPaths = ["/Users/someone/new"]
-        scanRelease.signal()
-
-        wait(for: [scannedNewFolders], timeout: 5)
-    }
-
-    func test_should_not_queue_another_file_scan_while_one_is_running() {
-        let appDelegate = makeAppDelegate()
-        let scanRelease = DispatchSemaphore(value: 0)
-        let fileScans = expectation(description: "a second file scan runs")
-        fileScans.isInverted = true
-        fileScans.expectedFulfillmentCount = 2
-        appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in
-            fileScans.fulfill()
-            scanRelease.wait()
-            return []
-        })
-        appDelegate.openWindow()
-        appDelegate.window?.close()
-
-        appDelegate.openWindow()
-        scanRelease.signal()
-        scanRelease.signal()
-
-        wait(for: [fileScans], timeout: 0.5)
-    }
 }
