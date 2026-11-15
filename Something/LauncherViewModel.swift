@@ -6,7 +6,7 @@ final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
         didSet {
             // SwiftUI's TextField writes the unchanged text back, for example
-            // on Return, and a rescan would reset the highlighted row.
+            // on Return, and rebuilding the candidates resets the highlight.
             guard query != oldValue else { return }
             updateCandidates()
         }
