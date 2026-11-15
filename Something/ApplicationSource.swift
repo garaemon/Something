@@ -8,7 +8,7 @@ struct ApplicationSource: CandidateSource {
 
     init(
         applications: [LaunchableApplication],
-        launchApplication: @escaping (LaunchableApplication) -> Void = { _ in }
+        launchApplication: @escaping (LaunchableApplication) -> Void
     ) {
         self.applications = applications
         self.launchApplication = launchApplication

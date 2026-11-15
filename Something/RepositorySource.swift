@@ -7,7 +7,7 @@ struct RepositorySource: CandidateSource {
     let repositories: [GhqRepository]
     let openRepository: (GhqRepository) -> Void
 
-    init(repositories: [GhqRepository], openRepository: @escaping (GhqRepository) -> Void = { _ in }) {
+    init(repositories: [GhqRepository], openRepository: @escaping (GhqRepository) -> Void) {
         self.repositories = repositories
         self.openRepository = openRepository
     }

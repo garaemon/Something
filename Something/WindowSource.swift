@@ -7,7 +7,7 @@ struct WindowSource: CandidateSource {
     let windows: [SwitchableWindow]
     let raiseWindow: (SwitchableWindow) -> Void
 
-    init(windows: [SwitchableWindow], raiseWindow: @escaping (SwitchableWindow) -> Void = { _ in }) {
+    init(windows: [SwitchableWindow], raiseWindow: @escaping (SwitchableWindow) -> Void) {
         self.windows = windows
         self.raiseWindow = raiseWindow
     }

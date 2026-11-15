@@ -16,6 +16,14 @@ final class LauncherViewModelTests: XCTestCase {
         ApplicationSource(applications: names.map(makeApplication), launchApplication: { _ in })
     }
 
+    private func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
+        WindowSource(windows: windows, raiseWindow: { _ in })
+    }
+
+    private func makeRepositorySource(_ names: [String]) -> RepositorySource {
+        RepositorySource(repositories: names.map(makeRepository), openRepository: { _ in })
+    }
+
     func test_should_show_all_applications_initially() {
         let viewModel = makeViewModel(["Safari", "Mail"])
 
@@ -107,7 +115,7 @@ final class LauncherViewModelTests: XCTestCase {
     func test_should_ignore_replacement_for_a_source_it_does_not_list() {
         let viewModel = makeViewModel(["Mail"])
 
-        viewModel.replaceSource(RepositorySource(repositories: [makeRepository("github.com/a/b")]))
+        viewModel.replaceSource(makeRepositorySource(["github.com/a/b"]))
 
         XCTAssertEqual(viewModel.candidates.map(\.name), ["Mail"])
     }
@@ -227,7 +235,7 @@ final class LauncherViewModelTests: XCTestCase {
         viewModel.query = "git"
 
         viewModel.replaceSource(
-            WindowSource(windows: [makeWindow("Safari", "GitHub"), makeWindow("Mail", "Inbox")]))
+            makeWindowSource([makeWindow("Safari", "GitHub"), makeWindow("Mail", "Inbox")]))
 
         XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari — GitHub"])
     }
@@ -236,7 +244,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(applications: ["Mail"], windows: [makeWindow("Safari", "GitHub")])
         viewModel.moveSelection(by: 1)
 
-        viewModel.replaceSource(WindowSource(windows: [makeWindow("Safari", "News")]))
+        viewModel.replaceSource(makeWindowSource([makeWindow("Safari", "News")]))
 
         XCTAssertEqual(viewModel.selectedCandidate?.name, "Mail")
     }
@@ -247,7 +255,7 @@ final class LauncherViewModelTests: XCTestCase {
         viewModel.moveSelection(by: 1)
 
         viewModel.replaceSource(
-            WindowSource(windows: [makeWindow("Safari", "GitHub"), makeWindow("Safari", "News")]))
+            makeWindowSource([makeWindow("Safari", "GitHub"), makeWindow("Safari", "News")]))
 
         XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari — News")
     }
@@ -375,7 +383,7 @@ final class LauncherViewModelTests: XCTestCase {
         viewModel.query = "vim"
 
         viewModel.replaceSource(
-            RepositorySource(repositories: ["github.com/a/emacs", "github.com/a/vim"].map(makeRepository)))
+            makeRepositorySource(["github.com/a/emacs", "github.com/a/vim"]))
 
         XCTAssertEqual(viewModel.candidates.map(\.name), ["github.com/a/vim"])
     }
@@ -392,8 +400,8 @@ final class LauncherViewModelTests: XCTestCase {
 
     func test_should_list_web_searches_after_repositories() {
         let viewModel = LauncherViewModel(sources: [
-            RepositorySource(repositories: [makeRepository("github.com/a/vim")]),
-            WebSearchSource(engines: [.google]),
+            makeRepositorySource(["github.com/a/vim"]),
+            WebSearchSource(engines: [.google], openURL: { _ in }),
         ])
 
         viewModel.query = "vim"

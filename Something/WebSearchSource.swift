@@ -7,7 +7,7 @@ struct WebSearchSource: CandidateSource {
     let engines: [WebSearchEngine]
     let openURL: (URL) -> Void
 
-    init(engines: [WebSearchEngine], openURL: @escaping (URL) -> Void = { _ in }) {
+    init(engines: [WebSearchEngine], openURL: @escaping (URL) -> Void) {
         self.engines = engines
         self.openURL = openURL
     }
