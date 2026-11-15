@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Shows the windows of running applications and then every application under
 /// a query field, and narrows the list on each keystroke, in the style of Emacs
-/// anything.el.
+/// anything.el. A non-empty query also lists web searches for it at the end.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
@@ -14,7 +14,7 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Window or Application", text: $viewModel.query)
+            TextField("Window, Application, or Web Search", text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(.title2)
                 .padding(12)
@@ -73,8 +73,9 @@ struct LauncherView: View {
         return .handled
     }
 
-    // Keep the window and the query when nothing matches, so the user can
-    // fix a typo instead of retyping the whole query.
+    // Keep the window open when the list is empty, so the user can keep
+    // typing. A non-empty query always lists web searches, so Return on it
+    // always picks a row.
     private func activateAndDismiss() {
         guard viewModel.activateSelectedCandidate() else { return }
         dismiss()
