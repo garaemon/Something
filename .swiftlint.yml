@@ -1,0 +1,31 @@
+included:
+  - Something
+excluded:
+  - build
+  - Prototypes
+  - SomethingTests
+
+disabled_rules:
+  # TODO(owner) comments with an issue link are the project convention for
+  # incomplete work, so an open TODO is not a violation.
+  - todo
+  # Trailing commas keep diffs of multi-line literals to one line.
+  - trailing_comma
+
+identifier_name:
+  # Coordinates, time steps, and interpolation parameters follow the math
+  # notation of the physics and animation code.
+  excluded:
+    - id
+    - x
+    - y
+    - z
+    - t
+    - u
+    - v
+    - d
+    - dt
+
+large_tuple:
+  # RGB color components travel as a labeled three-member tuple.
+  warning: 3

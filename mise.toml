@@ -1,4 +1,5 @@
 [tools]
+swiftlint = "0.65.1"
 xcodegen = "2.46.0"
 
 [env]
@@ -28,3 +29,7 @@ run = "open $DERIVED_DATA_PATH/Build/Products/Debug/Something.app"
 description = "Run the unit tests"
 depends = ["generate"]
 run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration Debug -derivedDataPath $DERIVED_DATA_PATH test"
+
+[tasks.lint]
+description = "Lint the app sources with SwiftLint"
+run = "swiftlint lint --strict"

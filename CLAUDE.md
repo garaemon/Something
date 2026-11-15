@@ -37,6 +37,11 @@ Run the unit tests (`SomethingTests`):
 mise run test
 ```
 
+Lint the app sources with [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail):
+```bash
+mise run lint
+```
+
 Build and launch the app:
 ```bash
 mise run run
