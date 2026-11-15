@@ -121,6 +121,7 @@ mise run build
 - **Calculator.swift**: Recursive descent evaluator of `+ - * / % ^`, unary minus, and parentheses (`×` and `÷` too). Rejects an expression without a binary operator, such as "2024" or "-5", and numbers chained by two or more hyphens or slashes, so that "2026-11-15" stays a search. Formats integers without a decimal point and rounds fractions to 12 significant digits.
 - **CalculatorSource.swift**: Launcher source that lists `= <result>` for an arithmetic query, and copies the result on pick.
 - **SettingsSource.swift**: Launcher source that lists "Something Settings" for queries such as "settings" or "pref", and opens the settings window.
+- **PythonInterpreter.swift**: Runs a `PythonBlock` (leading source plus a last statement whose expression value is echoed) on the embedded pocketpy VM, and returns the printed output and the last traceback line. Variables persist between runs until `reset()`. pocketpy keeps process-wide C state, so the app has one shared interpreter that serializes runs on its own queue, and a watchdog stops a run with `TimeoutError` (2 s by default). Swift reaches pocketpy through `Something-Bridging-Header.h`.
 
 ### Key Behavioral Patterns
 
@@ -139,6 +140,9 @@ mise run build
 - **HotKey (v0.2.1)**: Swift Package Manager dependency for global hotkey functionality
   - Repository: https://github.com/soffes/HotKey
   - Used for: global hotkey registration
+- **pocketpy (v2.2.0)**: Python 3 interpreter in C, vendored in `ThirdParty/pocketpy` (see its README for the upgrade steps and build flags)
+  - Repository: https://github.com/pocketpy/pocketpy
+  - Used for: running Python in the scratch buffer
 
 ### Window Management Strategy
 
