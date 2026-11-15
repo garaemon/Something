@@ -16,5 +16,14 @@ struct SomethingApp: App {
         Settings {
             EmptyView() // No content for the settings window itself
         }
+        .commands {
+            // Point Settings… (Command-comma) at the window that AppDelegate owns.
+            // The menu bar is hidden for an accessory app, but its shortcuts still
+            // work, and the stock item would open this empty Settings scene.
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") { appDelegate.openSettings() }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
+        }
     }
 }

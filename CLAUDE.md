@@ -99,7 +99,7 @@ mise run build
 
 - **Background Service Pattern**: App runs as accessory (.accessory activation policy) without Dock presence
 - **Global Hotkey Activation**: Uses HotKey library for Cmd+Shift+X trigger
-- **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it.
+- **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command.
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open. The mascot panel is a child window of the launcher, created and closed with it. AppDelegate picks its placement at random on each open, among those that fit the screen.
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
