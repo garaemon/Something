@@ -30,7 +30,8 @@ final class ApplicationIconCache {
         if let cachedIcon = iconsByProcessIdentifier.object(forKey: key) {
             return cachedIcon
         }
-        guard let runningIcon = NSRunningApplication(processIdentifier: processIdentifier)?.icon else {
+        guard let runningIcon = NSRunningApplication(processIdentifier: processIdentifier)?.icon
+        else {
             return NSWorkspace.shared.icon(for: .application)
         }
         iconsByProcessIdentifier.setObject(runningIcon, forKey: key)

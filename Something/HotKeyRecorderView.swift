@@ -40,8 +40,11 @@ struct HotKeyRecorderView: View {
             stopRecording()
             return
         }
-        guard let keyCombo = HotKeyRecording.makeKeyCombo(
-            carbonKeyCode: UInt32(event.keyCode), modifierFlags: modifierFlags)
+        guard
+            let keyCombo = HotKeyRecording.makeKeyCombo(
+                carbonKeyCode: UInt32(event.keyCode),
+                modifierFlags: modifierFlags
+            )
         else {
             NSSound.beep()
             return

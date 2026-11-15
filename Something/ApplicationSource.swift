@@ -13,7 +13,10 @@ struct ApplicationSource: CandidateSource {
     private func makeCandidate(for application: LaunchableApplication) -> LauncherCandidate {
         LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: application),
-            name: application.name, icon: .applicationBundle(application), kind: .application,
-            actions: [LauncherAction(title: "Open") { launchApplication(application) }])
+            name: application.name,
+            icon: .applicationBundle(application),
+            kind: .application,
+            actions: [LauncherAction(title: "Open") { launchApplication(application) }]
+        )
     }
 }

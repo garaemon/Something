@@ -8,13 +8,18 @@ struct RepositorySource: CandidateSource {
     let openRepository: (GhqRepository) -> Void
 
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
-        ApplicationMatcher.filterItems(repositories, matching: query, name: \.name).map(makeCandidate)
+        ApplicationMatcher.filterItems(repositories, matching: query, name: \.name).map(
+            makeCandidate
+        )
     }
 
     private func makeCandidate(for repository: GhqRepository) -> LauncherCandidate {
         LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: repository),
-            name: repository.name, icon: .folder, kind: .repository,
-            actions: [LauncherAction(title: "Open in Finder") { openRepository(repository) }])
+            name: repository.name,
+            icon: .folder,
+            kind: .repository,
+            actions: [LauncherAction(title: "Open in Finder") { openRepository(repository) }]
+        )
     }
 }

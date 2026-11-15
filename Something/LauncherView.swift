@@ -16,13 +16,16 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Window, Application, Repository, File, or Web Search", text: $viewModel.query)
-                .textFieldStyle(.plain)
-                .font(.title2)
-                .padding(12)
-                .focused($isQueryFieldFocused)
-                .onSubmit(activateAndDismiss)
-                .onKeyPress(phases: .down, action: handleKeyPress)
+            TextField(
+                "Window, Application, Repository, File, or Web Search",
+                text: $viewModel.query
+            )
+            .textFieldStyle(.plain)
+            .font(.title2)
+            .padding(12)
+            .focused($isQueryFieldFocused)
+            .onSubmit(activateAndDismiss)
+            .onKeyPress(phases: .down, action: handleKeyPress)
             Divider()
             candidateList
         }

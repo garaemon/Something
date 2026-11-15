@@ -27,7 +27,8 @@ enum MascotToon {
     /// needed. `_surface.normal` is in view space, hence the light is moved there.
     static var surfaceModifier: String {
         """
-        float3 worldLight = normalize(float3(\(lightDirection.x), \(lightDirection.y), \(lightDirection.z)));
+        float3 worldLight = normalize(
+            float3(\(lightDirection.x), \(lightDirection.y), \(lightDirection.z)));
         float3 viewLight = normalize((scn_frame.viewTransform * float4(worldLight, 0.0)).xyz);
         float d = dot(normalize(_surface.normal), viewLight);
         float band = d > \(lightThreshold)

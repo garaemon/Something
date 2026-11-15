@@ -14,7 +14,10 @@ struct WindowSource: CandidateSource {
     private func makeCandidate(for window: SwitchableWindow) -> LauncherCandidate {
         LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: window),
-            name: window.name, icon: .runningApplication(window.processIdentifier), kind: .window,
-            actions: [LauncherAction(title: "Switch to Window") { raiseWindow(window) }])
+            name: window.name,
+            icon: .runningApplication(window.processIdentifier),
+            kind: .window,
+            actions: [LauncherAction(title: "Switch to Window") { raiseWindow(window) }]
+        )
     }
 }

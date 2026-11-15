@@ -32,7 +32,9 @@ struct RepositoryCatalog {
     // symbolic link back to an ancestor, which would list repositories again
     // under another name.
     private static func collectRepositories(
-        in directory: URL, relativePath: String, ancestorRealPaths: Set<String>
+        in directory: URL,
+        relativePath: String,
+        ancestorRealPaths: Set<String>
     ) -> [GhqRepository] {
         let fileManager = FileManager.default
         let realPath = directory.resolvingSymlinksInPath().path
@@ -47,15 +49,20 @@ struct RepositoryCatalog {
         // keep the link's own path in the names and URLs.
         let childNames =
             (try? fileManager.contentsOfDirectory(
-                at: directory.resolvingSymlinksInPath(), includingPropertiesForKeys: nil,
-                options: [.skipsHiddenFiles]))?.map(\.lastPathComponent) ?? []
+                at: directory.resolvingSymlinksInPath(),
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ))?.map(\.lastPathComponent) ?? []
         let children = childNames.map { directory.appendingPathComponent($0) }
         return children.filter(isDirectory).flatMap { child in
             let childPath =
-                relativePath.isEmpty ? child.lastPathComponent : "\(relativePath)/\(child.lastPathComponent)"
+                relativePath.isEmpty
+                ? child.lastPathComponent : "\(relativePath)/\(child.lastPathComponent)"
             return collectRepositories(
-                in: child, relativePath: childPath,
-                ancestorRealPaths: ancestorRealPaths.union([realPath]))
+                in: child,
+                relativePath: childPath,
+                ancestorRealPaths: ancestorRealPaths.union([realPath])
+            )
         }
     }
 

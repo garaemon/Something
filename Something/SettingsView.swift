@@ -30,12 +30,25 @@ struct SettingsView: View {
                     Spacer()
                     // Idle keeps the robot standing still at the center instead
                     // of replaying the entrance.
-                    MascotView(state: .idle, query: "", placement: .top, model: settings.mascotModel)
-                        .frame(width: Self.previewSize, height: Self.previewSize)
+                    MascotView(
+                        state: .idle,
+                        query: "",
+                        placement: .top,
+                        model: settings.mascotModel
+                    )
+                    .frame(width: Self.previewSize, height: Self.previewSize)
                     Spacer()
                 }
-                ColorPicker("Head color", selection: makeColorBinding(\.mascotHeadColor), supportsOpacity: false)
-                ColorPicker("Body color", selection: makeColorBinding(\.mascotBodyColor), supportsOpacity: false)
+                ColorPicker(
+                    "Head color",
+                    selection: makeColorBinding(\.mascotHeadColor),
+                    supportsOpacity: false
+                )
+                ColorPicker(
+                    "Body color",
+                    selection: makeColorBinding(\.mascotBodyColor),
+                    supportsOpacity: false
+                )
             } header: {
                 Text("Mascot")
             } footer: {
@@ -89,7 +102,9 @@ struct SettingsView: View {
         openPanel.canChooseFiles = false
         openPanel.allowsMultipleSelection = true
         guard openPanel.runModal() == .OK else { return }
-        openPanel.urls.forEach { settings.addFileFolder($0.path) }
+        for folderURL in openPanel.urls {
+            settings.addFileFolder(folderURL.path)
+        }
     }
 
     private func chooseRepositoryRoot() {
@@ -97,23 +112,35 @@ struct SettingsView: View {
         openPanel.canChooseDirectories = true
         openPanel.canChooseFiles = false
         openPanel.allowsMultipleSelection = false
-        openPanel.directoryURL = URL(fileURLWithPath: settings.repositoryRootPath, isDirectory: true)
+        openPanel.directoryURL = URL(
+            fileURLWithPath: settings.repositoryRootPath,
+            isDirectory: true
+        )
         guard openPanel.runModal() == .OK, let chosenDirectory = openPanel.url else { return }
         settings.repositoryRootPath = chosenDirectory.path
     }
 
     /// Bridges a "#RRGGBB" setting to the `Color` that `ColorPicker` edits.
-    private func makeColorBinding(_ keyPath: ReferenceWritableKeyPath<AppSettings, String>) -> Binding<Color> {
+    private func makeColorBinding(
+        _ keyPath: ReferenceWritableKeyPath<AppSettings, String>
+    ) -> Binding<Color> {
         Binding(
             get: {
-                let components = MascotModel.rgb(hex: settings[keyPath: keyPath]) ?? (red: 1, green: 1, blue: 1)
-                return Color(.sRGB, red: components.red, green: components.green, blue: components.blue)
+                let components =
+                    MascotModel.rgb(hex: settings[keyPath: keyPath]) ?? (red: 1, green: 1, blue: 1)
+                return Color(
+                    .sRGB,
+                    red: components.red,
+                    green: components.green,
+                    blue: components.blue
+                )
             },
             set: { newColor in
                 // The scene builder reads sRGB hex, so a picker color from
                 // another space, such as Display P3, is converted first.
                 guard let hex = MascotSceneBuilder.hex(of: NSColor(newColor)) else { return }
                 settings[keyPath: keyPath] = hex
-            })
+            }
+        )
     }
 }

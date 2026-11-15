@@ -27,12 +27,15 @@ struct FileSource: CandidateSource {
     private func makeCandidate(for file: LocalFile) -> LauncherCandidate {
         LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: file),
-            name: file.name, icon: .fileType(extension: file.url.pathExtension.lowercased()), kind: .file,
+            name: file.name,
+            icon: .fileType(extension: file.url.pathExtension.lowercased()),
+            kind: .file,
             actions: [
                 LauncherAction(title: "Open") { openFile(file) },
                 // Unreachable until the launcher can pick a non-default action.
                 // https://github.com/garaemon/Something/issues/20
                 LauncherAction(title: "Reveal in Finder") { revealFile(file) },
-            ])
+            ]
+        )
     }
 }

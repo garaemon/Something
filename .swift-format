@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "indentation": {
+    "spaces": 4
+  },
+  "lineLength": 100,
+  "lineBreakBeforeEachArgument": true,
+  "lineBreakBeforeEachGenericRequirement": true,
+  "prioritizeKeepingFunctionOutputTogether": true,
+  "respectsExistingLineBreaks": true,
+  "multiElementCollectionTrailingCommas": true,
+  "multilineTrailingCommaBehavior": "keptAsWritten",
+  "lineBreakBetweenDeclarationAttributes": false
+}

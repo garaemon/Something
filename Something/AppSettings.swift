@@ -50,14 +50,20 @@ final class AppSettings: ObservableObject {
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
-        let savedHotKey = (userDefaults.dictionary(forKey: StorageKey.hotKey)).flatMap(KeyCombo.init(dictionary:))
+        let savedHotKey = (userDefaults.dictionary(forKey: StorageKey.hotKey)).flatMap(
+            KeyCombo.init(dictionary:)
+        )
         hotKeyCombo = savedHotKey ?? Self.defaultHotKeyCombo
-        mascotHeadColor = userDefaults.string(forKey: StorageKey.mascotHeadColor) ?? MascotModel.defaultHeadColor
-        mascotBodyColor = userDefaults.string(forKey: StorageKey.mascotBodyColor) ?? MascotModel.defaultBodyColor
+        mascotHeadColor =
+            userDefaults.string(forKey: StorageKey.mascotHeadColor) ?? MascotModel.defaultHeadColor
+        mascotBodyColor =
+            userDefaults.string(forKey: StorageKey.mascotBodyColor) ?? MascotModel.defaultBodyColor
         repositoryRootPath =
-            userDefaults.string(forKey: StorageKey.repositoryRootPath) ?? Self.defaultRepositoryRootPath
+            userDefaults.string(forKey: StorageKey.repositoryRootPath)
+            ?? Self.defaultRepositoryRootPath
         fileFolderPaths =
-            userDefaults.stringArray(forKey: StorageKey.fileFolderPaths) ?? Self.defaultFileFolderPaths
+            userDefaults.stringArray(forKey: StorageKey.fileFolderPaths)
+            ?? Self.defaultFileFolderPaths
     }
 
     /// The robot painted with the chosen skin colors.

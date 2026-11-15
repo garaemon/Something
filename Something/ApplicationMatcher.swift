@@ -8,7 +8,8 @@ enum ApplicationMatcher {
     /// Names that start with the first pattern come first. Ties are ordered by
     /// name. An empty query returns every application.
     static func filterApplications(
-        _ applications: [LaunchableApplication], matching query: String
+        _ applications: [LaunchableApplication],
+        matching query: String
     ) -> [LaunchableApplication] {
         filterItems(applications, matching: query, name: \.name)
     }
@@ -16,10 +17,14 @@ enum ApplicationMatcher {
     /// Returns the items whose `name` contains every whitespace-separated
     /// pattern in `query`, ordered as `filterApplications` orders applications.
     static func filterItems<Item>(
-        _ items: [Item], matching query: String, name: (Item) -> String
+        _ items: [Item],
+        matching query: String,
+        name: (Item) -> String
     ) -> [Item] {
         let patterns = splitPatterns(query)
-        let matchedItems = items.filter { containsAllPatterns(name($0).lowercased(), patterns: patterns) }
+        let matchedItems = items.filter {
+            containsAllPatterns(name($0).lowercased(), patterns: patterns)
+        }
         guard let firstPattern = patterns.first else {
             return sortByName(matchedItems, name: name)
         }

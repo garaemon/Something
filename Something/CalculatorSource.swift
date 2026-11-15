@@ -10,11 +10,13 @@ struct CalculatorSource: CandidateSource {
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         guard let value = Calculator.evaluate(query) else { return [] }
         let resultText = Calculator.formatResult(value)
-        return [
-            LauncherCandidate(
-                id: LauncherCandidateID(sourceID: sourceID, item: resultText),
-                name: "= \(resultText)", icon: .systemSymbol("equal.circle"), kind: .calculator,
-                actions: [LauncherAction(title: "Copy Result") { copyText(resultText) }])
-        ]
+        let resultCandidate = LauncherCandidate(
+            id: LauncherCandidateID(sourceID: sourceID, item: resultText),
+            name: "= \(resultText)",
+            icon: .systemSymbol("equal.circle"),
+            kind: .calculator,
+            actions: [LauncherAction(title: "Copy Result") { copyText(resultText) }]
+        )
+        return [resultCandidate]
     }
 }

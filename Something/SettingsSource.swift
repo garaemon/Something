@@ -12,13 +12,16 @@ struct SettingsSource: CandidateSource {
 
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty,
-            !ApplicationMatcher.filterItems([Self.searchableName], matching: query, name: { $0 }).isEmpty
+            !ApplicationMatcher.filterItems([Self.searchableName], matching: query, name: { $0 })
+                .isEmpty
         else { return [] }
-        return [
-            LauncherCandidate(
-                id: LauncherCandidateID(sourceID: sourceID, item: Self.candidateName),
-                name: Self.candidateName, icon: .systemSymbol("gearshape"), kind: .settings,
-                actions: [LauncherAction(title: "Open Settings", perform: openSettings)])
-        ]
+        let settingsCandidate = LauncherCandidate(
+            id: LauncherCandidateID(sourceID: sourceID, item: Self.candidateName),
+            name: Self.candidateName,
+            icon: .systemSymbol("gearshape"),
+            kind: .settings,
+            actions: [LauncherAction(title: "Open Settings", perform: openSettings)]
+        )
+        return [settingsCandidate]
     }
 }
