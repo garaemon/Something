@@ -10,6 +10,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Tests replace the settings to keep off the user's real UserDefaults.
     var settings = AppSettings()
     private(set) var settingsWindow: NSWindow?
+    private var settingsWindowCloseObserver: NSObjectProtocol?
     private var settingsSubscriptions: Set<AnyCancellable> = []
     var window: NSWindow? // Keep a reference to the window
     // Add a strong reference to the new window controller
@@ -88,6 +89,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func openSettings() {
         let window = settingsWindow ?? makeSettingsWindow()
         settingsWindow = window
+        if window.contentView == nil {
+            window.contentView = makeSettingsContentView()
+        }
         NSApplication.shared.activate()
         window.makeKeyAndOrderFront(nil)
     }
@@ -98,9 +102,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = SettingsSource.candidateName
         // Kept alive by `settingsWindow` so that a reopen keeps its position.
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: SettingsView(settings: settings))
+        window.contentView = makeSettingsContentView()
         window.center()
+        // Drops the content of the closed window. The mascot preview inside
+        // keeps SceneKit's render loop running for as long as the view lives.
+        settingsWindowCloseObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak window] _ in
+            MainActor.assumeIsolated { window?.contentView = nil }
+        }
         return window
+    }
+
+    private func makeSettingsContentView() -> NSView {
+        NSHostingView(rootView: SettingsView(settings: settings))
     }
 
     func openWindow() {
