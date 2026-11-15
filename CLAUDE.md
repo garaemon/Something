@@ -81,9 +81,3 @@ The app implements a sophisticated window lifecycle:
 3. Window automatically hides on focus loss (windowDidResignKey)
 4. Strong references maintained in AppDelegate during window lifetime
 5. Cleanup handled via closure-based callback system (onWindowRelease)
-
-### Sandboxing
-
-The app does not use the App Sandbox.
-The Accessibility API, which lists and raises other applications' windows, does not work inside the sandbox.
-`Something.entitlements` is therefore empty.
