@@ -75,9 +75,8 @@ struct LauncherView: View {
         return .handled
     }
 
-    // Keep the window open when the list is empty, so the user can keep
-    // typing. A non-empty query always lists web searches, so Return on it
-    // always picks a row.
+    // Keep the window open when no action runs, such as on an empty list or
+    // a row without actions, so the user can keep typing.
     private func activateAndDismiss() {
         guard viewModel.activateSelectedCandidate() else { return }
         dismiss()
