@@ -1,8 +1,8 @@
 import AppKit
 import UniformTypeIdentifiers
 
-/// Caches application icons so that list rows do not reload them from disk
-/// every time SwiftUI re-renders the rows.
+/// Caches the icons of applications and file types so that list rows do not
+/// reload them from disk every time SwiftUI re-renders the rows.
 final class ApplicationIconCache {
     static let shared = ApplicationIconCache()
 
