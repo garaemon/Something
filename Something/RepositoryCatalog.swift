@@ -1,18 +1,18 @@
 import Foundation
 
-/// Lists the git repositories under the ghq root.
+/// Lists the git repositories under a root folder, such as the ghq root.
 struct RepositoryCatalog {
-    /// Returns the current repositories. Runs on a background queue.
-    let loadRepositories: () -> [GhqRepository]
+    /// Returns the current repositories under the given root. Runs on a
+    /// background queue.
+    let loadRepositories: (URL) -> [GhqRepository]
 
-    /// Returns a catalog that scans `~/ghq`, the default ghq root.
+    /// Returns a catalog that scans the directory tree under the root that
+    /// each load receives.
     ///
-    /// The catalog reads the directory tree instead of running ghq, so the
-    /// app never starts a shell. A custom `ghq.root` setting is not read.
+    /// The catalog reads the tree instead of running ghq, so the app never
+    /// starts a shell. A custom `ghq.root` setting is not read.
     static func makeDefault() -> RepositoryCatalog {
-        let rootDirectory = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("ghq", isDirectory: true)
-        return RepositoryCatalog(loadRepositories: { scanRepositories(under: rootDirectory) })
+        RepositoryCatalog(loadRepositories: scanRepositories(under:))
     }
 
     /// Returns every directory under `rootDirectory` that holds a `.git`

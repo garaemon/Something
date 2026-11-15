@@ -1,7 +1,7 @@
 import Foundation
 
-/// Lists ghq repositories, narrowed by their path relative to the ghq root,
-/// and opens the picked one.
+/// Lists git repositories, narrowed by their path relative to the repositories
+/// folder, and opens the picked one.
 struct RepositorySource: CandidateSource {
     let sourceID = CandidateSourceID("repositories")
     let repositories: [GhqRepository]

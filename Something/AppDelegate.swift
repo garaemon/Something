@@ -26,11 +26,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
-    // Walking the ~/ghq tree touches many directories, which would delay the
-    // window on the main thread.
+    // Walking the repositories folder touches many directories, which would
+    // delay the window on the main thread.
     private var cachedRepositories: [GhqRepository] = []
-    // A scan of a large ~/ghq can outlast a hotkey press, so repeated presses
-    // would otherwise pile up stale scans on the serial queue.
+    // A scan of a large repositories folder can outlast a hotkey press, so
+    // repeated presses would otherwise pile up stale scans on the serial queue.
     private var isLoadingRepositories = false
     private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
@@ -42,7 +42,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowListQueue = DispatchQueue(
         label: "com.garaemon.Something.windowList", qos: .userInitiated)
     // isLoadingRepositories already keeps scans one at a time; the queue is
-    // separate so that a slow ~/ghq walk does not delay the other lists.
+    // separate so that a slow repositories folder walk does not delay the
+    // other lists.
     private let repositoryListQueue = DispatchQueue(
         label: "com.garaemon.Something.repositoryList", qos: .userInitiated)
 
@@ -57,7 +58,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Registers the hot key from the settings, and registers it again whenever
-    /// the settings change it or start recording a new one.
+    /// the settings change it or start recording a new one. Also rescans the
+    /// repositories whenever the settings change their folder.
     func startObservingSettings() {
         settingsSubscriptions.removeAll()
         // @Published emits before the property changes, so the sinks use the
@@ -69,6 +71,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.$isRecordingHotKey
             .removeDuplicates()
             .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
+            .store(in: &settingsSubscriptions)
+        settings.$repositoryRootPath
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(pendingRootPath: rootPath) }
             .store(in: &settingsSubscriptions)
     }
 
@@ -223,18 +230,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func refreshRepositoriesInBackground() {
+    // The settings sink passes pendingRootPath, because @Published emits
+    // before the setting holds the new folder.
+    private func refreshRepositoriesInBackground(pendingRootPath: String? = nil) {
         guard !isLoadingRepositories else { return }
         isLoadingRepositories = true
         let catalog = repositoryCatalog
+        let scannedRootPath = pendingRootPath ?? settings.repositoryRootPath
+        let rootDirectory = URL(fileURLWithPath: scannedRootPath, isDirectory: true)
         repositoryListQueue.async { [weak self] in
-            let repositories = catalog.loadRepositories()
+            let repositories = catalog.loadRepositories(rootDirectory)
             DispatchQueue.main.async {
-                self?.isLoadingRepositories = false
-                self?.cachedRepositories = repositories
-                self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
+                self?.finishRepositoryRefresh(repositories, scannedRootPath: scannedRootPath)
             }
         }
+    }
+
+    // A root change during a scan was skipped by the isLoadingRepositories
+    // guard, so the stale result is dropped and the new root is scanned.
+    private func finishRepositoryRefresh(_ repositories: [GhqRepository], scannedRootPath: String) {
+        isLoadingRepositories = false
+        guard scannedRootPath == settings.repositoryRootPath else {
+            refreshRepositoriesInBackground()
+            return
+        }
+        cachedRepositories = repositories
+        launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
     }
 
     // Windows are not cached, because they open, close, and change titles

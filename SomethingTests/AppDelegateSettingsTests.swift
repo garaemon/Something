@@ -11,7 +11,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         let appDelegate = AppDelegate()
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
-        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { [] })
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()
@@ -94,5 +94,86 @@ final class AppDelegateSettingsTests: XCTestCase {
         launcherViewModel.query = "settings"
 
         XCTAssertTrue(launcherViewModel.candidates.map(\.name).contains(SettingsSource.candidateName))
+    }
+
+    func test_should_scan_repository_root_from_settings() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.settings.repositoryRootPath = "/Users/someone/src"
+        let scannedRoot = expectation(description: "the catalog scans the configured root")
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { rootDirectory in
+            if rootDirectory.path == "/Users/someone/src" { scannedRoot.fulfill() }
+            return []
+        })
+
+        appDelegate.openWindow()
+
+        wait(for: [scannedRoot], timeout: 5)
+    }
+
+    func test_should_scan_again_when_repository_root_changes() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        let scannedNewRoot = expectation(description: "the catalog scans the new root")
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { rootDirectory in
+            if rootDirectory.path == "/Users/someone/src" { scannedNewRoot.fulfill() }
+            return []
+        })
+
+        appDelegate.settings.repositoryRootPath = "/Users/someone/src"
+
+        wait(for: [scannedNewRoot], timeout: 5)
+    }
+
+    // The settings are not observed here, so only the stale-scan check in the
+    // finished scan can start the scan of the new root.
+    func test_should_scan_new_root_when_root_changes_during_scan() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.settings.repositoryRootPath = "/Users/someone/old"
+        let scanRelease = DispatchSemaphore(value: 0)
+        let scannedNewRoot = expectation(description: "the catalog scans the new root")
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { rootDirectory in
+            if rootDirectory.path == "/Users/someone/new" {
+                scannedNewRoot.fulfill()
+            } else {
+                scanRelease.wait()
+            }
+            return []
+        })
+        appDelegate.openWindow()
+
+        appDelegate.settings.repositoryRootPath = "/Users/someone/new"
+        scanRelease.signal()
+
+        wait(for: [scannedNewRoot], timeout: 5)
+    }
+
+    func test_should_not_scan_when_same_repository_root_is_chosen_again() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        let repositoryScan = expectation(description: "the catalog scans again")
+        repositoryScan.isInverted = true
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in
+            repositoryScan.fulfill()
+            return []
+        })
+
+        appDelegate.settings.repositoryRootPath = AppSettings.defaultRepositoryRootPath
+
+        wait(for: [repositoryScan], timeout: 0.5)
+    }
+
+    func test_should_not_scan_previous_root_when_repository_root_changes() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        let previousRootScan = expectation(description: "the catalog scans the previous root")
+        previousRootScan.isInverted = true
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { rootDirectory in
+            if rootDirectory.path == AppSettings.defaultRepositoryRootPath { previousRootScan.fulfill() }
+            return []
+        })
+
+        appDelegate.settings.repositoryRootPath = "/Users/someone/src"
+
+        wait(for: [previousRootScan], timeout: 0.5)
     }
 }
