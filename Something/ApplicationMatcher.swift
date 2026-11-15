@@ -10,26 +10,28 @@ enum ApplicationMatcher {
     static func filterApplications(
         _ applications: [LaunchableApplication], matching query: String
     ) -> [LaunchableApplication] {
+        filterItems(applications, matching: query, name: \.name)
+    }
+
+    /// Returns the items whose `name` contains every whitespace-separated
+    /// pattern in `query`, ordered as `filterApplications` orders applications.
+    static func filterItems<Item>(
+        _ items: [Item], matching query: String, name: (Item) -> String
+    ) -> [Item] {
         let patterns = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
-        let matchedApplications = applications.filter { application in
-            let lowercasedName = application.name.lowercased()
+        let matchedItems = items.filter { item in
+            let lowercasedName = name(item).lowercased()
             return patterns.allSatisfy { lowercasedName.contains($0) }
         }
         guard let firstPattern = patterns.first else {
-            return sortByName(matchedApplications)
+            return sortByName(matchedItems, name: name)
         }
-        let prefixMatches = matchedApplications.filter {
-            $0.name.lowercased().hasPrefix(firstPattern)
-        }
-        let otherMatches = matchedApplications.filter {
-            !$0.name.lowercased().hasPrefix(firstPattern)
-        }
-        return sortByName(prefixMatches) + sortByName(otherMatches)
+        let prefixMatches = matchedItems.filter { name($0).lowercased().hasPrefix(firstPattern) }
+        let otherMatches = matchedItems.filter { !name($0).lowercased().hasPrefix(firstPattern) }
+        return sortByName(prefixMatches, name: name) + sortByName(otherMatches, name: name)
     }
 
-    private static func sortByName(_ applications: [LaunchableApplication]) -> [LaunchableApplication] {
-        applications.sorted {
-            $0.name.localizedStandardCompare($1.name) == .orderedAscending
-        }
+    private static func sortByName<Item>(_ items: [Item], name: (Item) -> String) -> [Item] {
+        items.sorted { name($0).localizedStandardCompare(name($1)) == .orderedAscending }
     }
 }
