@@ -96,7 +96,11 @@ private struct CandidateRow: View {
             Image(nsImage: icon)
                 .resizable()
                 .frame(width: 20, height: 20)
+            // One line per row keeps the rows the same height when a long
+            // window title meets the badge column.
             Text(candidate.name)
+                .lineLimit(1)
+                .truncationMode(.tail)
             Spacer()
             KindBadge(kind: candidate.kind)
                 .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.secondary)
