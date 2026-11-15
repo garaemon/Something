@@ -12,6 +12,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
+        appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
         appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()

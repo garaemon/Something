@@ -21,6 +21,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var applicationCatalog = ApplicationCatalog.makeDefault()
     var windowCatalog = WindowCatalog.makeDefault()
     var repositoryCatalog = RepositoryCatalog.makeDefault()
+    var fileCatalog: FileCatalog {
+        get { fileListLoader.catalog }
+        set { fileListLoader.catalog = newValue }
+    }
     // Tests replace the random pick to get a fixed placement.
     var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = { $0.randomElement() ?? .top }
     // The launcher shows the previous scan immediately, because scanning the
@@ -32,6 +36,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // A scan of a large repositories folder can outlast a hotkey press, so
     // repeated presses would otherwise pile up stale scans on the serial queue.
     private var isLoadingRepositories = false
+    // The file folders, such as ~/Documents, can be as slow to walk as the
+    // repositories folder, so files follow the same caching.
+    private lazy var fileListLoader: FileListLoader = {
+        let loader = FileListLoader(catalog: .makeDefault()) { [weak self] in
+            self?.settings.fileFolderPaths ?? []
+        }
+        loader.onFilesLoaded = { [weak self] files in
+            self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
+        }
+        return loader
+    }()
     private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
     // older scan never overwrites a newer result.
@@ -54,12 +69,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.setActivationPolicy(.accessory)
         refreshApplicationsInBackground()
         refreshRepositoriesInBackground()
+        fileListLoader.refresh()
         startObservingSettings()
     }
 
     /// Registers the hot key from the settings, and registers it again whenever
     /// the settings change it or start recording a new one. Also rescans the
-    /// repositories whenever the settings change their folder.
+    /// repositories or the files whenever the settings change their folders.
     func startObservingSettings() {
         settingsSubscriptions.removeAll()
         // @Published emits before the property changes, so the sinks use the
@@ -76,6 +92,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(pendingRootPath: rootPath) }
+            .store(in: &settingsSubscriptions)
+        settings.$fileFolderPaths
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] folderPaths in self?.fileListLoader.refresh(pendingFolderPaths: folderPaths) }
             .store(in: &settingsSubscriptions)
     }
 
@@ -166,6 +187,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshApplicationsInBackground()
         refreshWindowsInBackground()
         refreshRepositoriesInBackground()
+        fileListLoader.refresh()
 
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
@@ -212,6 +234,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(cachedRepositories),
+            Self.makeFileSource(fileListLoader.cachedFiles),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             WebSearchSource(engines: WebSearchEngine.launcherEngines, openURL: { NSWorkspace.shared.open($0) }),
         ])
@@ -287,6 +310,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         RepositorySource(repositories: repositories, openRepository: openRepository)
     }
 
+    private static func makeFileSource(_ files: [LocalFile]) -> FileSource {
+        FileSource(
+            files: files, openFile: openFile,
+            revealFile: { NSWorkspace.shared.activateFileViewerSelecting([$0.url]) })
+    }
+
     private static func launchApplication(_ application: LaunchableApplication) {
         NSWorkspace.shared.openApplication(
             at: application.url, configuration: NSWorkspace.OpenConfiguration()
@@ -299,5 +328,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private static func openRepository(_ repository: GhqRepository) {
         guard !NSWorkspace.shared.open(repository.url) else { return }
         NSLog("Failed to open %@", repository.url.path)
+    }
+
+    private static func openFile(_ file: LocalFile) {
+        guard !NSWorkspace.shared.open(file.url) else { return }
+        NSLog("Failed to open %@", file.url.path)
     }
 }

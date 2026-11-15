@@ -12,6 +12,7 @@ final class AppDelegateTests: XCTestCase {
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
+        appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
         return appDelegate
     }
 
