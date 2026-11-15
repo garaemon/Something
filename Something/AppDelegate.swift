@@ -74,7 +74,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.$repositoryRootPath
             .dropFirst()
             .removeDuplicates()
-            .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(rootPath: rootPath) }
+            .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(pendingRootPath: rootPath) }
             .store(in: &settingsSubscriptions)
     }
 
@@ -215,16 +215,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func refreshRepositoriesInBackground(rootPath: String? = nil) {
+    // The settings sink passes pendingRootPath, because @Published emits
+    // before the setting holds the new folder.
+    private func refreshRepositoriesInBackground(pendingRootPath: String? = nil) {
         guard !isLoadingRepositories else { return }
         isLoadingRepositories = true
         let catalog = repositoryCatalog
-        let rootPath = rootPath ?? settings.repositoryRootPath
-        let rootDirectory = URL(fileURLWithPath: rootPath, isDirectory: true)
+        let scannedRootPath = pendingRootPath ?? settings.repositoryRootPath
+        let rootDirectory = URL(fileURLWithPath: scannedRootPath, isDirectory: true)
         repositoryListQueue.async { [weak self] in
             let repositories = catalog.loadRepositories(rootDirectory)
             DispatchQueue.main.async {
-                self?.finishRepositoryRefresh(repositories, scannedRootPath: rootPath)
+                self?.finishRepositoryRefresh(repositories, scannedRootPath: scannedRootPath)
             }
         }
     }
