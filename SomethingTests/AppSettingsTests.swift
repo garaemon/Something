@@ -125,4 +125,31 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.fileFolderPaths, AppSettings.defaultFileFolderPaths)
     }
+
+    func test_should_append_added_file_folder() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = ["/a"]
+
+        settings.addFileFolder("/b")
+
+        XCTAssertEqual(settings.fileFolderPaths, ["/a", "/b"])
+    }
+
+    func test_should_not_add_file_folder_twice() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = ["/a"]
+
+        settings.addFileFolder("/a")
+
+        XCTAssertEqual(settings.fileFolderPaths, ["/a"])
+    }
+
+    func test_should_remove_file_folder() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = ["/a", "/b"]
+
+        settings.removeFileFolder("/a")
+
+        XCTAssertEqual(settings.fileFolderPaths, ["/b"])
+    }
 }

@@ -65,6 +65,16 @@ final class AppSettings: ObservableObject {
         MascotModel.default.recolored(headColor: mascotHeadColor, bodyColor: mascotBodyColor)
     }
 
+    /// Appends `path` to the file folders unless the list already holds it.
+    func addFileFolder(_ path: String) {
+        guard !fileFolderPaths.contains(path) else { return }
+        fileFolderPaths.append(path)
+    }
+
+    func removeFileFolder(_ path: String) {
+        fileFolderPaths.removeAll { $0 == path }
+    }
+
     func resetToDefaults() {
         hotKeyCombo = Self.defaultHotKeyCombo
         mascotHeadColor = MascotModel.defaultHeadColor
