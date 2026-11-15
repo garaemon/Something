@@ -5,6 +5,8 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
+    private static let previewSize: CGFloat = 160
+
     var body: some View {
         Form {
             Section("Launcher") {
@@ -13,14 +15,22 @@ struct SettingsView: View {
                 }
             }
             Section {
+                HStack {
+                    Spacer()
+                    // Idle keeps the robot standing still at the center instead
+                    // of replaying the entrance.
+                    MascotView(state: .idle, query: "", placement: .top, model: settings.mascotModel)
+                        .frame(width: Self.previewSize, height: Self.previewSize)
+                    Spacer()
+                }
                 ColorPicker("Head color", selection: makeColorBinding(\.mascotHeadColor), supportsOpacity: false)
                 ColorPicker("Body color", selection: makeColorBinding(\.mascotBodyColor), supportsOpacity: false)
             } header: {
                 Text("Mascot")
             } footer: {
-                // The mascot exists only while the launcher is open, and the
-                // launcher closes when this window takes focus.
-                Text("Colors apply the next time the launcher opens.")
+                // The launcher's mascot exists only while the launcher is open,
+                // and the launcher closes when this window takes focus.
+                Text("The launcher's mascot takes the new colors the next time it opens.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -44,9 +54,8 @@ struct SettingsView: View {
             set: { newColor in
                 // The scene builder reads sRGB hex, so a picker color from
                 // another space, such as Display P3, is converted first.
-                guard let srgbColor = NSColor(newColor).usingColorSpace(.sRGB) else { return }
-                settings[keyPath: keyPath] = MascotModel.hex(
-                    red: srgbColor.redComponent, green: srgbColor.greenComponent, blue: srgbColor.blueComponent)
+                guard let hex = MascotSceneBuilder.hex(of: NSColor(newColor)) else { return }
+                settings[keyPath: keyPath] = hex
             })
     }
 }
