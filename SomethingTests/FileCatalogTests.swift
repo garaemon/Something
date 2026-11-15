@@ -102,4 +102,32 @@ final class FileCatalogTests: XCTestCase {
 
         XCTAssertEqual(Set(files.map(\.name)), ["Downloads/a.txt", "Documents/b.txt"])
     }
+
+    func test_should_list_files_through_symbolic_link_folder_with_link_name() throws {
+        try createFile("a.txt")
+        let linkFolder = folder.deletingLastPathComponent().appendingPathComponent("Linked", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: linkFolder, withDestinationURL: folder)
+
+        let files = FileCatalog.scanFiles(in: [linkFolder])
+
+        XCTAssertEqual(files.map(\.name), ["Linked/a.txt"])
+    }
+
+    func test_should_skip_node_modules() throws {
+        try createFile("project/node_modules/lib/index.js")
+
+        let files = FileCatalog.scanFiles(in: [folder])
+
+        XCTAssertTrue(files.isEmpty)
+    }
+
+    func test_should_stop_at_file_count_limit() throws {
+        try createFile("a.txt")
+        try createFile("b.txt")
+        try createFile("c.txt")
+
+        let files = FileCatalog.scanFiles(in: [folder], maximumFileCountPerFolder: 2)
+
+        XCTAssertEqual(files.count, 2)
+    }
 }
