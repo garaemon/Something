@@ -401,11 +401,10 @@ final class LauncherViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.candidates.map(\.name), ["github.com/a/vim", "Search Google: vim"])
     }
 
-    func test_should_not_treat_same_named_candidates_of_different_sources_as_equal() {
-        let applicationCandidate = makeApplicationSource(["vim"]).makeCandidates(matching: "")[0]
-        let repositoryCandidate = RepositorySource(repositories: [makeRepository("vim")])
-            .makeCandidates(matching: "")[0]
+    func test_should_not_treat_equal_items_of_different_sources_as_the_same_candidate() {
+        let applicationsID = LauncherCandidateID(sourceID: CandidateSourceID("applications"), item: "vim")
+        let repositoriesID = LauncherCandidateID(sourceID: CandidateSourceID("repositories"), item: "vim")
 
-        XCTAssertNotEqual(applicationCandidate, repositoryCandidate)
+        XCTAssertNotEqual(applicationsID, repositoriesID)
     }
 }
