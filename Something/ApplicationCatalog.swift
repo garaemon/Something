@@ -18,11 +18,14 @@ struct ApplicationCatalog {
             searchDirectories: [
                 URL(fileURLWithPath: "/Applications"),
                 URL(fileURLWithPath: "/System/Applications"),
-                FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications"),
+                FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
+                    "Applications"
+                ),
             ],
             individualApplications: [
                 URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
-            ])
+            ]
+        )
     }
 
     /// Returns every `.app` bundle under the search directories plus the
@@ -32,7 +35,8 @@ struct ApplicationCatalog {
     /// nested inside another bundle are not. Unreadable directories and
     /// missing individual applications are skipped.
     func loadApplications() -> [LaunchableApplication] {
-        let existingIndividualApplications = individualApplications
+        let existingIndividualApplications =
+            individualApplications
             .filter { FileManager.default.fileExists(atPath: $0.path) }
             .map(makeApplication(at:))
         return searchDirectories.flatMap(findApplications(in:)) + existingIndividualApplications
@@ -41,8 +45,10 @@ struct ApplicationCatalog {
     private func findApplications(in directory: URL) -> [LaunchableApplication] {
         guard
             let enumerator = FileManager.default.enumerator(
-                at: directory, includingPropertiesForKeys: nil,
-                options: [.skipsPackageDescendants, .skipsHiddenFiles])
+                at: directory,
+                includingPropertiesForKeys: nil,
+                options: [.skipsPackageDescendants, .skipsHiddenFiles]
+            )
         else {
             return []
         }

@@ -13,14 +13,21 @@ struct WebSearchEngine: Hashable {
     let queryParameterName: String
 
     static let google = WebSearchEngine(
-        actionLabel: "Search Google", symbolName: "magnifyingglass",
-        baseURL: "https://www.google.com/search", fixedQueryItems: [], queryParameterName: "q")
+        actionLabel: "Search Google",
+        symbolName: "magnifyingglass",
+        baseURL: "https://www.google.com/search",
+        fixedQueryItems: [],
+        queryParameterName: "q"
+    )
 
     // udm=50 switches Google Search to AI Mode.
     static let googleAIMode = WebSearchEngine(
-        actionLabel: "Ask Google AI Mode", symbolName: "sparkles",
+        actionLabel: "Ask Google AI Mode",
+        symbolName: "sparkles",
         baseURL: "https://www.google.com/search",
-        fixedQueryItems: [URLQueryItem(name: "udm", value: "50")], queryParameterName: "q")
+        fixedQueryItems: [URLQueryItem(name: "udm", value: "50")],
+        queryParameterName: "q"
+    )
 
     /// The engines that the launcher lists, in display order.
     static let launcherEngines: [WebSearchEngine] = [.google, .googleAIMode]
@@ -43,13 +50,16 @@ struct WebSearch: Hashable {
     /// URL is malformed.
     var url: URL? {
         guard var components = URLComponents(string: engine.baseURL) else { return nil }
-        let queryItems = engine.fixedQueryItems + [URLQueryItem(name: engine.queryParameterName, value: query)]
+        let queryItems =
+            engine.fixedQueryItems + [URLQueryItem(name: engine.queryParameterName, value: query)]
         components.percentEncodedQueryItems = queryItems.map(Self.encodeQueryItem)
         return components.url
     }
 
     private static func encodeQueryItem(_ item: URLQueryItem) -> URLQueryItem {
-        let encodedValue = item.value?.addingPercentEncoding(withAllowedCharacters: queryValueAllowedCharacters)
+        let encodedValue = item.value?.addingPercentEncoding(
+            withAllowedCharacters: queryValueAllowedCharacters
+        )
         return URLQueryItem(name: item.name, value: encodedValue)
     }
 }

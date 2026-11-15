@@ -1,6 +1,6 @@
+import Cocoa
 import Combine
 import HotKey
-import Cocoa
 import SwiftUI
 
 // Remove NSWindowDelegate conformance from AppDelegate
@@ -12,7 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var settingsWindow: NSWindow?
     private var settingsWindowCloseObserver: NSObjectProtocol?
     private var settingsSubscriptions: Set<AnyCancellable> = []
-    var window: NSWindow? // Keep a reference to the window
+    var window: NSWindow?  // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
     // The mascot stands on or beside the launcher in a window of its own.
@@ -23,7 +23,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var repositoryCatalog = RepositoryCatalog.makeDefault()
     var fileCatalog = FileCatalog.makeDefault()
     // Tests replace the random pick to get a fixed placement.
-    var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = { $0.randomElement() ?? .top }
+    var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = {
+        $0.randomElement() ?? .top
+    }
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
@@ -37,11 +39,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // A serial queue delivers scans in the order they started, so a slow
     // older scan never overwrites a newer result.
     private let applicationScanQueue = DispatchQueue(
-        label: "com.garaemon.Something.applicationScan", qos: .userInitiated)
+        label: "com.garaemon.Something.applicationScan",
+        qos: .userInitiated
+    )
     // Windows get their own queue so that a slow folder scan does not delay
     // the window list, which the user expects right after the hotkey.
     private let windowListQueue = DispatchQueue(
-        label: "com.garaemon.Something.windowList", qos: .userInitiated)
+        label: "com.garaemon.Something.windowList",
+        qos: .userInitiated
+    )
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Change the activation policy to .accessory
@@ -107,7 +113,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makeSettingsWindow() -> NSWindow {
         let window = NSWindow(
-            contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            contentRect: .zero,
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
         window.title = SettingsSource.candidateName
         // Kept alive by `settingsWindow` so that a reopen keeps its position.
         window.isReleasedWhenClosed = false
@@ -116,7 +126,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Drops the content of the closed window. The mascot preview inside
         // keeps SceneKit's render loop running for as long as the view lives.
         settingsWindowCloseObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification, object: window, queue: .main
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
         ) { [weak window] _ in
             MainActor.assumeIsolated { window?.contentView = nil }
         }
@@ -137,7 +149,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let newWindow = NSWindow(
             contentRect: NSRect(origin: .zero, size: LauncherView.minimumSize),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered, defer: false)
+            backing: .buffered,
+            defer: false
+        )
         newWindow.center()
         newWindow.setFrameAutosaveName("SomethingWindow")
         // ARC owns the window through `window`. Letting AppKit also release it on
@@ -156,9 +170,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         newWindowController.onWindowRelease = { [weak self] in
             self?.closeMascotPanel()
             // When the window is released (hidden/closed), nil out the references
-            self?.window?.orderOut(nil) // Ensure it's hidden if not already
+            self?.window?.orderOut(nil)  // Ensure it's hidden if not already
             self?.window = nil
-            self?.windowController = nil // Release the strong reference to the controller
+            self?.windowController = nil  // Release the strong reference to the controller
             self?.launcherViewModel = nil
         }
 
@@ -176,8 +190,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         newWindow.makeKeyAndOrderFront(nil)
         attachMascotPanel(to: newWindow, controller: newWindowController)
 
-        self.window = newWindow // Store reference to the new window
-        self.windowController = newWindowController // Store strong reference to the controller
+        self.window = newWindow  // Store reference to the new window
+        self.windowController = newWindowController  // Store strong reference to the controller
     }
 
     // Attached after the launcher is ordered front so that the panel never competes
@@ -185,12 +199,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func attachMascotPanel(to launcher: NSWindow, controller: SomethingWindowController) {
         guard let viewModel = launcherViewModel else { return }
         // Only placements that fit on the screen are offered, so that the robot is not clipped.
-        let candidates = launcher.screen.map {
-            MascotPanelLayout.placements(fittingLauncherFrame: launcher.frame, within: $0.visibleFrame)
-        } ?? MascotPlacement.allCases
+        let candidates =
+            launcher.screen.map {
+                MascotPanelLayout.placements(
+                    fittingLauncherFrame: launcher.frame,
+                    within: $0.visibleFrame
+                )
+            } ?? MascotPlacement.allCases
         let panel = MascotPanel.make(
-            viewModel: viewModel, launcherFrame: launcher.frame,
-            placement: chooseMascotPlacement(candidates), model: settings.mascotModel)
+            viewModel: viewModel,
+            launcherFrame: launcher.frame,
+            placement: chooseMascotPlacement(candidates),
+            model: settings.mascotModel
+        )
         launcher.addChildWindow(panel, ordered: .above)
         mascotPanel = panel
         controller.onWindowResize = { [weak self, weak launcher] in
@@ -220,7 +241,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeRepositorySource(repositoryLoader.cachedItems),
             Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
-            WebSearchSource(engines: WebSearchEngine.launcherEngines, openURL: { NSWorkspace.shared.open($0) }),
+            WebSearchSource(
+                engines: WebSearchEngine.launcherEngines,
+                openURL: { NSWorkspace.shared.open($0) }
+            ),
         ])
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
@@ -244,9 +268,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             makeLoadFunction: { [weak self] in
                 let catalog = self?.repositoryCatalog
                 return { rootPath in
-                    catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true)) ?? []
+                    catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true))
+                        ?? []
                 }
-            })
+            }
+        )
         loader.onItemsLoaded = { [weak self] repositories in
             self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
         }
@@ -260,9 +286,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             makeLoadFunction: { [weak self] in
                 let catalog = self?.fileCatalog
                 return { folderPaths in
-                    catalog?.loadFiles(folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }) ?? []
+                    catalog?.loadFiles(
+                        folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }
+                    ) ?? []
                 }
-            })
+            }
+        )
         loader.onItemsLoaded = { [weak self] files in
             self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
         }
@@ -298,7 +327,9 @@ extension AppDelegate {
         WindowSource(windows: windows, raiseWindow: WindowRaiser.raiseWindow)
     }
 
-    private static func makeApplicationSource(_ applications: [LaunchableApplication]) -> ApplicationSource {
+    private static func makeApplicationSource(
+        _ applications: [LaunchableApplication]
+    ) -> ApplicationSource {
         ApplicationSource(applications: applications, launchApplication: launchApplication)
     }
 
@@ -308,13 +339,16 @@ extension AppDelegate {
 
     private static func makeFileSource(_ files: [LocalFile]) -> FileSource {
         FileSource(
-            files: files, openFile: openFile,
-            revealFile: { NSWorkspace.shared.activateFileViewerSelecting([$0.url]) })
+            files: files,
+            openFile: openFile,
+            revealFile: { NSWorkspace.shared.activateFileViewerSelecting([$0.url]) }
+        )
     }
 
     private static func launchApplication(_ application: LaunchableApplication) {
         NSWorkspace.shared.openApplication(
-            at: application.url, configuration: NSWorkspace.OpenConfiguration()
+            at: application.url,
+            configuration: NSWorkspace.OpenConfiguration()
         ) { _, error in
             guard let error else { return }
             NSLog("Failed to launch %@: %@", application.url.path, error.localizedDescription)

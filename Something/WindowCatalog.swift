@@ -31,7 +31,8 @@ private final class AccessibilityPermissionPrompt {
             hasPrompted = true
             return isFirstCall
         }
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): shouldPrompt] as CFDictionary
+        let options =
+            [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): shouldPrompt] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
     }
 }
@@ -48,7 +49,9 @@ private enum AccessibilityWindowReader {
     static func loadWindows() -> [SwitchableWindow] {
         let ownProcessIdentifier = ProcessInfo.processInfo.processIdentifier
         return NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && $0.processIdentifier != ownProcessIdentifier }
+            .filter {
+                $0.activationPolicy == .regular && $0.processIdentifier != ownProcessIdentifier
+            }
             .flatMap(loadWindows(of:))
     }
 
@@ -63,7 +66,8 @@ private enum AccessibilityWindowReader {
         }
         // Use the bundle file name, as the application list does, so that
         // one query matches both an application and its windows.
-        let applicationName = application.bundleURL?.deletingPathExtension().lastPathComponent
+        let applicationName =
+            application.bundleURL?.deletingPathExtension().lastPathComponent
             ?? application.localizedName ?? ""
         return windowElements.compactMap { windowElement in
             AXUIElementSetMessagingTimeout(windowElement, AccessibilityMessaging.timeoutSeconds)
@@ -76,14 +80,18 @@ private enum AccessibilityWindowReader {
                 return nil
             }
             return SwitchableWindow(
-                applicationName: applicationName, title: title,
-                processIdentifier: application.processIdentifier, element: windowElement)
+                applicationName: applicationName,
+                title: title,
+                processIdentifier: application.processIdentifier,
+                element: windowElement
+            )
         }
     }
 
     private static func copyAttribute(_ attribute: String, of element: AXUIElement) -> CFTypeRef? {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else {
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success
+        else {
             return nil
         }
         return value

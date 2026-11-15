@@ -36,7 +36,8 @@ struct BalanceSimulation: Equatable {
 
     mutating func step(dt: Double = BalanceSimulation.fixedStep, command: Command = Command()) {
         let error = position - command.target
-        let unclamped = Self.positionGain * error + Self.velocityGain * velocity
+        let unclamped =
+            Self.positionGain * error + Self.velocityGain * velocity
             + Self.leanGain * lean + Self.leanRateGain * leanRate
         let acceleration = min(max(unclamped, -Self.accelerationLimit), Self.accelerationLimit)
         leanRate += command.kick

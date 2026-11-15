@@ -22,9 +22,12 @@ struct FileCatalog {
     /// Stops a folder at `maximumFileCountPerFolder` files in directory order,
     /// so a folder past that count can lose recent files.
     static func scanFiles(
-        in folders: [URL], maximumFileCountPerFolder: Int = defaultMaximumFileCountPerFolder
+        in folders: [URL],
+        maximumFileCountPerFolder: Int = defaultMaximumFileCountPerFolder
     ) -> [LocalFile] {
-        let collectedFiles = folders.flatMap { collectFiles(in: $0, maximumFileCount: maximumFileCountPerFolder) }
+        let collectedFiles = folders.flatMap {
+            collectFiles(in: $0, maximumFileCount: maximumFileCountPerFolder)
+        }
         var seenPaths: Set<String> = []
         return collectedFiles.filter { seenPaths.insert($0.resolvedPath).inserted }
             .sorted { $0.modificationDate > $1.modificationDate }
@@ -60,9 +63,11 @@ struct FileCatalog {
         // it walks the target and the names keep the link's own name.
         guard
             let enumerator = FileManager.default.enumerator(
-                at: folder.resolvingSymlinksInPath(), includingPropertiesForKeys: resourceKeys,
+                at: folder.resolvingSymlinksInPath(),
+                includingPropertiesForKeys: resourceKeys,
                 options: [.skipsHiddenFiles, .skipsPackageDescendants],
-                errorHandler: logEnumerationError)
+                errorHandler: logEnumerationError
+            )
         else { return [] }
         let folderPathPrefix = folder.resolvingSymlinksInPath().standardizedFileURL.path + "/"
         var collectedFiles: [DatedFile] = []
@@ -71,7 +76,12 @@ struct FileCatalog {
             if isTooDeep || skippedDirectoryNames.contains(itemURL.lastPathComponent) {
                 enumerator.skipDescendants()
             }
-            guard let datedFile = makeDatedFile(itemURL, folder: folder, folderPathPrefix: folderPathPrefix)
+            guard
+                let datedFile = makeDatedFile(
+                    itemURL,
+                    folder: folder,
+                    folderPathPrefix: folderPathPrefix
+                )
             else { continue }
             collectedFiles.append(datedFile)
             if collectedFiles.count >= maximumFileCount { break }
@@ -79,7 +89,11 @@ struct FileCatalog {
         return collectedFiles
     }
 
-    private static func makeDatedFile(_ itemURL: URL, folder: URL, folderPathPrefix: String) -> DatedFile? {
+    private static func makeDatedFile(
+        _ itemURL: URL,
+        folder: URL,
+        folderPathPrefix: String
+    ) -> DatedFile? {
         guard let values = try? itemURL.resourceValues(forKeys: Set(resourceKeys)),
             values.isRegularFile == true || values.isPackage == true
         else { return nil }
@@ -88,9 +102,13 @@ struct FileCatalog {
         let relativePath = String(itemPath.dropFirst(folderPathPrefix.count))
         let file = LocalFile(
             name: "\(folder.lastPathComponent)/\(relativePath)",
-            url: folder.appendingPathComponent(relativePath))
+            url: folder.appendingPathComponent(relativePath)
+        )
         return DatedFile(
-            file: file, modificationDate: values.contentModificationDate ?? .distantPast, resolvedPath: itemPath)
+            file: file,
+            modificationDate: values.contentModificationDate ?? .distantPast,
+            resolvedPath: itemPath
+        )
     }
 
     // A folder that macOS denies, such as ~/Documents before the user grants

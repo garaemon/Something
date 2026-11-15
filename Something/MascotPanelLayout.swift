@@ -33,28 +33,41 @@ enum MascotPanelLayout {
 
     /// AppKit's y axis points up. On top, the ground line is the launcher's top edge;
     /// beside the launcher, it is level with the launcher's bottom edge.
-    static func frame(forLauncherFrame launcher: CGRect, placement: MascotPlacement = .top) -> CGRect {
+    static func frame(
+        forLauncherFrame launcher: CGRect,
+        placement: MascotPlacement = .top
+    ) -> CGRect {
         let lineOffset = placement.groundLineFraction * panelSize.height
         switch placement {
         case .top:
             return CGRect(
-                x: launcher.maxX - rightInset - panelSize.width, y: launcher.maxY - lineOffset,
-                width: panelSize.width, height: panelSize.height)
+                x: launcher.maxX - rightInset - panelSize.width,
+                y: launcher.maxY - lineOffset,
+                width: panelSize.width,
+                height: panelSize.height
+            )
         case .right:
             return CGRect(
-                x: launcher.maxX - sideOverlap, y: launcher.minY - lineOffset,
-                width: panelSize.width, height: panelSize.height)
+                x: launcher.maxX - sideOverlap,
+                y: launcher.minY - lineOffset,
+                width: panelSize.width,
+                height: panelSize.height
+            )
         case .left:
             return CGRect(
-                x: launcher.minX + sideOverlap - panelSize.width, y: launcher.minY - lineOffset,
-                width: panelSize.width, height: panelSize.height)
+                x: launcher.minX + sideOverlap - panelSize.width,
+                y: launcher.minY - lineOffset,
+                width: panelSize.width,
+                height: panelSize.height
+            )
         }
     }
 
     /// Placements whose panel lies entirely on the screen, so that the robot is never
     /// cut off. Returns every placement when none fits, because the mascot must still appear.
     static func placements(
-        fittingLauncherFrame launcher: CGRect, within screenVisibleFrame: CGRect
+        fittingLauncherFrame launcher: CGRect,
+        within screenVisibleFrame: CGRect
     ) -> [MascotPlacement] {
         let fitting = MascotPlacement.allCases.filter {
             screenVisibleFrame.contains(frame(forLauncherFrame: launcher, placement: $0))
@@ -67,7 +80,9 @@ enum MascotPanelLayout {
     /// is `atan2(height, distance)` below horizontal and must end up
     /// `atan((1 - 2f) * tan(fov / 2))` below the view axis.
     static func cameraPitch(
-        cameraHeight: Double, cameraDistance: Double, verticalFieldOfViewDegrees: Double,
+        cameraHeight: Double,
+        cameraDistance: Double,
+        verticalFieldOfViewDegrees: Double,
         placement: MascotPlacement = .top
     ) -> Double {
         let angleToOrigin = atan2(cameraHeight, cameraDistance)

@@ -17,10 +17,15 @@ struct WebSearchSource: CandidateSource {
     // A malformed engine URL still lists the row, but without an action, so
     // Return keeps the launcher open instead of closing it for nothing.
     private func makeCandidate(for search: WebSearch) -> LauncherCandidate {
-        let actions = search.url.map { url in [LauncherAction(title: "Open in Browser") { openURL(url) }] }
+        let actions = search.url.map { url in
+            [LauncherAction(title: "Open in Browser") { openURL(url) }]
+        }
         return LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: search),
-            name: search.title, icon: .systemSymbol(search.engine.symbolName), kind: .webSearch,
-            actions: actions ?? [])
+            name: search.title,
+            icon: .systemSymbol(search.engine.symbolName),
+            kind: .webSearch,
+            actions: actions ?? []
+        )
     }
 }

@@ -94,8 +94,12 @@ struct MascotAnimator {
 
     private func currentPose(_ snapshot: MascotSnapshot) -> MascotPose {
         MascotChoreography.pose(
-            state: state, elapsed: stateTime, sinceInput: sinceInput, inputCount: snapshot.inputCount,
-            placement: placement)
+            state: state,
+            elapsed: stateTime,
+            sinceInput: sinceInput,
+            inputCount: snapshot.inputCount,
+            placement: placement
+        )
     }
 
     private mutating func approachYaw(_ desired: Double, dt: Double) {
@@ -121,6 +125,7 @@ struct MascotAnimator {
             rightHandSideways: pose.rightHandSideways,
             leftWheelRoll: roll + turn,
             rightWheelRoll: roll - turn,
-            screenText: MascotScreen.text(for: state, query: snapshot.query, elapsed: textElapsed))
+            screenText: MascotScreen.text(for: state, query: snapshot.query, elapsed: textElapsed)
+        )
     }
 }

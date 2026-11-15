@@ -56,7 +56,10 @@ enum MascotSceneBuilder {
         let screenMaterial = SCNMaterial()
         screenMaterial.lightingModel = .constant
         screenMaterial.isDoubleSided = false
-        let plane = SCNPlane(width: CGFloat(model.screen.width), height: CGFloat(model.screen.height))
+        let plane = SCNPlane(
+            width: CGFloat(model.screen.width),
+            height: CGFloat(model.screen.height)
+        )
         plane.firstMaterial = screenMaterial
         let screenNode = SCNNode(geometry: plane)
         screenNode.position = vector(model.screen.position)
@@ -65,8 +68,14 @@ enum MascotSceneBuilder {
         let cameraNode = makeCamera(placement: placement)
         scene.rootNode.addChildNode(cameraNode)
         return MascotRig(
-            scene: scene, cameraNode: cameraNode, root: root, groups: groups,
-            groupBasePositions: basePositions, screenMaterial: screenMaterial, partMaterials: partMaterials)
+            scene: scene,
+            cameraNode: cameraNode,
+            root: root,
+            groups: groups,
+            groupBasePositions: basePositions,
+            screenMaterial: screenMaterial,
+            partMaterials: partMaterials
+        )
     }
 
     /// Repaints the parts of an already built rig with the colors of `model`,
@@ -81,7 +90,8 @@ enum MascotSceneBuilder {
     }
 
     private static func makeGroupNodes(
-        _ specs: [MascotModel.GroupSpec], under root: SCNNode
+        _ specs: [MascotModel.GroupSpec],
+        under root: SCNNode
     ) -> [MascotModel.Group: SCNNode] {
         var groups: [MascotModel.Group: SCNNode] = [:]
         for spec in specs {
@@ -106,8 +116,11 @@ enum MascotSceneBuilder {
         switch shape {
         case .box(let width, let height, let depth, let cornerRadius):
             return SCNBox(
-                width: CGFloat(width), height: CGFloat(height), length: CGFloat(depth),
-                chamferRadius: CGFloat(cornerRadius))
+                width: CGFloat(width),
+                height: CGFloat(height),
+                length: CGFloat(depth),
+                chamferRadius: CGFloat(cornerRadius)
+            )
         case .cylinder(let radius, let height, _):
             return SCNCylinder(radius: CGFloat(radius), height: CGFloat(height))
         case .sphere(let radius):
@@ -130,12 +143,20 @@ enum MascotSceneBuilder {
     static func hex(of color: NSColor) -> String? {
         guard let srgbColor = color.usingColorSpace(.sRGB) else { return nil }
         return MascotModel.hex(
-            red: srgbColor.redComponent, green: srgbColor.greenComponent, blue: srgbColor.blueComponent)
+            red: srgbColor.redComponent,
+            green: srgbColor.greenComponent,
+            blue: srgbColor.blueComponent
+        )
     }
 
     private static func color(hex: String) -> NSColor {
         let rgb = MascotModel.rgb(hex: hex) ?? (red: 1, green: 0, blue: 1)
-        return NSColor(srgbRed: CGFloat(rgb.red), green: CGFloat(rgb.green), blue: CGFloat(rgb.blue), alpha: 1)
+        return NSColor(
+            srgbRed: CGFloat(rgb.red),
+            green: CGFloat(rgb.green),
+            blue: CGFloat(rgb.blue),
+            alpha: 1
+        )
     }
 
     private static func makeToonMaterial(hex: String) -> SCNMaterial {
@@ -151,8 +172,11 @@ enum MascotSceneBuilder {
         let material = SCNMaterial()
         material.lightingModel = .constant
         material.diffuse.contents = NSColor(
-            srgbRed: CGFloat(MascotToon.outlineColor.red), green: CGFloat(MascotToon.outlineColor.green),
-            blue: CGFloat(MascotToon.outlineColor.blue), alpha: 1)
+            srgbRed: CGFloat(MascotToon.outlineColor.red),
+            green: CGFloat(MascotToon.outlineColor.green),
+            blue: CGFloat(MascotToon.outlineColor.blue),
+            alpha: 1
+        )
         // Cull the front so that only the inflated back faces rim the real mesh.
         material.cullMode = .front
         material.shaderModifiers = [.geometry: MascotToon.outlineGeometryModifier]
@@ -179,13 +203,19 @@ enum MascotSceneBuilder {
         camera.zFar = 50
         let node = SCNNode()
         node.camera = camera
-        node.position = SCNVector3(CGFloat(cameraPosition.x), CGFloat(cameraPosition.y), CGFloat(cameraPosition.z))
+        node.position = SCNVector3(
+            CGFloat(cameraPosition.x),
+            CGFloat(cameraPosition.y),
+            CGFloat(cameraPosition.z)
+        )
         // Looks down -Z by default; a negative turn about X tilts it downward. The aim
         // puts the ground line where the placement wants it.
         let pitch = MascotPanelLayout.cameraPitch(
-            cameraHeight: cameraPosition.y, cameraDistance: cameraPosition.z,
+            cameraHeight: cameraPosition.y,
+            cameraDistance: cameraPosition.z,
             verticalFieldOfViewDegrees: verticalFieldOfView,
-            placement: placement)
+            placement: placement
+        )
         node.eulerAngles.x = CGFloat(-pitch)
         return node
     }

@@ -9,7 +9,9 @@ enum Calculator {
     /// arithmetic, applies no binary operator (as in `-5` or `(2024)`), looks
     /// like a date, or has a non-finite value such as a division by zero.
     static func evaluate(_ expression: String) -> Double? {
-        guard !isSeparatedNumberChain(expression), let tokens = tokenize(expression) else { return nil }
+        guard !isSeparatedNumberChain(expression), let tokens = tokenize(expression) else {
+            return nil
+        }
         var parser = CalculatorParser(tokens: tokens)
         guard let value = parser.parseExpression(), parser.isAtEnd, parser.hasAppliedBinaryOperator,
             value.isFinite

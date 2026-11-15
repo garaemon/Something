@@ -12,8 +12,11 @@ struct CalculatorSource: CandidateSource {
         let resultText = Calculator.formatResult(value)
         let resultCandidate = LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: resultText),
-            name: "= \(resultText)", icon: .systemSymbol("equal.circle"), kind: .calculator,
-            actions: [LauncherAction(title: "Copy Result") { copyText(resultText) }])
+            name: "= \(resultText)",
+            icon: .systemSymbol("equal.circle"),
+            kind: .calculator,
+            actions: [LauncherAction(title: "Copy Result") { copyText(resultText) }]
+        )
         return [resultCandidate]
     }
 }

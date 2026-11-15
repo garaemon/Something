@@ -30,6 +30,10 @@ description = "Run the unit tests"
 depends = ["generate"]
 run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration Debug -derivedDataPath $DERIVED_DATA_PATH test"
 
+[tasks.format]
+description = "Format the app sources with swift-format"
+run = "xcrun swift-format format --in-place --recursive Something"
+
 [tasks.lint]
 description = "Lint the app sources with SwiftLint"
 run = "swiftlint lint --strict"

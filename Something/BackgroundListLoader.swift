@@ -23,7 +23,8 @@ final class BackgroundListLoader<Key: Equatable, Item> {
     /// loads it, on the main thread whenever a load starts. The function then
     /// runs on a background queue.
     init(
-        queueLabel: String, readKey: @escaping () -> Key,
+        queueLabel: String,
+        readKey: @escaping () -> Key,
         makeLoadFunction: @escaping () -> (Key) -> [Item]
     ) {
         self.readKey = readKey

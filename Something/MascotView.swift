@@ -85,10 +85,17 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
         // On the left the whole pose is mirrored, which is cheaper than a second resting yaw.
         let yaw = placement == .left ? -frame.yaw : frame.yaw
         rig.root.position = SCNVector3(
-            CGFloat(sin(yaw) * frame.position), CGFloat(frame.lift), CGFloat(cos(yaw) * frame.position))
+            CGFloat(sin(yaw) * frame.position),
+            CGFloat(frame.lift),
+            CGFloat(cos(yaw) * frame.position)
+        )
         rig.root.eulerAngles = SCNVector3(0, CGFloat(yaw), 0)
         rig.groups[.tilt]?.eulerAngles = SCNVector3(CGFloat(frame.lean), 0, 0)
-        rig.groups[.head]?.eulerAngles = SCNVector3(CGFloat(frame.headPitch), 0, CGFloat(frame.headTilt))
+        rig.groups[.head]?.eulerAngles = SCNVector3(
+            CGFloat(frame.headPitch),
+            0,
+            CGFloat(frame.headTilt)
+        )
         rig.groups[.wheelLeft]?.eulerAngles = SCNVector3(CGFloat(frame.leftWheelRoll), 0, 0)
         rig.groups[.wheelRight]?.eulerAngles = SCNVector3(CGFloat(frame.rightWheelRoll), 0, 0)
         offset(.handLeft, x: 0, y: frame.leftHandLift)
@@ -117,20 +124,32 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     private func renderText(_ text: String) -> CGImage? {
         guard
             let context = CGContext(
-                data: nil, width: Self.textureWidth, height: Self.textureHeight, bitsPerComponent: 8,
-                bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+                data: nil,
+                width: Self.textureWidth,
+                height: Self.textureHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
         else { return nil }
         let font = CTFontCreateWithName("Menlo-Bold" as CFString, Self.fontSize, nil)
         let color = CGColor(
-            red: CGFloat(textColor.red), green: CGFloat(textColor.green), blue: CGFloat(textColor.blue), alpha: 1)
+            red: CGFloat(textColor.red),
+            green: CGFloat(textColor.green),
+            blue: CGFloat(textColor.blue),
+            alpha: 1
+        )
         let attributes: [NSAttributedString.Key: Any] = [
             NSAttributedString.Key(kCTFontAttributeName as String): font,
             NSAttributedString.Key(kCTForegroundColorAttributeName as String): color,
         ]
-        let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attributes))
+        let line = CTLineCreateWithAttributedString(
+            NSAttributedString(string: text, attributes: attributes)
+        )
         // Centre the glyph band vertically; the left margin matches the prototype.
-        let baseline = CGFloat(Self.textureHeight) / 2 - (CTFontGetAscent(font) - CTFontGetDescent(font)) / 2
+        let baseline =
+            CGFloat(Self.textureHeight) / 2 - (CTFontGetAscent(font) - CTFontGetDescent(font)) / 2
         context.textPosition = CGPoint(x: 26, y: baseline)
         CTLineDraw(line, context)
         return context.makeImage()

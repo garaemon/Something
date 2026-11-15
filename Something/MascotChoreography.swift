@@ -37,7 +37,10 @@ enum MascotChoreography {
     ///   - sinceInput: seconds since the last query change.
     ///   - inputCount: number of query changes so far, to alternate the hands.
     static func pose(
-        state: MascotState, elapsed: Double, sinceInput: Double, inputCount: Int,
+        state: MascotState,
+        elapsed: Double,
+        sinceInput: Double,
+        inputCount: Int,
         placement: MascotPlacement = .top
     ) -> MascotPose {
         var pose = MascotPose()
