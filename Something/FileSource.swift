@@ -16,11 +16,10 @@ struct FileSource: CandidateSource {
     // An empty query lists nothing, so that opening the launcher does not
     // bury the repositories under every file of the folders.
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
-        let patterns = query.lowercased().split(whereSeparator: \.isWhitespace)
+        let patterns = ApplicationMatcher.splitPatterns(query)
         guard !patterns.isEmpty else { return [] }
-        let matchedFiles = files.lazy.filter { file in
-            let lowercasedName = file.name.lowercased()
-            return patterns.allSatisfy { lowercasedName.contains($0) }
+        let matchedFiles = files.lazy.filter {
+            ApplicationMatcher.containsAllPatterns($0.lowercasedName, patterns: patterns)
         }
         return matchedFiles.prefix(Self.candidateLimit).map(makeCandidate)
     }
