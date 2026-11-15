@@ -91,4 +91,65 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.repositoryRootPath, AppSettings.defaultRepositoryRootPath)
     }
+
+    func test_should_use_downloads_and_documents_as_file_folders_when_nothing_is_saved() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        let homePath = FileManager.default.homeDirectoryForCurrentUser.path
+        XCTAssertEqual(settings.fileFolderPaths, ["\(homePath)/Downloads", "\(homePath)/Documents"])
+    }
+
+    func test_should_restore_saved_file_folders() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).fileFolderPaths = ["/Users/someone/Desktop"]
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.fileFolderPaths, ["/Users/someone/Desktop"])
+    }
+
+    func test_should_restore_empty_file_folders() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).fileFolderPaths = []
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.fileFolderPaths, [])
+    }
+
+    func test_should_return_default_file_folders_after_reset() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = []
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.fileFolderPaths, AppSettings.defaultFileFolderPaths)
+    }
+
+    func test_should_append_added_file_folder() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = ["/a"]
+
+        settings.addFileFolder("/b")
+
+        XCTAssertEqual(settings.fileFolderPaths, ["/a", "/b"])
+    }
+
+    func test_should_not_add_file_folder_twice() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = ["/a"]
+
+        settings.addFileFolder("/a")
+
+        XCTAssertEqual(settings.fileFolderPaths, ["/a"])
+    }
+
+    func test_should_remove_file_folder() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.fileFolderPaths = ["/a", "/b"]
+
+        settings.removeFileFolder("/a")
+
+        XCTAssertEqual(settings.fileFolderPaths, ["/b"])
+    }
 }

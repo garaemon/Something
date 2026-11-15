@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// The settings window: the launcher hot key, the git repositories folder, and
-/// the mascot's skin colors.
+/// The settings window: the launcher hot key, the git repositories folder, the
+/// folders whose files the launcher lists, and the mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
@@ -24,6 +24,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            fileFoldersSection
             Section {
                 HStack {
                     Spacer()
@@ -52,6 +53,43 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var fileFoldersSection: some View {
+        Section {
+            ForEach(settings.fileFolderPaths, id: \.self) { folderPath in
+                HStack {
+                    Text((folderPath as NSString).abbreviatingWithTildeInPath)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(folderPath)
+                    Spacer()
+                    Button {
+                        settings.removeFileFolder(folderPath)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Remove")
+                }
+            }
+            Button("Add Folder…", action: addFileFolder)
+        } header: {
+            Text("File Folders")
+        } footer: {
+            Text("The launcher lists the files under these folders when you type a query.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func addFileFolder() {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseDirectories = true
+        openPanel.canChooseFiles = false
+        openPanel.allowsMultipleSelection = true
+        guard openPanel.runModal() == .OK else { return }
+        openPanel.urls.forEach { settings.addFileFolder($0.path) }
     }
 
     private func chooseRepositoryRoot() {

@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 /// Shows the windows of running applications, every application, and then the
 /// git repositories under a query field, and narrows the list on each
 /// keystroke, in the style of Emacs anything.el. A non-empty query also lists
-/// web searches for it at the end.
+/// the files of the file folders and web searches for it at the end.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
@@ -16,7 +16,7 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Window, Application, Repository, or Web Search", text: $viewModel.query)
+            TextField("Window, Application, Repository, File, or Web Search", text: $viewModel.query)
                 .textFieldStyle(.plain)
                 .font(.title2)
                 .padding(12)
@@ -119,6 +119,8 @@ private struct CandidateRow: View {
             return ApplicationIconCache.shared.loadIcon(forProcess: processIdentifier)
         case .folder:
             return Self.folderIcon
+        case .fileType(let fileExtension):
+            return ApplicationIconCache.shared.loadIcon(forFileExtension: fileExtension)
         case .systemSymbol(let symbolName):
             return NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) ?? NSImage()
         }

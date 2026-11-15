@@ -9,12 +9,17 @@ final class AppSettings: ObservableObject {
     /// `~/ghq`, the default root of ghq.
     static let defaultRepositoryRootPath = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("ghq").path
+    /// `~/Downloads` and `~/Documents`.
+    static let defaultFileFolderPaths = ["Downloads", "Documents"].map {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent($0).path
+    }
 
     private enum StorageKey {
         static let hotKey = "hotKey"
         static let mascotHeadColor = "mascotHeadColor"
         static let mascotBodyColor = "mascotBodyColor"
         static let repositoryRootPath = "repositoryRootPath"
+        static let fileFolderPaths = "fileFolderPaths"
     }
 
     @Published var hotKeyCombo: KeyCombo {
@@ -33,6 +38,10 @@ final class AppSettings: ObservableObject {
     @Published var repositoryRootPath: String {
         didSet { userDefaults.set(repositoryRootPath, forKey: StorageKey.repositoryRootPath) }
     }
+    /// Absolute paths of the folders whose files the launcher lists.
+    @Published var fileFolderPaths: [String] {
+        didSet { userDefaults.set(fileFolderPaths, forKey: StorageKey.fileFolderPaths) }
+    }
     /// True while the settings window waits for a new hot key. The current hot
     /// key must be paused meanwhile, or Carbon takes the press before the window sees it.
     @Published var isRecordingHotKey = false
@@ -47,6 +56,8 @@ final class AppSettings: ObservableObject {
         mascotBodyColor = userDefaults.string(forKey: StorageKey.mascotBodyColor) ?? MascotModel.defaultBodyColor
         repositoryRootPath =
             userDefaults.string(forKey: StorageKey.repositoryRootPath) ?? Self.defaultRepositoryRootPath
+        fileFolderPaths =
+            userDefaults.stringArray(forKey: StorageKey.fileFolderPaths) ?? Self.defaultFileFolderPaths
     }
 
     /// The robot painted with the chosen skin colors.
@@ -54,10 +65,21 @@ final class AppSettings: ObservableObject {
         MascotModel.default.recolored(headColor: mascotHeadColor, bodyColor: mascotBodyColor)
     }
 
+    /// Appends `path` to the file folders unless the list already holds it.
+    func addFileFolder(_ path: String) {
+        guard !fileFolderPaths.contains(path) else { return }
+        fileFolderPaths.append(path)
+    }
+
+    func removeFileFolder(_ path: String) {
+        fileFolderPaths.removeAll { $0 == path }
+    }
+
     func resetToDefaults() {
         hotKeyCombo = Self.defaultHotKeyCombo
         mascotHeadColor = MascotModel.defaultHeadColor
         mascotBodyColor = MascotModel.defaultBodyColor
         repositoryRootPath = Self.defaultRepositoryRootPath
+        fileFolderPaths = Self.defaultFileFolderPaths
     }
 }
