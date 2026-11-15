@@ -76,8 +76,16 @@ final class FileCatalogTests: XCTestCase {
         XCTAssertEqual(files.map(\.name), ["Downloads/new.txt", "Downloads/old.txt"])
     }
 
-    func test_should_skip_files_deeper_than_limit() throws {
-        try createFile("a/b/c/d/e/deep.txt")
+    func test_should_list_files_four_levels_deep() throws {
+        try createFile("a/b/c/deep.txt")
+
+        let files = FileCatalog.scanFiles(in: [folder])
+
+        XCTAssertEqual(files.map(\.name), ["Downloads/a/b/c/deep.txt"])
+    }
+
+    func test_should_skip_files_five_levels_deep() throws {
+        try createFile("a/b/c/d/deep.txt")
 
         let files = FileCatalog.scanFiles(in: [folder])
 
