@@ -302,4 +302,14 @@ final class LauncherViewModelTests: XCTestCase {
 
         XCTAssertEqual(openedURL?.absoluteString, "https://www.google.com/search?q=swift")
     }
+
+    func test_should_keep_selected_web_search_when_applications_are_replaced() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google, .googleAIMode])
+        viewModel.query = "zzz"
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceApplications([makeApplication("Mail")])
+
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Ask Google AI Mode: zzz")
+    }
 }
