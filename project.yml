@@ -37,10 +37,13 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
-        # The launcher lists files under these protected folders, and macOS
-        # shows the text in the access prompt.
+        # The launcher lists files under the protected folders that the user
+        # adds in the settings, and macOS shows the text in the access prompt.
         INFOPLIST_KEY_NSDocumentsFolderUsageDescription: "Something lists files in your Documents folder as launcher candidates."
         INFOPLIST_KEY_NSDownloadsFolderUsageDescription: "Something lists files in your Downloads folder as launcher candidates."
+        INFOPLIST_KEY_NSDesktopFolderUsageDescription: "Something lists files in your Desktop folder as launcher candidates."
+        INFOPLIST_KEY_NSRemovableVolumesUsageDescription: "Something lists files in folders on removable volumes as launcher candidates."
+        INFOPLIST_KEY_NSNetworkVolumesUsageDescription: "Something lists files in folders on network volumes as launcher candidates."
         CODE_SIGN_ENTITLEMENTS: Something/Something.entitlements
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
