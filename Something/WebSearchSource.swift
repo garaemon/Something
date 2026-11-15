@@ -7,11 +7,6 @@ struct WebSearchSource: CandidateSource {
     let engines: [WebSearchEngine]
     let openURL: (URL) -> Void
 
-    init(engines: [WebSearchEngine], openURL: @escaping (URL) -> Void) {
-        self.engines = engines
-        self.openURL = openURL
-    }
-
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else { return [] }

@@ -6,14 +6,6 @@ struct ApplicationSource: CandidateSource {
     let applications: [LaunchableApplication]
     let launchApplication: (LaunchableApplication) -> Void
 
-    init(
-        applications: [LaunchableApplication],
-        launchApplication: @escaping (LaunchableApplication) -> Void
-    ) {
-        self.applications = applications
-        self.launchApplication = launchApplication
-    }
-
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         ApplicationMatcher.filterApplications(applications, matching: query).map(makeCandidate)
     }

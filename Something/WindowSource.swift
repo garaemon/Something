@@ -7,11 +7,6 @@ struct WindowSource: CandidateSource {
     let windows: [SwitchableWindow]
     let raiseWindow: (SwitchableWindow) -> Void
 
-    init(windows: [SwitchableWindow], raiseWindow: @escaping (SwitchableWindow) -> Void) {
-        self.windows = windows
-        self.raiseWindow = raiseWindow
-    }
-
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         ApplicationMatcher.filterItems(windows, matching: query, name: \.name).map(makeCandidate)
     }
