@@ -19,10 +19,9 @@ struct ApplicationSource: CandidateSource {
     }
 
     private func makeCandidate(for application: LaunchableApplication) -> LauncherCandidate {
-        let launch = launchApplication
-        return LauncherCandidate(
+        LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: application),
             name: application.name, icon: .applicationBundle(application),
-            actions: [LauncherAction(title: "Open") { launch(application) }])
+            actions: [LauncherAction(title: "Open") { launchApplication(application) }])
     }
 }
