@@ -243,4 +243,73 @@ final class LauncherViewModelTests: XCTestCase {
 
         XCTAssertEqual(raisedTitle, "GitHub")
     }
+
+    private func makeViewModel(
+        applications applicationNames: [String], webSearchEngines: [WebSearchEngine],
+        onOpenURL: @escaping (URL) -> Void = { _ in }
+    ) -> LauncherViewModel {
+        LauncherViewModel(
+            applications: applicationNames.map(makeApplication), launchApplication: { _ in },
+            webSearchEngines: webSearchEngines, openURL: onOpenURL)
+    }
+
+    func test_should_append_web_searches_after_matching_candidates() {
+        let viewModel = makeViewModel(applications: ["Safari"], webSearchEngines: [.google, .googleAIMode])
+
+        viewModel.query = "saf"
+
+        XCTAssertEqual(
+            viewModel.candidates.map(\.name), ["Safari", "Search Google: saf", "Ask Google AI Mode: saf"])
+    }
+
+    func test_should_list_web_searches_when_nothing_else_matches() {
+        let viewModel = makeViewModel(applications: ["Safari"], webSearchEngines: [.google])
+
+        viewModel.query = "zzz"
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Search Google: zzz"])
+    }
+
+    func test_should_not_list_web_searches_when_query_is_empty() {
+        let viewModel = makeViewModel(applications: ["Safari"], webSearchEngines: [.google])
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari"])
+    }
+
+    func test_should_not_list_web_searches_when_query_is_only_whitespace() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google])
+
+        viewModel.query = "   "
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), [])
+    }
+
+    func test_should_trim_whitespace_from_web_search_query() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google])
+
+        viewModel.query = "  swift  "
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Search Google: swift"])
+    }
+
+    func test_should_open_url_of_selected_web_search() {
+        var openedURL: URL?
+        let viewModel = makeViewModel(
+            applications: [], webSearchEngines: [.google], onOpenURL: { openedURL = $0 })
+        viewModel.query = "swift"
+
+        viewModel.activateSelectedCandidate()
+
+        XCTAssertEqual(openedURL?.absoluteString, "https://www.google.com/search?q=swift")
+    }
+
+    func test_should_keep_selected_web_search_when_applications_are_replaced() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google, .googleAIMode])
+        viewModel.query = "zzz"
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceApplications([makeApplication("Mail")])
+
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Ask Google AI Mode: zzz")
+    }
 }

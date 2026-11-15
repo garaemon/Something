@@ -18,19 +18,26 @@ final class LauncherViewModel: ObservableObject {
     private var windows: [SwitchableWindow]
     private let launchApplication: (LaunchableApplication) -> Void
     private let raiseWindow: (SwitchableWindow) -> Void
+    private let webSearchEngines: [WebSearchEngine]
+    private let openURL: (URL) -> Void
 
     /// Creates a view model that lists `windows` and then `applications`,
-    /// all of them while the query is empty.
+    /// all of them while the query is empty. A non-empty query also lists one
+    /// search per engine in `webSearchEngines` at the end.
     init(
         applications: [LaunchableApplication],
         windows: [SwitchableWindow] = [],
         launchApplication: @escaping (LaunchableApplication) -> Void,
-        raiseWindow: @escaping (SwitchableWindow) -> Void = { _ in }
+        raiseWindow: @escaping (SwitchableWindow) -> Void = { _ in },
+        webSearchEngines: [WebSearchEngine] = [],
+        openURL: @escaping (URL) -> Void = { _ in }
     ) {
         self.applications = applications
         self.windows = windows
         self.launchApplication = launchApplication
         self.raiseWindow = raiseWindow
+        self.webSearchEngines = webSearchEngines
+        self.openURL = openURL
         updateCandidates()
     }
 
@@ -76,6 +83,9 @@ final class LauncherViewModel: ObservableObject {
             launchApplication(application)
         case .window(let window):
             raiseWindow(window)
+        case .webSearch(let search):
+            guard let url = search.url else { return false }
+            openURL(url)
         }
         return true
     }
@@ -92,7 +102,13 @@ final class LauncherViewModel: ObservableObject {
             .map(LauncherCandidate.window)
         let applicationCandidates = ApplicationMatcher.filterApplications(applications, matching: query)
             .map(LauncherCandidate.application)
-        candidates = windowCandidates + applicationCandidates
+        candidates = windowCandidates + applicationCandidates + makeWebSearchCandidates()
         selectedIndex = 0
+    }
+
+    private func makeWebSearchCandidates() -> [LauncherCandidate] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return [] }
+        return webSearchEngines.map { .webSearch(WebSearch(engine: $0, query: trimmedQuery)) }
     }
 }
