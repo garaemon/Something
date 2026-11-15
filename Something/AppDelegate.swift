@@ -6,6 +6,7 @@ import SwiftUI
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     var myHotKey: HotKey?
+    private(set) var settingsWindow: NSWindow?
     var window: NSWindow? // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
@@ -52,6 +53,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         myHotKey?.keyDownHandler = { [weak self] in
             self?.openWindow()
         }
+    }
+
+    /// Shows the settings window, creating it on first use.
+    func openSettings() {
+        let window = settingsWindow ?? makeSettingsWindow()
+        settingsWindow = window
+        NSApplication.shared.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    private func makeSettingsWindow() -> NSWindow {
+        let window = NSWindow(
+            contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.title = SettingsSource.candidateName
+        // Kept alive by `settingsWindow` so that a reopen keeps its position.
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: SettingsView())
+        window.center()
+        return window
     }
 
     func openWindow() {
@@ -141,6 +161,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(cachedRepositories),
+            SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             WebSearchSource(engines: WebSearchEngine.launcherEngines, openURL: { NSWorkspace.shared.open($0) }),
         ])
         launcherViewModel = viewModel
