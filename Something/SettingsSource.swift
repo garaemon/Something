@@ -17,7 +17,7 @@ struct SettingsSource: CandidateSource {
         return [
             LauncherCandidate(
                 id: LauncherCandidateID(sourceID: sourceID, item: Self.candidateName),
-                name: Self.candidateName, icon: .systemSymbol("gearshape"),
+                name: Self.candidateName, icon: .systemSymbol("gearshape"), kind: .settings,
                 actions: [LauncherAction(title: "Open Settings", perform: openSettings)])
         ]
     }

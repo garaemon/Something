@@ -9,6 +9,7 @@ struct LauncherCandidate: Hashable, Identifiable {
     /// The text that the row shows.
     let name: String
     let icon: LauncherCandidateIcon
+    let kind: LauncherCandidateKind
     /// The things the user can do with the candidate. The first action runs
     /// on Return; an empty list makes the candidate impossible to pick.
     let actions: [LauncherAction]
@@ -38,6 +39,39 @@ enum LauncherCandidateIcon: Hashable {
     case runningApplication(pid_t)
     case folder
     case systemSymbol(String)
+}
+
+/// The kind of thing that a row stands for, shown beside its name so that the
+/// user can tell a window of Safari from the Safari application.
+enum LauncherCandidateKind: CaseIterable {
+    case window
+    case application
+    case repository
+    case webSearch
+    case settings
+
+    /// The short text of the badge, such as "Window".
+    var label: String {
+        switch self {
+        case .window: "Window"
+        case .application: "App"
+        case .repository: "Repo"
+        case .webSearch: "Web"
+        case .settings: "Settings"
+        }
+    }
+
+    /// The SF Symbol name of the badge. The settings badge avoids gearshape,
+    /// because the settings row already shows gearshape as its icon.
+    var symbolName: String {
+        switch self {
+        case .window: "macwindow"
+        case .application: "app.badge"
+        case .repository: "arrow.triangle.branch"
+        case .webSearch: "globe"
+        case .settings: "slider.horizontal.3"
+        }
+    }
 }
 
 // TODO(garaemon): Let the user pick a non-default action and show `title` in
