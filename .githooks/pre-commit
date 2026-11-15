@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+# SwiftLint reads the working tree, so a commit of only some hunks is linted
+# with its unstaged changes too.
+staged_swift_files=$(git diff --cached --name-only --diff-filter=ACMR -- 'Something/*.swift')
+if [[ -z "$staged_swift_files" ]]; then
+  exit 0
+fi
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "pre-commit: mise is not installed; see https://mise.jdx.dev" >&2
+  exit 1
+fi
+
+mise run lint

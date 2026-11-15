@@ -212,6 +212,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
         let viewModel = LauncherViewModel(sources: [
+            // The result comes first, as in Raycast: an expression rarely
+            // matches a window or an application, and Return copies it.
+            CalculatorSource(copyText: Self.copyTextToPasteboard),
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
@@ -281,6 +284,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 targetViewModel.replaceSource(Self.makeWindowSource(windows))
             }
         }
+    }
+
+    private static func copyTextToPasteboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     private static func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
