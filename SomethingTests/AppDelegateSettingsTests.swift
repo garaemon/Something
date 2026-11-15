@@ -65,6 +65,27 @@ final class AppDelegateSettingsTests: XCTestCase {
         XCTAssertTrue(appDelegate.settingsWindow === firstWindow)
     }
 
+    // The mascot preview keeps rendering while its view lives, so a closed
+    // window must not keep it.
+    func test_should_release_settings_content_when_closed() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.openSettings()
+
+        appDelegate.settingsWindow?.close()
+
+        XCTAssertNil(appDelegate.settingsWindow?.contentView)
+    }
+
+    func test_should_show_settings_content_when_reopened_after_close() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.openSettings()
+        appDelegate.settingsWindow?.close()
+
+        appDelegate.openSettings()
+
+        XCTAssertNotNil(appDelegate.settingsWindow?.contentView)
+    }
+
     func test_should_list_settings_in_launcher() throws {
         let appDelegate = makeAppDelegate()
         appDelegate.openWindow()

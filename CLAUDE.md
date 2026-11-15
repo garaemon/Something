@@ -67,8 +67,8 @@ mise run build
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus, and reports resizes so that AppDelegate can reposition the mascot panel.
 - **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, then the git repositories under the configured folder (`~/ghq` by default), and narrows the list on each keystroke. A non-empty query also lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a repository opens its directory in Finder; picking a web search opens it in the default browser. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher. Lists the candidates of its sources in order, swaps in a rescanned source by its identifier, and runs the default action of the picked candidate.
-- **LauncherCandidate.swift**: One launcher row: identifier, name, icon, and a list of actions. The first action is the default one. Equality compares identifiers only.
-- **CandidateSource.swift**: The `CandidateSource` protocol, in the style of anything.el sources. A source produces the candidates of one kind for a query. A new kind of candidate adds a source instead of touching every `switch`.
+- **LauncherCandidate.swift**: One launcher row: identifier, name, icon, kind, and a list of actions. The first action is the default one. Equality compares identifiers only. The kind (Window, App, Repo, Web, Settings) is a badge at the right end of the row, so that a window of an application stands apart from the application itself.
+- **CandidateSource.swift**: The `CandidateSource` protocol, in the style of anything.el sources. A source produces the candidates of one kind for a query. A new kind of candidate adds a source, plus a case of `LauncherCandidateKind` with its badge label and symbol.
 - **ApplicationSource.swift**, **WindowSource.swift**, **RepositorySource.swift**, **WebSearchSource.swift**: The sources of applications, windows, ghq repositories, and web searches.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first. The generic `filterItems` narrows any candidate by a name closure, such as windows by app name and title.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
@@ -87,13 +87,13 @@ mise run build
 - **MascotAnimator.swift**: Steps the simulation with a fixed-step accumulator and maps it to a `MascotFrame` (pose, wheel roll, screen text). No SceneKit, so it is testable.
 - **MascotModel.swift**: The robot's parts as `Codable` data, with the prototype robot as the default, so that skins can later be loaded from a file. `recolored(headColor:bodyColor:)` repaints the skin colors.
 - **MascotToon.swift**: Toon-shading and outline shader modifiers with their tunable numbers in one place.
-- **MascotSceneBuilder.swift**: Builds the SceneKit nodes from `MascotModel` with toon materials, inverted-hull outlines, a ground shadow for the side placements, and the camera, which is aimed so that the ground line lands on the placement's `groundLineFraction` of the view height.
+- **MascotSceneBuilder.swift**: Builds the SceneKit nodes from `MascotModel` with toon materials, inverted-hull outlines, in-place recoloring of a built rig, a ground shadow for the side placements, and the camera, which is aimed so that the ground line lands on the placement's `groundLineFraction` of the view height.
 - **MascotPanelLayout.swift**: `MascotPlacement` (top, left, right) and the pure geometry of the mascot panel (220x220 pt; on the launcher's top edge, or beside it with a 30 pt overlap and the ground line level with the launcher's bottom edge). Also picks the placements that fit the screen, and the camera pitch that matches the placement.
 - **MascotPanel.swift**: Borderless, transparent, click-through `NSPanel` that never becomes key or main, with an `NSHostingView` of `MascotOverlayView`.
 - **MascotOverlayView.swift**: Observes `LauncherViewModel`, derives the mascot state, and owns the entrance timer.
-- **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
+- **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, which builds the shapes once and repaints only the colors when `model` changes, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
 - **AppSettings.swift**: User preferences (hot key, repositories folder, mascot head and body colors), saved to an injectable `UserDefaults` on every change.
-- **SettingsView.swift**: The settings window content: hot key recorder, repositories folder picker, mascot color pickers, and Restore Defaults.
+- **SettingsView.swift**: The settings window content: hot key recorder, repositories folder picker, a live mascot preview, mascot color pickers, and Restore Defaults.
 - **HotKeyRecorderView.swift**: Button that records the next key press as the hot key through a local key monitor. Esc cancels.
 - **HotKeyRecording.swift**: Turns a key press into a `KeyCombo`, and rejects a press without Command, Option, or Control.
 - **SettingsSource.swift**: Launcher source that lists "Something Settings" for queries such as "settings" or "pref", and opens the settings window.
@@ -102,7 +102,7 @@ mise run build
 
 - **Background Service Pattern**: App runs as accessory (.accessory activation policy) without Dock presence
 - **Global Hotkey Activation**: Uses HotKey library for the hot key from `AppSettings` (Cmd+Shift+X by default). AppDelegate registers the hot key again when the setting changes, and pauses it while the settings window records a new one.
-- **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open.
+- **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open; the preview in the settings window repaints at once.
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open. The mascot panel is a child window of the launcher, created and closed with it. AppDelegate picks its placement at random on each open, among those that fit the screen.
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
