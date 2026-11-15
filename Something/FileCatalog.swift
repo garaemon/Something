@@ -19,9 +19,8 @@ struct FileCatalog {
     /// and lists a package, such as a Keynote document, as one file. Returns
     /// no files for a missing folder. Lists a file under two of the folders,
     /// such as a folder and its subfolder, once, under the earlier folder.
-    /// Stops a folder at
-    /// `maximumFileCountPerFolder` files in directory order, so a folder past
-    /// that count can lose recent files.
+    /// Stops a folder at `maximumFileCountPerFolder` files in directory order,
+    /// so a folder past that count can lose recent files.
     static func scanFiles(
         in folders: [URL], maximumFileCountPerFolder: Int = defaultMaximumFileCountPerFolder
     ) -> [LocalFile] {
