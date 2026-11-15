@@ -1,7 +1,8 @@
 import AppKit
 import SceneKit
 
-/// The nodes that the animation moves, found again by group after building.
+/// The nodes that the animation moves, found again by group after building,
+/// and the part materials that a color change repaints in place.
 struct MascotRig {
     let scene: SCNScene
     let cameraNode: SCNNode
@@ -85,6 +86,7 @@ enum MascotSceneBuilder {
     /// The settings preview calls it on every picker change, where rebuilding
     /// the scene would restart the animation.
     static func applyColors(of model: MascotModel, to rig: MascotRig) {
+        assert(model.parts.count == rig.partMaterials.count, "model and rig have different parts")
         for (part, material) in zip(model.parts, rig.partMaterials) {
             material.diffuse.contents = color(hex: part.color)
         }
@@ -115,6 +117,14 @@ enum MascotSceneBuilder {
         case .z: node.eulerAngles.x = CGFloat.pi / 2
         case .y: break
         }
+    }
+
+    /// Formats `color` as sRGB "#RRGGBB", or returns nil for a color that has
+    /// no sRGB form, such as a pattern color.
+    static func hex(of color: NSColor) -> String? {
+        guard let srgbColor = color.usingColorSpace(.sRGB) else { return nil }
+        return MascotModel.hex(
+            red: srgbColor.redComponent, green: srgbColor.greenComponent, blue: srgbColor.blueComponent)
     }
 
     private static func color(hex: String) -> NSColor {

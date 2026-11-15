@@ -91,7 +91,7 @@ mise run build
 - **MascotPanelLayout.swift**: `MascotPlacement` (top, left, right) and the pure geometry of the mascot panel (220x220 pt; on the launcher's top edge, or beside it with a 30 pt overlap and the ground line level with the launcher's bottom edge). Also picks the placements that fit the screen, and the camera pitch that matches the placement.
 - **MascotPanel.swift**: Borderless, transparent, click-through `NSPanel` that never becomes key or main, with an `NSHostingView` of `MascotOverlayView`.
 - **MascotOverlayView.swift**: Observes `LauncherViewModel`, derives the mascot state, and owns the entrance timer.
-- **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
+- **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, which builds the shapes once and repaints only the colors when `model` changes, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
 - **AppSettings.swift**: User preferences (hot key, mascot head and body colors), saved to an injectable `UserDefaults` on every change.
 - **SettingsView.swift**: The settings window content: hot key recorder, a live mascot preview, mascot color pickers, and Restore Defaults.
 - **HotKeyRecorderView.swift**: Button that records the next key press as the hot key through a local key monitor. Esc cancels.

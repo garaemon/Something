@@ -41,8 +41,10 @@ struct MascotView: NSViewRepresentable {
 }
 
 /// Steps the animator and applies its frame to the nodes. SceneKit calls the
-/// delegate on its render thread, so everything here besides the mailbox is
-/// touched from that thread only after setup.
+/// delegate on its render thread. After setup, only that thread touches the
+/// pose and the screen texture. The main thread touches only the mailbox and,
+/// through `updateColors(of:)`, the part colors, which SceneKit lets any
+/// thread change.
 final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Sendable {
     let mailbox = MascotMailbox()
     let rig: MascotRig
@@ -63,7 +65,8 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
 
     private let textColor: (red: Double, green: Double, blue: Double)
 
-    /// Called on the main thread by SwiftUI updates only.
+    /// Repaints the parts when the colors of `model` differ from the last ones.
+    /// Call it on the main thread only, because `paintedModel` has no lock.
     func updateColors(of model: MascotModel) {
         guard model != paintedModel else { return }
         paintedModel = model

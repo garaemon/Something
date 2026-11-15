@@ -6,15 +6,17 @@ import XCTest
 
 final class MascotSceneBuilderTests: XCTestCase {
     func test_should_paint_head_material_with_new_head_color_after_recolor() throws {
+        let newHeadColor = "#3366CC"
         let rig = MascotSceneBuilder.build(.default)
+        let headIndex = try XCTUnwrap(
+            MascotModel.default.parts.firstIndex { $0.color == MascotModel.defaultHeadColor })
         let recoloredModel = MascotModel.default.recolored(
-            headColor: "#3366CC", bodyColor: MascotModel.defaultBodyColor)
+            headColor: newHeadColor, bodyColor: MascotModel.defaultBodyColor)
 
         MascotSceneBuilder.applyColors(of: recoloredModel, to: rig)
 
-        let headIndex = try XCTUnwrap(recoloredModel.parts.firstIndex { $0.color == "#3366CC" })
         let headColor = try XCTUnwrap(rig.partMaterials[headIndex].diffuse.contents as? NSColor)
-        XCTAssertEqual(MascotSceneBuilderTests.hex(of: headColor), "#3366CC")
+        XCTAssertEqual(MascotSceneBuilder.hex(of: headColor), newHeadColor)
     }
 
     func test_should_create_one_material_per_part() {
@@ -23,9 +25,10 @@ final class MascotSceneBuilderTests: XCTestCase {
         XCTAssertEqual(rig.partMaterials.count, MascotModel.default.parts.count)
     }
 
-    private static func hex(of color: NSColor) -> String? {
-        guard let srgbColor = color.usingColorSpace(.sRGB) else { return nil }
-        return MascotModel.hex(
-            red: srgbColor.redComponent, green: srgbColor.greenComponent, blue: srgbColor.blueComponent)
+    func test_should_format_display_p3_color_as_srgb_hex() throws {
+        let srgbColor = NSColor(srgbRed: 0.2, green: 0.4, blue: 0.8, alpha: 1)
+        let displayP3Color = try XCTUnwrap(srgbColor.usingColorSpace(.displayP3))
+
+        XCTAssertEqual(MascotSceneBuilder.hex(of: displayP3Color), "#3366CC")
     }
 }
