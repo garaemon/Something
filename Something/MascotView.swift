@@ -9,7 +9,8 @@ struct MascotView: NSViewRepresentable {
     let state: MascotState
     let query: String
     let placement: MascotPlacement
-    /// Read once, when the scene is built.
+    /// The shapes are read once, when the scene is built. Later changes repaint
+    /// the colors only.
     let model: MascotModel
 
     func makeCoordinator() -> MascotRenderer {
@@ -35,6 +36,7 @@ struct MascotView: NSViewRepresentable {
 
     func updateNSView(_ view: SCNView, context: Context) {
         context.coordinator.mailbox.send(state: state, query: query)
+        context.coordinator.updateColors(of: model)
     }
 }
 
@@ -48,9 +50,11 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     private let placement: MascotPlacement
     private var lastTime: TimeInterval?
     private var shownText: String?
+    private var paintedModel: MascotModel
 
     init(model: MascotModel, placement: MascotPlacement) {
         self.placement = placement
+        paintedModel = model
         animator = MascotAnimator(placement: placement)
         rig = MascotSceneBuilder.build(model, placement: placement)
         textColor = MascotModel.rgb(hex: model.screen.textColor) ?? (red: 1, green: 1, blue: 1)
@@ -58,6 +62,13 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     }
 
     private let textColor: (red: Double, green: Double, blue: Double)
+
+    /// Called on the main thread by SwiftUI updates only.
+    func updateColors(of model: MascotModel) {
+        guard model != paintedModel else { return }
+        paintedModel = model
+        MascotSceneBuilder.applyColors(of: model, to: rig)
+    }
 
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
         let gap = lastTime.map { time - $0 } ?? 0

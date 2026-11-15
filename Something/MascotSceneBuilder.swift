@@ -9,6 +9,8 @@ struct MascotRig {
     let groups: [MascotModel.Group: SCNNode]
     let groupBasePositions: [MascotModel.Group: SCNVector3]
     let screenMaterial: SCNMaterial
+    /// One toon material per `MascotModel.parts` entry, in the same order.
+    let partMaterials: [SCNMaterial]
 }
 
 /// Turns a `MascotModel` into SceneKit nodes with toon shading and outlines.
@@ -48,10 +50,11 @@ enum MascotSceneBuilder {
         }
 
         let outlineMaterial = makeOutlineMaterial()
-        for part in model.parts {
+        let partMaterials = model.parts.map { makeToonMaterial(hex: $0.color) }
+        for (part, material) in zip(model.parts, partMaterials) {
             guard let group = groups[part.group] else { continue }
             let node = SCNNode(geometry: makeGeometry(part.shape))
-            node.geometry?.firstMaterial = makeToonMaterial(hex: part.color)
+            node.geometry?.firstMaterial = material
             node.position = vector(part.position)
             applyAxis(part.shape, to: node)
 
@@ -74,7 +77,17 @@ enum MascotSceneBuilder {
         scene.rootNode.addChildNode(cameraNode)
         return MascotRig(
             scene: scene, cameraNode: cameraNode, root: root, groups: groups,
-            groupBasePositions: basePositions, screenMaterial: screenMaterial)
+            groupBasePositions: basePositions, screenMaterial: screenMaterial, partMaterials: partMaterials)
+    }
+
+    /// Repaints the parts of an already built rig with the colors of `model`,
+    /// which must have the same parts as the model the rig was built from.
+    /// The settings preview calls it on every picker change, where rebuilding
+    /// the scene would restart the animation.
+    static func applyColors(of model: MascotModel, to rig: MascotRig) {
+        for (part, material) in zip(model.parts, rig.partMaterials) {
+            material.diffuse.contents = color(hex: part.color)
+        }
     }
 
     private static func vector(_ v: MascotModel.Vector) -> SCNVector3 {

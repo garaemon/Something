@@ -5,6 +5,8 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
+    private static let previewSize: CGFloat = 160
+
     var body: some View {
         Form {
             Section("Launcher") {
@@ -13,6 +15,14 @@ struct SettingsView: View {
                 }
             }
             Section {
+                HStack {
+                    Spacer()
+                    // Idle keeps the robot standing still at the center instead
+                    // of replaying the entrance.
+                    MascotView(state: .idle, query: "", placement: .top, model: settings.mascotModel)
+                        .frame(width: Self.previewSize, height: Self.previewSize)
+                    Spacer()
+                }
                 ColorPicker("Head color", selection: makeColorBinding(\.mascotHeadColor), supportsOpacity: false)
                 ColorPicker("Body color", selection: makeColorBinding(\.mascotBodyColor), supportsOpacity: false)
             } header: {
