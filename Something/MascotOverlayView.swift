@@ -14,9 +14,8 @@ struct MascotOverlayView: View {
         // look like it stands beside or on the launcher.
         MascotView(state: mascotState, query: viewModel.query, placement: placement, model: model)
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + MascotChoreography.appearDuration) {
-                    justOpened = false
-                }
+                let entranceEnd = DispatchTime.now() + MascotChoreography.appearDuration
+                DispatchQueue.main.asyncAfter(deadline: entranceEnd) { justOpened = false }
             }
             .onChange(of: viewModel.query) { justOpened = false }
     }

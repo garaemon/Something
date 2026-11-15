@@ -67,7 +67,8 @@ struct FileCatalog {
         let folderPathPrefix = folder.resolvingSymlinksInPath().standardizedFileURL.path + "/"
         var collectedFiles: [DatedFile] = []
         for case let itemURL as URL in enumerator {
-            if enumerator.level >= maximumDepth || skippedDirectoryNames.contains(itemURL.lastPathComponent) {
+            let isTooDeep = enumerator.level >= maximumDepth
+            if isTooDeep || skippedDirectoryNames.contains(itemURL.lastPathComponent) {
                 enumerator.skipDescendants()
             }
             guard let datedFile = makeDatedFile(itemURL, folder: folder, folderPathPrefix: folderPathPrefix)

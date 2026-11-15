@@ -285,7 +285,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+}
 
+// Sources and actions of launcher candidates. They keep no state of the delegate.
+extension AppDelegate {
     private static func copyTextToPasteboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)

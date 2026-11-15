@@ -89,7 +89,9 @@ struct SettingsView: View {
         openPanel.canChooseFiles = false
         openPanel.allowsMultipleSelection = true
         guard openPanel.runModal() == .OK else { return }
-        openPanel.urls.forEach { settings.addFileFolder($0.path) }
+        for folderURL in openPanel.urls {
+            settings.addFileFolder(folderURL.path)
+        }
     }
 
     private func chooseRepositoryRoot() {

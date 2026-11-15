@@ -35,20 +35,8 @@ enum MascotSceneBuilder {
         let root = SCNNode()
         scene.rootNode.addChildNode(root)
 
-        var groups: [MascotModel.Group: SCNNode] = [:]
-        var basePositions: [MascotModel.Group: SCNVector3] = [:]
-        for spec in model.groups {
-            let node = SCNNode()
-            node.position = vector(spec.position)
-            basePositions[spec.group] = node.position
-            groups[spec.group] = node
-        }
-        // Attach after all exist, so that the order of specs does not matter.
-        for spec in model.groups {
-            guard let node = groups[spec.group] else { continue }
-            let parent = spec.parent.flatMap { groups[$0] } ?? root
-            parent.addChildNode(node)
-        }
+        let groups = makeGroupNodes(model.groups, under: root)
+        let basePositions = groups.mapValues(\.position)
 
         let outlineMaterial = makeOutlineMaterial()
         let partMaterials = model.parts.map { makeToonMaterial(hex: $0.color) }
@@ -90,6 +78,24 @@ enum MascotSceneBuilder {
         for (part, material) in zip(model.parts, rig.partMaterials) {
             material.diffuse.contents = color(hex: part.color)
         }
+    }
+
+    private static func makeGroupNodes(
+        _ specs: [MascotModel.GroupSpec], under root: SCNNode
+    ) -> [MascotModel.Group: SCNNode] {
+        var groups: [MascotModel.Group: SCNNode] = [:]
+        for spec in specs {
+            let node = SCNNode()
+            node.position = vector(spec.position)
+            groups[spec.group] = node
+        }
+        // Attach after all exist, so that the order of specs does not matter.
+        for spec in specs {
+            guard let node = groups[spec.group] else { continue }
+            let parent = spec.parent.flatMap { groups[$0] } ?? root
+            parent.addChildNode(node)
+        }
+        return groups
     }
 
     private static func vector(_ v: MascotModel.Vector) -> SCNVector3 {
