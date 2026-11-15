@@ -119,6 +119,8 @@ private struct CandidateRow: View {
             return ApplicationIconCache.shared.loadIcon(forProcess: processIdentifier)
         case .folder:
             return Self.folderIcon
+        case .fileType(let fileExtension):
+            return ApplicationIconCache.shared.loadIcon(forFileExtension: fileExtension)
         case .systemSymbol(let symbolName):
             return NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) ?? NSImage()
         }

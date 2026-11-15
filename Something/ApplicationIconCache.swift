@@ -8,6 +8,7 @@ final class ApplicationIconCache {
 
     private let iconsByPath = NSCache<NSString, NSImage>()
     private let iconsByProcessIdentifier = NSCache<NSNumber, NSImage>()
+    private let iconsByFileExtension = NSCache<NSString, NSImage>()
 
     func loadIcon(for application: LaunchableApplication) -> NSImage {
         let path = application.url.path as NSString
@@ -34,5 +35,18 @@ final class ApplicationIconCache {
         }
         iconsByProcessIdentifier.setObject(runningIcon, forKey: key)
         return runningIcon
+    }
+
+    /// Returns the icon of files with `fileExtension`, such as "pdf", or the
+    /// generic document icon for an empty or unknown extension.
+    func loadIcon(forFileExtension fileExtension: String) -> NSImage {
+        let key = fileExtension as NSString
+        if let cachedIcon = iconsByFileExtension.object(forKey: key) {
+            return cachedIcon
+        }
+        let fileType = UTType(filenameExtension: fileExtension) ?? .data
+        let icon = NSWorkspace.shared.icon(for: fileType)
+        iconsByFileExtension.setObject(icon, forKey: key)
+        return icon
     }
 }

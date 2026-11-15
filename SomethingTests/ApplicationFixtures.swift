@@ -22,3 +22,9 @@ func makeWindow(_ applicationName: String, _ title: String) -> SwitchableWindow 
         applicationName: applicationName, title: title, processIdentifier: getpid(),
         element: AXUIElementCreateApplication(getpid()))
 }
+
+/// Returns a file named `name` under a fake folder that tests never touch on
+/// disk.
+func makeFile(_ name: String) -> LocalFile {
+    LocalFile(name: name, url: URL(fileURLWithPath: "/files/\(name)"))
+}

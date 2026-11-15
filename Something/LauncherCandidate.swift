@@ -38,6 +38,9 @@ enum LauncherCandidateIcon: Hashable {
     case applicationBundle(LaunchableApplication)
     case runningApplication(pid_t)
     case folder
+    /// The icon of a file type, such as "pdf". An empty extension stands for
+    /// a generic document.
+    case fileType(extension: String)
     case systemSymbol(String)
 }
 
@@ -47,6 +50,7 @@ enum LauncherCandidateKind: CaseIterable {
     case window
     case application
     case repository
+    case file
     case webSearch
     case settings
 
@@ -56,6 +60,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .window: "Window"
         case .application: "App"
         case .repository: "Repo"
+        case .file: "File"
         case .webSearch: "Web"
         case .settings: "Settings"
         }
@@ -68,6 +73,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .window: "macwindow"
         case .application: "app.badge"
         case .repository: "arrow.triangle.branch"
+        case .file: "doc"
         case .webSearch: "globe"
         case .settings: "slider.horizontal.3"
         }
