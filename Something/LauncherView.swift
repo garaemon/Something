@@ -98,6 +98,8 @@ private struct CandidateRow: View {
                 .frame(width: 20, height: 20)
             Text(candidate.name)
             Spacer()
+            KindBadge(kind: candidate.kind)
+                .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.secondary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
@@ -116,5 +118,20 @@ private struct CandidateRow: View {
         case .systemSymbol(let symbolName):
             return NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) ?? NSImage()
         }
+    }
+}
+
+// A fixed width lines the badges up in a column, so that the eye can scan
+// the kinds down the right edge of the list.
+private struct KindBadge: View {
+    private static let width: CGFloat = 84
+
+    let kind: LauncherCandidateKind
+
+    var body: some View {
+        Label(kind.label, systemImage: kind.symbolName)
+            .labelStyle(.titleAndIcon)
+            .font(.caption)
+            .frame(width: Self.width, alignment: .leading)
     }
 }

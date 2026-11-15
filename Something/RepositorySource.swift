@@ -14,7 +14,7 @@ struct RepositorySource: CandidateSource {
     private func makeCandidate(for repository: GhqRepository) -> LauncherCandidate {
         LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: repository),
-            name: repository.name, icon: .folder,
+            name: repository.name, icon: .folder, kind: .repository,
             actions: [LauncherAction(title: "Open in Finder") { openRepository(repository) }])
     }
 }

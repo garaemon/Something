@@ -20,7 +20,7 @@ struct WebSearchSource: CandidateSource {
         let actions = search.url.map { url in [LauncherAction(title: "Open in Browser") { openURL(url) }] }
         return LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: search),
-            name: search.title, icon: .systemSymbol(search.engine.symbolName),
+            name: search.title, icon: .systemSymbol(search.engine.symbolName), kind: .webSearch,
             actions: actions ?? [])
     }
 }
