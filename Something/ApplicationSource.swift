@@ -2,8 +2,7 @@ import Foundation
 
 /// Lists application bundles, narrowed by name, and launches the picked one.
 struct ApplicationSource: CandidateSource {
-    static let sourceID = CandidateSourceID("applications")
-
+    let sourceID = CandidateSourceID("applications")
     let applications: [LaunchableApplication]
     let launchApplication: (LaunchableApplication) -> Void
 
@@ -14,8 +13,6 @@ struct ApplicationSource: CandidateSource {
         self.applications = applications
         self.launchApplication = launchApplication
     }
-
-    var sourceID: CandidateSourceID { Self.sourceID }
 
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         ApplicationMatcher.filterApplications(applications, matching: query).map(makeCandidate)

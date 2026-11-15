@@ -3,8 +3,7 @@ import Foundation
 /// Lists ghq repositories, narrowed by their path relative to the ghq root,
 /// and opens the picked one.
 struct RepositorySource: CandidateSource {
-    static let sourceID = CandidateSourceID("repositories")
-
+    let sourceID = CandidateSourceID("repositories")
     let repositories: [GhqRepository]
     let openRepository: (GhqRepository) -> Void
 
@@ -12,8 +11,6 @@ struct RepositorySource: CandidateSource {
         self.repositories = repositories
         self.openRepository = openRepository
     }
-
-    var sourceID: CandidateSourceID { Self.sourceID }
 
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         ApplicationMatcher.filterItems(repositories, matching: query, name: \.name).map(makeCandidate)

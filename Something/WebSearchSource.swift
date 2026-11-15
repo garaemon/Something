@@ -3,8 +3,7 @@ import Foundation
 /// Lists one search per engine for any non-empty query, without narrowing,
 /// and opens the picked search in the browser.
 struct WebSearchSource: CandidateSource {
-    static let sourceID = CandidateSourceID("webSearches")
-
+    let sourceID = CandidateSourceID("webSearches")
     let engines: [WebSearchEngine]
     let openURL: (URL) -> Void
 
@@ -12,8 +11,6 @@ struct WebSearchSource: CandidateSource {
         self.engines = engines
         self.openURL = openURL
     }
-
-    var sourceID: CandidateSourceID { Self.sourceID }
 
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
