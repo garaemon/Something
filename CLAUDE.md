@@ -84,10 +84,10 @@ mise run build
 - **GhqRepository.swift**: Path relative to the repositories folder, such as `github.com/owner/name`, and URL of one repository that the launcher lists.
 - **RepositoryCatalog.swift**: Scans a root folder for directories that hold a `.git` entry, up to six levels deep and through symbolic links, without running ghq or a shell. A custom `ghq.root` is not read. An injectable `loadRepositories` closure, which takes the root, keeps tests off the real tree.
 - **LocalFile.swift**: Name (the folder's name plus the path inside it, such as `Downloads/reports/q3.pdf`) and URL of one file that the launcher lists.
-- **FileCatalog.swift**: Scans the file folders for regular files and packages, most recently modified first. Skips hidden files, stops four levels deep, and keeps at most 20,000 files per folder. An injectable `loadFiles` closure keeps tests off the real folders.
-- **FileListLoader.swift**: Caches the last file scan and rescans the file folders on a background queue, one scan at a time. AppDelegate owns one.
+- **FileCatalog.swift**: Scans the file folders for regular files and packages, most recently modified first. Skips hidden files and build output folders such as `node_modules`, stops four levels deep, and keeps at most 20,000 files per folder. An injectable `loadFiles` closure keeps tests off the real folders.
+- **BackgroundListLoader.swift**: Caches the last load of a list keyed by a setting, such as the repositories folder or the file folders, and loads it again on its own background queue, one load at a time. A load whose key changed meanwhile is dropped and the new key is loaded. AppDelegate owns one for repositories and one for files.
 - **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
-- **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
+- **ApplicationIconCache.swift**: Caches the icons of applications and file types so that list rows do not reload them on every render.
 - **BalanceSimulation.swift**: Pure two-wheeled inverted pendulum with pole-placed state feedback, a small constant disturbance, and a fixed 1/240 s step. The launcher state only sends it a target position and kicks.
 - **MascotState.swift**: Mascot state (`appearing`, `idle`, `typing`, `noMatch`) derived from the query, the candidate count, and whether the window just opened, plus the screen text for each state.
 - **MascotChoreography.swift**: Per-state target position, lift, yaw, head, and hand motion from the approved three.js prototype. The entrance rises from behind the launcher's top edge, or drops in from above beside it, and lands with a kick.
@@ -115,7 +115,7 @@ mise run build
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open. The mascot panel is a child window of the launcher, created and closed with it. AppDelegate picks its placement at random on each open, among those that fit the screen.
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
 - **Cached Repository List**: AppDelegate shows the previous repository scan immediately and rescans the repositories folder from `AppSettings` on a serial background queue at launch, on every open, and when the folder changes. An open skips the refresh while a previous one is still running. A scan of a folder that changed meanwhile is dropped and the new folder is scanned.
-- **Cached File List**: Like the repository list, through `FileListLoader`: the previous scan shows immediately, and the file folders from `AppSettings` are rescanned at launch, on every open, and when the folders change. `~/Documents` and `~/Downloads` are protected folders, so macOS asks for access on the first scan.
+- **Cached File List**: Like the repository list, through `BackgroundListLoader`: the previous scan shows immediately, and the file folders from `AppSettings` are rescanned at launch, on every open, and when the folders change. `~/Documents` and `~/Downloads` are protected folders, so macOS asks for access on the first scan.
 - **Fresh Window List**: AppDelegate lists windows on its own background queue on every open without caching. The Accessibility API returns only windows on the current Space.
 
 ### Dependencies
