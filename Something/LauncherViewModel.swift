@@ -4,7 +4,12 @@ import Foundation
 @MainActor
 final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
-        didSet { updateCandidates() }
+        didSet {
+            // SwiftUI's TextField writes the unchanged text back, for example
+            // on Return, and rebuilding the candidates resets the highlight.
+            guard query != oldValue else { return }
+            updateCandidates()
+        }
     }
     @Published private(set) var candidates: [LaunchableApplication] = []
     @Published private(set) var selectedIndex = 0
