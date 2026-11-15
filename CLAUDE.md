@@ -37,7 +37,12 @@ Run the unit tests (`SomethingTests`):
 mise run test
 ```
 
-Lint the app sources with [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail):
+Format the app sources with swift-format (`.swift-format`):
+```bash
+mise run format
+```
+
+Lint the app sources with swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail):
 ```bash
 mise run lint
 ```
@@ -48,6 +53,8 @@ mise run install-hooks
 ```
 
 The hook lives in `.githooks/pre-commit`. `git commit --no-verify` skips it.
+
+The code follows the Google Swift Style Guide with 4-space indentation. Read [STYLE_GUIDE.md](STYLE_GUIDE.md) before writing Swift code, and run `mise run format` after editing it.
 
 Build and launch the app:
 ```bash
