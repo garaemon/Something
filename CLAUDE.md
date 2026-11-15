@@ -65,14 +65,15 @@ mise run build
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus.
-- **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, and narrows the list on each keystroke. Picking a window brings it to the front; picking an application launches it. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
+- **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, and narrows the list on each keystroke. A non-empty query also lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a web search opens it in the default browser. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher.
-- **LauncherCandidate.swift**: One launcher row, either an application or a window.
+- **LauncherCandidate.swift**: One launcher row: an application, a window, or a web search.
 - **ApplicationMatcher.swift**: Case-insensitive AND match of whitespace-separated patterns. Prefix matches of the first pattern rank first. The generic `filterItems` narrows any candidate by a name closure, such as windows by app name and title.
 - **ApplicationCatalog.swift**: Scans `/Applications`, `/System/Applications`, and `~/Applications` for `.app` bundles, and adds Finder.
 - **LaunchableApplication.swift**: Name and URL of one application bundle that the launcher lists.
 - **SwitchableWindow.swift**: Application name, title, and Accessibility element of one window that the launcher lists.
 - **WindowCatalog.swift**: Lists standard windows of running regular applications through the Accessibility API, and asks for the Accessibility permission on first use.
+- **WebSearch.swift**: Search engines as data (`WebSearchEngine`: label, SF Symbol, base URL, fixed parameters) and the percent-encoded results URL for one query (`WebSearch`).
 - **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.
 - **PreferenceView.swift**: Preferences interface (currently basic placeholder).

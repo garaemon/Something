@@ -90,7 +90,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeLauncherView(in window: NSWindow) -> LauncherView {
         let viewModel = LauncherViewModel(
             applications: cachedApplications, launchApplication: launchApplication,
-            raiseWindow: WindowRaiser.raiseWindow)
+            raiseWindow: WindowRaiser.raiseWindow, webSearchEngines: WebSearchEngine.launcherEngines,
+            openURL: { NSWorkspace.shared.open($0) })
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
     }
