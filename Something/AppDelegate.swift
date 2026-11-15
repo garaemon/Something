@@ -119,15 +119,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // ARC owns the window through `window`. Letting AppKit also release it on
         // close over-releases it and crashes when the autorelease pool drains.
         newWindow.isReleasedWhenClosed = false
-        
+
         // Add this line to disable window restoration for this window
-        newWindow.restorationClass = nil 
+        newWindow.restorationClass = nil
 
         // Create an instance of the new window controller
         let newWindowController = SomethingWindowController()
         // Set the delegate of the new window to the new controller instance
         newWindow.delegate = newWindowController
-        
+
         // Set the closure for when the window should be released
         newWindowController.onWindowRelease = { [weak self] in
             self?.closeMascotPanel()

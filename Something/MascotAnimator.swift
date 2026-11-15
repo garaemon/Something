@@ -59,8 +59,7 @@ struct MascotAnimator {
             let previousTime = stateTime
             stateTime += dt
             let landingTime = MascotChoreography.landingTime(for: placement)
-            if state == .appearing && previousTime < landingTime && stateTime >= landingTime
-            {
+            if state == .appearing && previousTime < landingTime && stateTime >= landingTime {
                 // The landing jolt makes the robot wobble instead of landing dead still.
                 pendingKick += MascotChoreography.landingKick
             }

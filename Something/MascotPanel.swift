@@ -27,7 +27,8 @@ final class MascotPanel: NSPanel {
         panel.hasShadow = false
         panel.ignoresMouseEvents = true
 
-        let hostingView = NSHostingView(rootView: MascotOverlayView(viewModel: viewModel, placement: placement, model: model))
+        let hostingView = NSHostingView(
+            rootView: MascotOverlayView(viewModel: viewModel, placement: placement, model: model))
         // The panel's frame comes from the launcher layout, not from the SwiftUI content.
         hostingView.sizingOptions = []
         panel.contentView = hostingView
