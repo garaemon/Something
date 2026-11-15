@@ -72,8 +72,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
             .store(in: &settingsSubscriptions)
         settings.$repositoryRootPath
-            .dropFirst()
             .removeDuplicates()
+            .dropFirst()
             .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(pendingRootPath: rootPath) }
             .store(in: &settingsSubscriptions)
     }
