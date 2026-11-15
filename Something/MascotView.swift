@@ -8,9 +8,10 @@ import SwiftUI
 struct MascotView: NSViewRepresentable {
     let state: MascotState
     let query: String
+    let placement: MascotPlacement
 
     func makeCoordinator() -> MascotRenderer {
-        MascotRenderer(model: .default)
+        MascotRenderer(model: .default, placement: placement)
     }
 
     func makeNSView(context: Context) -> SCNView {
@@ -41,12 +42,15 @@ struct MascotView: NSViewRepresentable {
 final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Sendable {
     let mailbox = MascotMailbox()
     let rig: MascotRig
-    private var animator = MascotAnimator()
+    private var animator: MascotAnimator
+    private let placement: MascotPlacement
     private var lastTime: TimeInterval?
     private var shownText: String?
 
-    init(model: MascotModel) {
-        rig = MascotSceneBuilder.build(model)
+    init(model: MascotModel, placement: MascotPlacement) {
+        self.placement = placement
+        animator = MascotAnimator(placement: placement)
+        rig = MascotSceneBuilder.build(model, placement: placement)
         textColor = MascotModel.rgb(hex: model.screen.textColor) ?? (red: 1, green: 1, blue: 1)
         super.init()
     }
@@ -61,10 +65,12 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     }
 
     private func apply(_ frame: MascotFrame) {
+        // The resting yaw faces screen-left, toward the launcher for `.top` and `.right`.
+        // On the left the whole pose is mirrored, which is cheaper than a second resting yaw.
+        let yaw = placement == .left ? -frame.yaw : frame.yaw
         rig.root.position = SCNVector3(
-            CGFloat(sin(frame.yaw) * frame.position), CGFloat(frame.lift),
-            CGFloat(cos(frame.yaw) * frame.position))
-        rig.root.eulerAngles = SCNVector3(0, CGFloat(frame.yaw), 0)
+            CGFloat(sin(yaw) * frame.position), CGFloat(frame.lift), CGFloat(cos(yaw) * frame.position))
+        rig.root.eulerAngles = SCNVector3(0, CGFloat(yaw), 0)
         rig.groups[.tilt]?.eulerAngles = SCNVector3(CGFloat(frame.lean), 0, 0)
         rig.groups[.head]?.eulerAngles = SCNVector3(CGFloat(frame.headPitch), 0, CGFloat(frame.headTilt))
         rig.groups[.wheelLeft]?.eulerAngles = SCNVector3(CGFloat(frame.leftWheelRoll), 0, 0)

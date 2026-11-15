@@ -76,6 +76,14 @@ final class MascotStateTests: XCTestCase {
         XCTAssertEqual(MascotChoreography.entranceLift(2), 0, accuracy: 0.001)
     }
 
+    func test_should_drop_in_from_above_beside_the_launcher() {
+        XCTAssertEqual(MascotChoreography.entranceLift(0, placement: .right), 3.4, accuracy: 0.001)
+        XCTAssertEqual(MascotChoreography.entranceLift(0.45, placement: .left), 0, accuracy: 0.001)
+        XCTAssertEqual(MascotChoreography.entranceLift(1, placement: .left), 0, accuracy: 0.001)
+        XCTAssertEqual(MascotChoreography.landingTime(for: .right), 0.45, accuracy: 0.001)
+        XCTAssertEqual(MascotChoreography.landingTime(for: .top), 0.65, accuracy: 0.001)
+    }
+
     func test_should_lift_the_robot_in_the_first_frames_and_rest_when_the_entrance_is_over() {
         var animator = MascotAnimator()
         let snapshot = MascotSnapshot()

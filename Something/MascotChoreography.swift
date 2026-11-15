@@ -17,15 +17,14 @@ struct MascotPose: Equatable {
 /// Scripts from the approved prototype, one per state.
 enum MascotChoreography {
     static let restingYaw = -0.5
-    /// Fraction of the mascot panel's height between its bottom edge and the robot's
-    /// ground line. The panel layout and the camera both derive from it, so they
-    /// cannot drift apart.
-    static let groundLineFraction = 0.03
     /// The robot starts this far below the ground line, fully hidden behind the window.
     static let hiddenDepth = -2.4
     static let riseDuration = 0.4
     static let overshootHeight = 0.3
     static let landingTime = 0.65
+    /// Beside the launcher the robot drops in from above instead.
+    static let sideDropHeight = 3.4
+    static let sideLandingTime = 0.45
     static let landingKick = 0.8
     static let cursorAppearsAt = 1.0
     /// Time after which the entrance is over and the state may fall back to idle.
@@ -37,11 +36,14 @@ enum MascotChoreography {
     ///   - elapsed: seconds since the state began.
     ///   - sinceInput: seconds since the last query change.
     ///   - inputCount: number of query changes so far, to alternate the hands.
-    static func pose(state: MascotState, elapsed: Double, sinceInput: Double, inputCount: Int) -> MascotPose {
+    static func pose(
+        state: MascotState, elapsed: Double, sinceInput: Double, inputCount: Int,
+        placement: MascotPlacement = .top
+    ) -> MascotPose {
         var pose = MascotPose()
         switch state {
         case .appearing:
-            pose.lift = entranceLift(elapsed)
+            pose.lift = entranceLift(elapsed, placement: placement)
         case .idle:
             break
         case .typing:
@@ -65,7 +67,13 @@ enum MascotChoreography {
 
     /// Rises from behind the window edge past the ground line, then settles back.
     /// The panel's bottom edge hides the robot while it is below the line.
-    static func entranceLift(_ t: Double) -> Double {
+    static func entranceLift(_ t: Double, placement: MascotPlacement = .top) -> Double {
+        if placement != .top {
+            // As if it jumped off the launcher: falls from above onto the ground.
+            guard t < sideLandingTime else { return 0 }
+            let u = t / sideLandingTime
+            return sideDropHeight * (1 - u * u)
+        }
         if t < riseDuration {
             let u = clamp01(t / riseDuration)
             let easeOut = 1 - (1 - u) * (1 - u)
@@ -76,6 +84,10 @@ enum MascotChoreography {
             return overshootHeight * (1 - u * u)
         }
         return 0
+    }
+
+    static func landingTime(for placement: MascotPlacement) -> Double {
+        placement == .top ? landingTime : sideLandingTime
     }
 
     private static func clamp01(_ u: Double) -> Double { min(max(u, 0), 1) }

@@ -9,11 +9,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow? // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
-    // The mascot stands on the launcher's top edge in a window of its own.
+    // The mascot stands on or beside the launcher in a window of its own.
     private(set) var mascotPanel: MascotPanel?
     // Tests replace the catalog to avoid scanning the real application folders.
     var applicationCatalog = ApplicationCatalog.makeDefault()
     var windowCatalog = WindowCatalog.makeDefault()
+    // Tests replace the random pick to get a fixed placement.
+    var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = { $0.randomElement() ?? .top }
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
@@ -95,7 +97,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // for key status; it also cannot become key by itself.
     private func attachMascotPanel(to launcher: NSWindow, controller: SomethingWindowController) {
         guard let viewModel = launcherViewModel else { return }
-        let panel = MascotPanel.make(viewModel: viewModel, launcherFrame: launcher.frame)
+        // Only placements that fit on the screen are offered, so that the robot is not clipped.
+        let candidates = launcher.screen.map {
+            MascotPanelLayout.placements(fittingLauncherFrame: launcher.frame, within: $0.visibleFrame)
+        } ?? MascotPlacement.allCases
+        let panel = MascotPanel.make(
+            viewModel: viewModel, launcherFrame: launcher.frame,
+            placement: chooseMascotPlacement(candidates))
         launcher.addChildWindow(panel, ordered: .above)
         mascotPanel = panel
         controller.onWindowResize = { [weak self, weak launcher] in

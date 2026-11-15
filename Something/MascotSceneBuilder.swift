@@ -15,11 +15,19 @@ struct MascotRig {
 enum MascotSceneBuilder {
     static let cameraPosition = (x: 0.0, y: 2.9, z: 7.6)
     static let verticalFieldOfView = 24.0
+    static let shadowRadius = 1.15
+    static let shadowOpacity = 0.13
 
-    static func build(_ model: MascotModel) -> MascotRig {
+    static func build(_ model: MascotModel, placement: MascotPlacement = .top) -> MascotRig {
         let scene = SCNScene()
         // The window shows through behind the robot.
         scene.background.contents = NSColor.clear
+
+        // The shadow hangs on the scene root, not the robot, so that it stays on the
+        // ground while the robot is in the air.
+        if placement.showsGroundShadow {
+            scene.rootNode.addChildNode(makeShadow())
+        }
 
         let root = SCNNode()
         scene.rootNode.addChildNode(root)
@@ -62,7 +70,7 @@ enum MascotSceneBuilder {
         screenNode.position = vector(model.screen.position)
         groups[model.screen.group]?.addChildNode(screenNode)
 
-        let cameraNode = makeCamera()
+        let cameraNode = makeCamera(placement: placement)
         scene.rootNode.addChildNode(cameraNode)
         return MascotRig(
             scene: scene, cameraNode: cameraNode, root: root, groups: groups,
@@ -122,7 +130,20 @@ enum MascotSceneBuilder {
         return material
     }
 
-    private static func makeCamera() -> SCNNode {
+    private static func makeShadow() -> SCNNode {
+        let disc = SCNCylinder(radius: CGFloat(shadowRadius), height: 0.002)
+        let material = SCNMaterial()
+        material.lightingModel = .constant
+        material.diffuse.contents = NSColor(srgbRed: 0.17, green: 0.16, blue: 0.2, alpha: 1)
+        material.transparency = CGFloat(shadowOpacity)
+        material.writesToDepthBuffer = false
+        disc.firstMaterial = material
+        let node = SCNNode(geometry: disc)
+        node.position.y = 0.001
+        return node
+    }
+
+    private static func makeCamera(placement: MascotPlacement) -> SCNNode {
         let camera = SCNCamera()
         camera.fieldOfView = CGFloat(verticalFieldOfView)
         camera.zNear = 0.1
@@ -131,11 +152,11 @@ enum MascotSceneBuilder {
         node.camera = camera
         node.position = SCNVector3(CGFloat(cameraPosition.x), CGFloat(cameraPosition.y), CGFloat(cameraPosition.z))
         // Looks down -Z by default; a negative turn about X tilts it downward. The aim
-        // puts the ground line on the panel's `groundLineFraction`, where the launcher's
-        // top edge is.
+        // puts the ground line where the placement wants it.
         let pitch = MascotPanelLayout.cameraPitch(
             cameraHeight: cameraPosition.y, cameraDistance: cameraPosition.z,
-            verticalFieldOfViewDegrees: verticalFieldOfView)
+            verticalFieldOfViewDegrees: verticalFieldOfView,
+            placement: placement)
         node.eulerAngles.x = CGFloat(-pitch)
         return node
     }

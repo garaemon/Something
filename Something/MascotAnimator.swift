@@ -36,10 +36,12 @@ struct MascotAnimator {
     private var stateTime = 0.0
     private var sinceInput = 9.0
     private var yaw = MascotChoreography.restingYaw
+    private let placement: MascotPlacement
     // Keystroke kicks are applied once, in the first step after the query changed.
     private var carriedKick = 0.0
 
-    init() {
+    init(placement: MascotPlacement = .top) {
+        self.placement = placement
         // Wobble naturally from the first frame, as the prototype does.
         simulation.settle(seconds: 2)
     }
@@ -56,8 +58,8 @@ struct MascotAnimator {
             approachYaw(pose.yaw, dt: dt)
             let previousTime = stateTime
             stateTime += dt
-            if state == .appearing && previousTime < MascotChoreography.landingTime
-                && stateTime >= MascotChoreography.landingTime
+            let landingTime = MascotChoreography.landingTime(for: placement)
+            if state == .appearing && previousTime < landingTime && stateTime >= landingTime
             {
                 // The landing jolt makes the robot wobble instead of landing dead still.
                 pendingKick += MascotChoreography.landingKick
@@ -93,7 +95,8 @@ struct MascotAnimator {
 
     private func currentPose(_ snapshot: MascotSnapshot) -> MascotPose {
         MascotChoreography.pose(
-            state: state, elapsed: stateTime, sinceInput: sinceInput, inputCount: snapshot.inputCount)
+            state: state, elapsed: stateTime, sinceInput: sinceInput, inputCount: snapshot.inputCount,
+            placement: placement)
     }
 
     private mutating func approachYaw(_ desired: Double, dt: Double) {
