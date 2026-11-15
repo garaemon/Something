@@ -1,0 +1,6 @@
+// Code signing for both targets.
+// Put `DEVELOPMENT_TEAM = <your team ID>` in Configs/Local.xcconfig, which
+// git ignores, so that the Accessibility permission survives rebuilds.
+// Without that file the build is signed ad hoc. CI always builds ad hoc
+// because a fresh checkout has no Local.xcconfig.
+#include? "Local.xcconfig"

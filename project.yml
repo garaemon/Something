@@ -23,6 +23,9 @@ targets:
   Something:
     type: application
     platform: macOS
+    configFiles:
+      Debug: Configs/Signing.xcconfig
+      Release: Configs/Signing.xcconfig
     sources:
       - Something
     dependencies:
@@ -52,6 +55,9 @@ targets:
   SomethingTests:
     type: bundle.unit-test
     platform: macOS
+    configFiles:
+      Debug: Configs/Signing.xcconfig
+      Release: Configs/Signing.xcconfig
     sources:
       - SomethingTests
     dependencies:
