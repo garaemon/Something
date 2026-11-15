@@ -1,11 +1,20 @@
 import SwiftUI
 
-/// The content of the settings window.
+/// The settings window content: the launcher hot key and Restore Defaults.
 struct SettingsView: View {
+    @ObservedObject var settings: AppSettings
+
     var body: some View {
         Form {
-            Text("No settings yet.")
-                .foregroundStyle(.secondary)
+            Section("Launcher") {
+                LabeledContent("Hot key") {
+                    HotKeyRecorderView(settings: settings)
+                }
+            }
+            HStack {
+                Spacer()
+                Button("Restore Defaults", action: settings.resetToDefaults)
+            }
         }
         .formStyle(.grouped)
         .frame(width: 420)

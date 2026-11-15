@@ -1,3 +1,4 @@
+import Combine
 import HotKey
 import Cocoa
 import SwiftUI
@@ -5,8 +6,11 @@ import SwiftUI
 // Remove NSWindowDelegate conformance from AppDelegate
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var myHotKey: HotKey?
+    private(set) var myHotKey: HotKey?
+    // Tests replace the settings to keep off the user's real UserDefaults.
+    var settings = AppSettings()
     private(set) var settingsWindow: NSWindow?
+    private var settingsSubscriptions: Set<AnyCancellable> = []
     var window: NSWindow? // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
@@ -48,11 +52,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.setActivationPolicy(.accessory)
         refreshApplicationsInBackground()
         refreshRepositoriesInBackground()
+        startObservingSettings()
+    }
 
-        myHotKey = HotKey(key: .x, modifiers: [.command, .shift])
-        myHotKey?.keyDownHandler = { [weak self] in
+    /// Registers the hot key from the settings, and registers it again whenever
+    /// the settings change it or start recording a new one.
+    func startObservingSettings() {
+        settingsSubscriptions.removeAll()
+        // @Published emits before the property changes, so the sinks use the
+        // emitted value instead of reading the settings back.
+        settings.$hotKeyCombo
+            .removeDuplicates()
+            .sink { [weak self] keyCombo in self?.registerHotKey(keyCombo) }
+            .store(in: &settingsSubscriptions)
+        settings.$isRecordingHotKey
+            .removeDuplicates()
+            .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
+            .store(in: &settingsSubscriptions)
+    }
+
+    private func registerHotKey(_ keyCombo: KeyCombo) {
+        // Releasing the old HotKey unregisters it from Carbon.
+        myHotKey = nil
+        let hotKey = HotKey(keyCombo: keyCombo)
+        hotKey.keyDownHandler = { [weak self] in
             self?.openWindow()
         }
+        if settings.isRecordingHotKey {
+            hotKey.isPaused = true
+        }
+        myHotKey = hotKey
     }
 
     /// Shows the settings window, creating it on first use.
@@ -69,7 +98,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = SettingsSource.candidateName
         // Kept alive by `settingsWindow` so that a reopen keeps its position.
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: SettingsView())
+        window.contentView = NSHostingView(rootView: SettingsView(settings: settings))
         window.center()
         return window
     }

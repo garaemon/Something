@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-"Something" is a macOS utility app built with SwiftUI that operates as a background service. The app is designed to be triggered via global hotkey (Cmd+Shift+X) and automatically hides when it loses focus, making it behave like a quick-access tool rather than a traditional desktop application.
+"Something" is a macOS utility app built with SwiftUI that operates as a background service. The app is designed to be triggered via global hotkey (Cmd+Shift+X by default, configurable in the settings window) and automatically hides when it loses focus, making it behave like a quick-access tool rather than a traditional desktop application.
 
 ## Build Commands
 
@@ -92,13 +92,16 @@ mise run build
 - **MascotPanel.swift**: Borderless, transparent, click-through `NSPanel` that never becomes key or main, with an `NSHostingView` of `MascotOverlayView`.
 - **MascotOverlayView.swift**: Observes `LauncherViewModel`, derives the mascot state, and owns the entrance timer.
 - **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
-- **SettingsView.swift**: The settings window content.
+- **AppSettings.swift**: User preferences, currently the hot key, saved to an injectable `UserDefaults` on every change.
+- **SettingsView.swift**: The settings window content: hot key recorder and Restore Defaults.
+- **HotKeyRecorderView.swift**: Button that records the next key press as the hot key through a local key monitor. Esc cancels.
+- **HotKeyRecording.swift**: Turns a key press into a `KeyCombo`, and rejects a press without Command, Option, or Control.
 - **SettingsSource.swift**: Launcher source that lists "Something Settings" for queries such as "settings" or "pref", and opens the settings window.
 
 ### Key Behavioral Patterns
 
 - **Background Service Pattern**: App runs as accessory (.accessory activation policy) without Dock presence
-- **Global Hotkey Activation**: Uses HotKey library for Cmd+Shift+X trigger
+- **Global Hotkey Activation**: Uses HotKey library for the hot key from `AppSettings` (Cmd+Shift+X by default). AppDelegate registers the hot key again when the setting changes, and pauses it while the settings window records a new one.
 - **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command.
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open. The mascot panel is a child window of the launcher, created and closed with it. AppDelegate picks its placement at random on each open, among those that fit the screen.
@@ -110,7 +113,7 @@ mise run build
 
 - **HotKey (v0.2.1)**: Swift Package Manager dependency for global hotkey functionality
   - Repository: https://github.com/soffes/HotKey
-  - Used for: Cmd+Shift+X global hotkey registration
+  - Used for: global hotkey registration
 
 ### Window Management Strategy
 

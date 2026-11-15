@@ -1,3 +1,4 @@
+import HotKey
 import XCTest
 
 @testable import Something
@@ -5,15 +6,45 @@ import XCTest
 @MainActor
 final class AppDelegateSettingsTests: XCTestCase {
     private func makeAppDelegate() -> AppDelegate {
+        let suiteName = "AppDelegateSettingsTests.\(UUID().uuidString)"
+        addTeardownBlock { UserDefaults().removePersistentDomain(forName: suiteName) }
         let appDelegate = AppDelegate()
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { [] })
+        appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()
             appDelegate.settingsWindow?.close()
         }
         return appDelegate
+    }
+
+    func test_should_register_hot_key_from_settings() {
+        let appDelegate = makeAppDelegate()
+
+        appDelegate.startObservingSettings()
+
+        XCTAssertEqual(appDelegate.myHotKey?.keyCombo, AppSettings.defaultHotKeyCombo)
+    }
+
+    func test_should_register_new_hot_key_when_setting_changes() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        let newCombo = KeyCombo(key: .j, modifiers: [.control, .option, .command])
+
+        appDelegate.settings.hotKeyCombo = newCombo
+
+        XCTAssertEqual(appDelegate.myHotKey?.keyCombo, newCombo)
+    }
+
+    func test_should_pause_hot_key_while_recording() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+
+        appDelegate.settings.isRecordingHotKey = true
+
+        XCTAssertEqual(appDelegate.myHotKey?.isPaused, true)
     }
 
     func test_should_show_settings_window() {
