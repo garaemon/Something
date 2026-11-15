@@ -49,6 +49,7 @@ enum LauncherCandidateKind: CaseIterable {
     case repository
     case webSearch
     case settings
+    case calculator
 
     /// The short text of the badge, such as "Window".
     var label: String {
@@ -58,6 +59,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .repository: "Repo"
         case .webSearch: "Web"
         case .settings: "Settings"
+        case .calculator: "Calc"
         }
     }
 
@@ -70,6 +72,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .repository: "arrow.triangle.branch"
         case .webSearch: "globe"
         case .settings: "slider.horizontal.3"
+        case .calculator: "function"
         }
     }
 }
