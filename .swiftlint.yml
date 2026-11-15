@@ -1,3 +1,5 @@
+# Rules follow the Google Swift Style Guide (https://google.github.io/swift/),
+# except that the indentation stays at 4 spaces, the Xcode default.
 included:
   - Something
 excluded:
@@ -9,8 +11,44 @@ disabled_rules:
   # TODO(owner) comments with an issue link are the project convention for
   # incomplete work, so an open TODO is not a violation.
   - todo
-  # Trailing commas keep diffs of multi-line literals to one line.
-  - trailing_comma
+  # The guide indents continuation lines instead of aligning them.
+  - vertical_parameter_alignment
+
+opt_in_rules:
+  - attributes
+  - closure_spacing
+  - discouraged_object_literal
+  - explicit_init
+  - implicitly_unwrapped_optional
+  - indentation_width
+  - multiline_arguments
+  - multiline_parameters
+  - no_extension_access_modifier
+  - operator_usage_whitespace
+  - sorted_imports
+
+multiline_arguments:
+  # The guide breaks before the first argument of a vertical list.
+  first_argument_location: next_line
+
+line_length:
+  warning: 100
+  ignores_urls: true
+
+trailing_comma:
+  mandatory_comma: true
+
+indentation_width:
+  indentation_width: 4
+
+custom_rules:
+  no_block_comments:
+    name: "No Block Comments"
+    regex: '/\*'
+    match_kinds:
+      - comment
+      - doccomment
+    message: "Use // for comments and /// for doc comments."
 
 identifier_name:
   # Coordinates, time steps, and interpolation parameters follow the math

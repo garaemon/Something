@@ -35,8 +35,11 @@ description = "Format the app sources with swift-format"
 run = "xcrun swift-format format --in-place --recursive Something"
 
 [tasks.lint]
-description = "Lint the app sources with SwiftLint"
-run = "swiftlint lint --strict"
+description = "Lint the app sources with swift-format and SwiftLint"
+run = [
+  "xcrun swift-format lint --strict --recursive Something",
+  "swiftlint lint --strict",
+]
 
 [tasks.install-hooks]
 description = "Run the linter on every commit through the Git hooks in .githooks"
