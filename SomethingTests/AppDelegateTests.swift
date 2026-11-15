@@ -11,6 +11,7 @@ final class AppDelegateTests: XCTestCase {
         let appDelegate = AppDelegate()
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { [] })
         return appDelegate
     }
 
@@ -54,6 +55,72 @@ final class AppDelegateTests: XCTestCase {
 
         wait(for: [scanDelivered], timeout: 5)
         candidatesSubscription.cancel()
+    }
+
+    func test_should_show_listed_repositories_in_open_launcher() throws {
+        let appDelegate = makeAppDelegate()
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: {
+            [makeRepository("github.com/a/b")]
+        })
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+        let repositoriesDelivered = expectation(description: "repositories reach the open launcher")
+        repositoriesDelivered.assertForOverFulfill = false
+
+        appDelegate.openWindow()
+        let launcherViewModel = try XCTUnwrap(appDelegate.launcherViewModel)
+        let candidatesSubscription = launcherViewModel.$candidates.sink { candidates in
+            if candidates.map(\.name) == ["github.com/a/b"] { repositoriesDelivered.fulfill() }
+        }
+
+        wait(for: [repositoriesDelivered], timeout: 5)
+        candidatesSubscription.cancel()
+    }
+
+    func test_should_not_queue_another_repository_scan_while_one_is_running() {
+        let appDelegate = makeAppDelegate()
+        let scanRelease = DispatchSemaphore(value: 0)
+        let repositoryScans = expectation(description: "a second repository scan runs")
+        repositoryScans.isInverted = true
+        repositoryScans.expectedFulfillmentCount = 2
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: {
+            repositoryScans.fulfill()
+            scanRelease.wait()
+            return []
+        })
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+        appDelegate.openWindow()
+        appDelegate.window?.close()
+
+        appDelegate.openWindow()
+        scanRelease.signal()
+        scanRelease.signal()
+
+        wait(for: [repositoryScans], timeout: 0.5)
+    }
+
+    func test_should_scan_repositories_again_on_open_after_previous_scan_finishes() throws {
+        let appDelegate = makeAppDelegate()
+        let twoScans = expectation(description: "repositories are scanned on both opens")
+        twoScans.expectedFulfillmentCount = 2
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: {
+            twoScans.fulfill()
+            return [makeRepository("github.com/a/b")]
+        })
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+        let firstLoadDelivered = expectation(description: "first load reaches the launcher")
+        firstLoadDelivered.assertForOverFulfill = false
+        appDelegate.openWindow()
+        let launcherViewModel = try XCTUnwrap(appDelegate.launcherViewModel)
+        let candidatesSubscription = launcherViewModel.$candidates.sink { candidates in
+            if candidates.map(\.name) == ["github.com/a/b"] { firstLoadDelivered.fulfill() }
+        }
+        wait(for: [firstLoadDelivered], timeout: 5)
+        candidatesSubscription.cancel()
+        appDelegate.window?.close()
+
+        appDelegate.openWindow()
+
+        wait(for: [twoScans], timeout: 5)
     }
 
     func test_should_show_listed_windows_in_open_launcher() throws {

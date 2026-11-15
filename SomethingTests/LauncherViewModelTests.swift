@@ -243,4 +243,127 @@ final class LauncherViewModelTests: XCTestCase {
 
         XCTAssertEqual(raisedTitle, "GitHub")
     }
+
+    private func makeViewModel(
+        applications applicationNames: [String], webSearchEngines: [WebSearchEngine],
+        onOpenURL: @escaping (URL) -> Void = { _ in }
+    ) -> LauncherViewModel {
+        LauncherViewModel(
+            applications: applicationNames.map(makeApplication), launchApplication: { _ in },
+            webSearchEngines: webSearchEngines, openURL: onOpenURL)
+    }
+
+    func test_should_append_web_searches_after_matching_candidates() {
+        let viewModel = makeViewModel(applications: ["Safari"], webSearchEngines: [.google, .googleAIMode])
+
+        viewModel.query = "saf"
+
+        XCTAssertEqual(
+            viewModel.candidates.map(\.name), ["Safari", "Search Google: saf", "Ask Google AI Mode: saf"])
+    }
+
+    func test_should_list_web_searches_when_nothing_else_matches() {
+        let viewModel = makeViewModel(applications: ["Safari"], webSearchEngines: [.google])
+
+        viewModel.query = "zzz"
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Search Google: zzz"])
+    }
+
+    func test_should_not_list_web_searches_when_query_is_empty() {
+        let viewModel = makeViewModel(applications: ["Safari"], webSearchEngines: [.google])
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Safari"])
+    }
+
+    func test_should_not_list_web_searches_when_query_is_only_whitespace() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google])
+
+        viewModel.query = "   "
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), [])
+    }
+
+    func test_should_trim_whitespace_from_web_search_query() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google])
+
+        viewModel.query = "  swift  "
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Search Google: swift"])
+    }
+
+    func test_should_open_url_of_selected_web_search() {
+        var openedURL: URL?
+        let viewModel = makeViewModel(
+            applications: [], webSearchEngines: [.google], onOpenURL: { openedURL = $0 })
+        viewModel.query = "swift"
+
+        viewModel.activateSelectedCandidate()
+
+        XCTAssertEqual(openedURL?.absoluteString, "https://www.google.com/search?q=swift")
+    }
+
+    func test_should_keep_selected_web_search_when_applications_are_replaced() {
+        let viewModel = makeViewModel(applications: [], webSearchEngines: [.google, .googleAIMode])
+        viewModel.query = "zzz"
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceApplications([makeApplication("Mail")])
+
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Ask Google AI Mode: zzz")
+    }
+
+    private func makeViewModel(
+        applications applicationNames: [String], repositories repositoryNames: [String],
+        onOpen: @escaping (GhqRepository) -> Void = { _ in }
+    ) -> LauncherViewModel {
+        LauncherViewModel(
+            applications: applicationNames.map(makeApplication),
+            repositories: repositoryNames.map(makeRepository),
+            launchApplication: { _ in }, openRepository: onOpen)
+    }
+
+    func test_should_list_repositories_after_applications() {
+        let viewModel = makeViewModel(applications: ["Mail"], repositories: ["github.com/a/b"])
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["Mail", "github.com/a/b"])
+    }
+
+    func test_should_narrow_repositories_by_relative_path() {
+        let viewModel = makeViewModel(
+            applications: [], repositories: ["github.com/a/emacs", "github.com/a/vim"])
+
+        viewModel.query = "emacs"
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["github.com/a/emacs"])
+    }
+
+    func test_should_show_replaced_repositories_narrowed_by_current_query() {
+        let viewModel = makeViewModel(applications: [], repositories: [])
+        viewModel.query = "vim"
+
+        viewModel.replaceRepositories(["github.com/a/emacs", "github.com/a/vim"].map(makeRepository))
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["github.com/a/vim"])
+    }
+
+    func test_should_open_selected_repository() {
+        var openedName: String?
+        let viewModel = makeViewModel(
+            applications: [], repositories: ["github.com/a/b"], onOpen: { openedName = $0.name })
+
+        viewModel.activateSelectedCandidate()
+
+        XCTAssertEqual(openedName, "github.com/a/b")
+    }
+
+    func test_should_list_web_searches_after_repositories() {
+        let viewModel = LauncherViewModel(
+            applications: [], repositories: [makeRepository("github.com/a/vim")],
+            launchApplication: { _ in }, webSearchEngines: [.google])
+
+        viewModel.query = "vim"
+
+        XCTAssertEqual(viewModel.candidates.map(\.name), ["github.com/a/vim", "Search Google: vim"])
+    }
 }

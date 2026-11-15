@@ -16,21 +16,34 @@ final class LauncherViewModel: ObservableObject {
 
     private var applications: [LaunchableApplication]
     private var windows: [SwitchableWindow]
+    private var repositories: [GhqRepository]
     private let launchApplication: (LaunchableApplication) -> Void
     private let raiseWindow: (SwitchableWindow) -> Void
+    private let openRepository: (GhqRepository) -> Void
+    private let webSearchEngines: [WebSearchEngine]
+    private let openURL: (URL) -> Void
 
-    /// Creates a view model that lists `windows` and then `applications`,
-    /// all of them while the query is empty.
+    /// Creates a view model that lists `windows`, `applications`, and then
+    /// `repositories`, all of them while the query is empty. A non-empty query
+    /// also lists one search per engine in `webSearchEngines` at the end.
     init(
         applications: [LaunchableApplication],
         windows: [SwitchableWindow] = [],
+        repositories: [GhqRepository] = [],
         launchApplication: @escaping (LaunchableApplication) -> Void,
-        raiseWindow: @escaping (SwitchableWindow) -> Void = { _ in }
+        raiseWindow: @escaping (SwitchableWindow) -> Void = { _ in },
+        openRepository: @escaping (GhqRepository) -> Void = { _ in },
+        webSearchEngines: [WebSearchEngine] = [],
+        openURL: @escaping (URL) -> Void = { _ in }
     ) {
         self.applications = applications
         self.windows = windows
+        self.repositories = repositories
         self.launchApplication = launchApplication
         self.raiseWindow = raiseWindow
+        self.openRepository = openRepository
+        self.webSearchEngines = webSearchEngines
+        self.openURL = openURL
         updateCandidates()
     }
 
@@ -64,6 +77,12 @@ final class LauncherViewModel: ObservableObject {
         updateCandidatesKeepingSelection { windows = newWindows }
     }
 
+    /// Swaps in a new set of repositories, such as a fresh scan, keeping
+    /// the query and the highlighted candidate when it still matches.
+    func replaceRepositories(_ newRepositories: [GhqRepository]) {
+        updateCandidatesKeepingSelection { repositories = newRepositories }
+    }
+
     /// Hands the selected candidate synchronously to the matching closure.
     /// Does nothing when no candidate matches the query.
     ///
@@ -76,6 +95,11 @@ final class LauncherViewModel: ObservableObject {
             launchApplication(application)
         case .window(let window):
             raiseWindow(window)
+        case .repository(let repository):
+            openRepository(repository)
+        case .webSearch(let search):
+            guard let url = search.url else { return false }
+            openURL(url)
         }
         return true
     }
@@ -92,7 +116,16 @@ final class LauncherViewModel: ObservableObject {
             .map(LauncherCandidate.window)
         let applicationCandidates = ApplicationMatcher.filterApplications(applications, matching: query)
             .map(LauncherCandidate.application)
-        candidates = windowCandidates + applicationCandidates
+        let repositoryCandidates = ApplicationMatcher.filterItems(repositories, matching: query, name: \.name)
+            .map(LauncherCandidate.repository)
+        candidates =
+            windowCandidates + applicationCandidates + repositoryCandidates + makeWebSearchCandidates()
         selectedIndex = 0
+    }
+
+    private func makeWebSearchCandidates() -> [LauncherCandidate] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return [] }
+        return webSearchEngines.map { .webSearch(WebSearch(engine: $0, query: trimmedQuery)) }
     }
 }
