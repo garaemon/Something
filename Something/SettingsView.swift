@@ -1,7 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// The settings window: the launcher hot key and the mascot's skin colors.
+/// The settings window: the launcher hot key, the git repositories folder, and
+/// the mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
@@ -10,6 +11,15 @@ struct SettingsView: View {
             Section("Launcher") {
                 LabeledContent("Hot key") {
                     HotKeyRecorderView(settings: settings)
+                }
+                LabeledContent("Repositories folder") {
+                    HStack {
+                        Text((settings.repositoryRootPath as NSString).abbreviatingWithTildeInPath)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(settings.repositoryRootPath)
+                        Button("Choose…", action: chooseRepositoryRoot)
+                    }
                 }
             }
             Section {
@@ -32,6 +42,16 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func chooseRepositoryRoot() {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseDirectories = true
+        openPanel.canChooseFiles = false
+        openPanel.allowsMultipleSelection = false
+        openPanel.directoryURL = URL(fileURLWithPath: settings.repositoryRootPath, isDirectory: true)
+        guard openPanel.runModal() == .OK, let chosenDirectory = openPanel.url else { return }
+        settings.repositoryRootPath = chosenDirectory.path
     }
 
     /// Bridges a "#RRGGBB" setting to the `Color` that `ColorPicker` edits.

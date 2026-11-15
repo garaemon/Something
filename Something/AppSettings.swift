@@ -6,11 +6,15 @@ import HotKey
 @MainActor
 final class AppSettings: ObservableObject {
     static let defaultHotKeyCombo = KeyCombo(key: .x, modifiers: [.command, .shift])
+    /// `~/ghq`, the default root of ghq.
+    static let defaultRepositoryRootPath = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("ghq").path
 
     private enum StorageKey {
         static let hotKey = "hotKey"
         static let mascotHeadColor = "mascotHeadColor"
         static let mascotBodyColor = "mascotBodyColor"
+        static let repositoryRootPath = "repositoryRootPath"
     }
 
     @Published var hotKeyCombo: KeyCombo {
@@ -24,6 +28,10 @@ final class AppSettings: ObservableObject {
     @Published var mascotBodyColor: String {
         didSet { userDefaults.set(mascotBodyColor, forKey: StorageKey.mascotBodyColor) }
     }
+    /// Absolute path of the folder that the launcher scans for git repositories.
+    @Published var repositoryRootPath: String {
+        didSet { userDefaults.set(repositoryRootPath, forKey: StorageKey.repositoryRootPath) }
+    }
     /// True while the settings window waits for a new hot key. The current hot
     /// key must be paused meanwhile, or Carbon takes the press before the window sees it.
     @Published var isRecordingHotKey = false
@@ -36,6 +44,8 @@ final class AppSettings: ObservableObject {
         hotKeyCombo = savedHotKey ?? Self.defaultHotKeyCombo
         mascotHeadColor = userDefaults.string(forKey: StorageKey.mascotHeadColor) ?? MascotModel.defaultHeadColor
         mascotBodyColor = userDefaults.string(forKey: StorageKey.mascotBodyColor) ?? MascotModel.defaultBodyColor
+        repositoryRootPath =
+            userDefaults.string(forKey: StorageKey.repositoryRootPath) ?? Self.defaultRepositoryRootPath
     }
 
     /// The robot painted with the chosen skin colors.
@@ -47,5 +57,6 @@ final class AppSettings: ObservableObject {
         hotKeyCombo = Self.defaultHotKeyCombo
         mascotHeadColor = MascotModel.defaultHeadColor
         mascotBodyColor = MascotModel.defaultBodyColor
+        repositoryRootPath = Self.defaultRepositoryRootPath
     }
 }

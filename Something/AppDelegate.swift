@@ -69,6 +69,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .removeDuplicates()
             .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
             .store(in: &settingsSubscriptions)
+        settings.$repositoryRootPath
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] rootPath in self?.refreshRepositoriesInBackground(rootPath: rootPath) }
+            .store(in: &settingsSubscriptions)
     }
 
     private func registerHotKey(_ keyCombo: KeyCombo) {
@@ -208,18 +213,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func refreshRepositoriesInBackground() {
+    private func refreshRepositoriesInBackground(rootPath: String? = nil) {
         guard !isLoadingRepositories else { return }
         isLoadingRepositories = true
         let catalog = repositoryCatalog
+        let rootPath = rootPath ?? settings.repositoryRootPath
+        let rootDirectory = URL(fileURLWithPath: rootPath, isDirectory: true)
         repositoryListQueue.async { [weak self] in
-            let repositories = catalog.loadRepositories()
+            let repositories = catalog.loadRepositories(rootDirectory)
             DispatchQueue.main.async {
-                self?.isLoadingRepositories = false
-                self?.cachedRepositories = repositories
-                self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
+                self?.finishRepositoryRefresh(repositories, scannedRootPath: rootPath)
             }
         }
+    }
+
+    // A root change during a scan was skipped by the isLoadingRepositories
+    // guard, so the stale result is dropped and the new root is scanned.
+    private func finishRepositoryRefresh(_ repositories: [GhqRepository], scannedRootPath: String) {
+        isLoadingRepositories = false
+        guard scannedRootPath == settings.repositoryRootPath else {
+            refreshRepositoriesInBackground()
+            return
+        }
+        cachedRepositories = repositories
+        launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
     }
 
     // Windows are not cached, because they open, close, and change titles

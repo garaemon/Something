@@ -11,7 +11,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         let appDelegate = AppDelegate()
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
-        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { [] })
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()
@@ -73,5 +73,33 @@ final class AppDelegateSettingsTests: XCTestCase {
         launcherViewModel.query = "settings"
 
         XCTAssertTrue(launcherViewModel.candidates.map(\.name).contains(SettingsSource.candidateName))
+    }
+
+    func test_should_scan_repository_root_from_settings() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.settings.repositoryRootPath = "/Users/someone/src"
+        let scannedRoot = expectation(description: "the catalog scans the configured root")
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { rootDirectory in
+            if rootDirectory.path == "/Users/someone/src" { scannedRoot.fulfill() }
+            return []
+        })
+
+        appDelegate.openWindow()
+
+        wait(for: [scannedRoot], timeout: 5)
+    }
+
+    func test_should_scan_again_when_repository_root_changes() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        let scannedNewRoot = expectation(description: "the catalog scans the new root")
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { rootDirectory in
+            if rootDirectory.path == "/Users/someone/src" { scannedNewRoot.fulfill() }
+            return []
+        })
+
+        appDelegate.settings.repositoryRootPath = "/Users/someone/src"
+
+        wait(for: [scannedNewRoot], timeout: 5)
     }
 }

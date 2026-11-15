@@ -65,4 +65,30 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.hotKeyCombo, AppSettings.defaultHotKeyCombo)
     }
+
+    func test_should_use_ghq_under_home_as_repository_root_when_nothing_is_saved() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        XCTAssertEqual(
+            settings.repositoryRootPath,
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("ghq").path)
+    }
+
+    func test_should_restore_saved_repository_root() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).repositoryRootPath = "/Users/someone/src"
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.repositoryRootPath, "/Users/someone/src")
+    }
+
+    func test_should_return_default_repository_root_after_reset() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.repositoryRootPath = "/Users/someone/src"
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.repositoryRootPath, AppSettings.defaultRepositoryRootPath)
+    }
 }

@@ -11,7 +11,7 @@ final class AppDelegateTests: XCTestCase {
         let appDelegate = AppDelegate()
         appDelegate.applicationCatalog = ApplicationCatalog(searchDirectories: [])
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
-        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { [] })
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         return appDelegate
     }
 
@@ -59,7 +59,7 @@ final class AppDelegateTests: XCTestCase {
 
     func test_should_show_listed_repositories_in_open_launcher() throws {
         let appDelegate = makeAppDelegate()
-        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: {
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in
             [makeRepository("github.com/a/b")]
         })
         addTeardownBlock { @MainActor in appDelegate.window?.close() }
@@ -82,7 +82,7 @@ final class AppDelegateTests: XCTestCase {
         let repositoryScans = expectation(description: "a second repository scan runs")
         repositoryScans.isInverted = true
         repositoryScans.expectedFulfillmentCount = 2
-        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: {
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in
             repositoryScans.fulfill()
             scanRelease.wait()
             return []
@@ -102,7 +102,7 @@ final class AppDelegateTests: XCTestCase {
         let appDelegate = makeAppDelegate()
         let twoScans = expectation(description: "repositories are scanned on both opens")
         twoScans.expectedFulfillmentCount = 2
-        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: {
+        appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in
             twoScans.fulfill()
             return [makeRepository("github.com/a/b")]
         })
