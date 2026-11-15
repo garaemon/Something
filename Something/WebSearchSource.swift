@@ -3,7 +3,8 @@ import Foundation
 /// Lists one search per engine for any non-empty query, without narrowing,
 /// and opens the picked search in the browser.
 struct WebSearchSource: CandidateSource {
-    let sourceID = CandidateSourceID("webSearches")
+    static let webSearchSourceID = CandidateSourceID("webSearches")
+    let sourceID = WebSearchSource.webSearchSourceID
     let engines: [WebSearchEngine]
     let openURL: (URL) -> Void
 
