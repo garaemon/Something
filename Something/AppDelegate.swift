@@ -25,11 +25,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
-    // Walking the ~/ghq tree touches many directories, which would delay the
-    // window on the main thread.
+    // Walking the repositories folder touches many directories, which would
+    // delay the window on the main thread.
     private var cachedRepositories: [GhqRepository] = []
-    // A scan of a large ~/ghq can outlast a hotkey press, so repeated presses
-    // would otherwise pile up stale scans on the serial queue.
+    // A scan of a large repositories folder can outlast a hotkey press, so
+    // repeated presses would otherwise pile up stale scans on the serial queue.
     private var isLoadingRepositories = false
     private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
@@ -41,7 +41,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowListQueue = DispatchQueue(
         label: "com.garaemon.Something.windowList", qos: .userInitiated)
     // isLoadingRepositories already keeps scans one at a time; the queue is
-    // separate so that a slow ~/ghq walk does not delay the other lists.
+    // separate so that a slow repositories folder walk does not delay the
+    // other lists.
     private let repositoryListQueue = DispatchQueue(
         label: "com.garaemon.Something.repositoryList", qos: .userInitiated)
 
@@ -56,7 +57,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Registers the hot key from the settings, and registers it again whenever
-    /// the settings change it or start recording a new one.
+    /// the settings change it or start recording a new one. Also rescans the
+    /// repositories whenever the settings change their folder.
     func startObservingSettings() {
         settingsSubscriptions.removeAll()
         // @Published emits before the property changes, so the sinks use the

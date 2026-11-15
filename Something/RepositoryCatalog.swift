@@ -6,7 +6,8 @@ struct RepositoryCatalog {
     /// background queue.
     let loadRepositories: (URL) -> [GhqRepository]
 
-    /// Returns a catalog that scans the directory tree.
+    /// Returns a catalog that scans the directory tree under the root that
+    /// each load receives.
     ///
     /// The catalog reads the tree instead of running ghq, so the app never
     /// starts a shell. A custom `ghq.root` setting is not read.

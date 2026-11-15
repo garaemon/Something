@@ -76,7 +76,7 @@ mise run build
 - **SwitchableWindow.swift**: Application name, title, and Accessibility element of one window that the launcher lists.
 - **WindowCatalog.swift**: Lists standard windows of running regular applications through the Accessibility API, and asks for the Accessibility permission on first use.
 - **WebSearch.swift**: Search engines as data (`WebSearchEngine`: label, SF Symbol, base URL, fixed parameters) and the percent-encoded results URL for one query (`WebSearch`).
-- **GhqRepository.swift**: Path relative to the ghq root, such as `github.com/owner/name`, and URL of one repository that the launcher lists.
+- **GhqRepository.swift**: Path relative to the repositories folder, such as `github.com/owner/name`, and URL of one repository that the launcher lists.
 - **RepositoryCatalog.swift**: Scans a root folder for directories that hold a `.git` entry, up to six levels deep and through symbolic links, without running ghq or a shell. A custom `ghq.root` is not read. An injectable `loadRepositories` closure, which takes the root, keeps tests off the real tree.
 - **WindowRaiser.swift**: Unminimizes and raises a window, then activates its application.
 - **ApplicationIconCache.swift**: Caches application icons so that list rows do not reload them on every render.

@@ -28,7 +28,8 @@ final class AppSettings: ObservableObject {
     @Published var mascotBodyColor: String {
         didSet { userDefaults.set(mascotBodyColor, forKey: StorageKey.mascotBodyColor) }
     }
-    /// Absolute path of the folder that the launcher scans for git repositories.
+    /// Absolute path of the folder that the launcher scans for git
+    /// repositories.
     @Published var repositoryRootPath: String {
         didSet { userDefaults.set(repositoryRootPath, forKey: StorageKey.repositoryRootPath) }
     }

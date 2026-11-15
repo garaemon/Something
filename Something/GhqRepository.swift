@@ -1,8 +1,9 @@
 import Foundation
 
-/// A repository under a ghq root that the launcher can open.
+/// A git repository under the repositories folder that the launcher can open.
 struct GhqRepository: Hashable {
-    /// The path relative to its ghq root, such as `github.com/owner/name`.
+    /// The path relative to the repositories folder, such as
+    /// `github.com/owner/name`.
     let name: String
     let url: URL
 }

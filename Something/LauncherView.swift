@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Shows the windows of running applications, every application, and then the
-/// ghq repositories under a query field, and narrows the list on each
+/// git repositories under a query field, and narrows the list on each
 /// keystroke, in the style of Emacs anything.el. A non-empty query also lists
 /// web searches for it at the end.
 struct LauncherView: View {
