@@ -221,4 +221,11 @@ final class PythonSyntaxScannerTests: XCTestCase {
             ]
         )
     }
+
+    // `E` is a hex digit there, so the minus after it is subtraction, not an exponent sign.
+    func test_should_end_hex_number_before_minus_after_e() {
+        let tokens = findNamedTokens(in: "0x1E-1")
+
+        XCTAssertEqual(tokens.map(\.text), ["0x1E", "1"])
+    }
 }
