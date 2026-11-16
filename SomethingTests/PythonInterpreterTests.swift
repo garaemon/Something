@@ -58,7 +58,7 @@ final class PythonInterpreterTests: XCTestCase {
         XCTAssertNil(result.errorMessage)
     }
 
-    func test_should_report_last_line_of_traceback_as_error() {
+    func test_should_report_exception_type_and_message_as_error() {
         let result = interpreter.run(PythonBlock(lastStatement: "1 / 0"))
 
         XCTAssertEqual(result.errorMessage?.hasPrefix("ZeroDivisionError:"), true)
@@ -117,5 +117,19 @@ final class PythonInterpreterTests: XCTestCase {
         let result = interpreter.run(PythonBlock(lastStatement: "print('again')"))
 
         XCTAssertEqual(result.output, "again\n")
+    }
+
+    func test_should_keep_exception_type_of_multiline_message() {
+        let result = interpreter.run(PythonBlock(lastStatement: "raise ValueError('first\\nsecond')"))
+
+        XCTAssertEqual(result.errorMessage, "ValueError: first\nsecond")
+    }
+
+    func test_should_report_last_exception_of_a_chain() {
+        let source = "try:\n    1 / 0\nexcept ZeroDivisionError:\n    raise KeyError('key')\n"
+
+        let result = interpreter.run(PythonBlock(lastStatement: source))
+
+        XCTAssertEqual(result.errorMessage?.hasPrefix("KeyError"), true)
     }
 }

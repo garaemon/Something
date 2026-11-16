@@ -12,7 +12,8 @@ struct PythonBlock: Equatable {
 struct PythonRunResult: Equatable {
     /// Printed text plus the echoed value of the last expression, if any.
     let output: String
-    /// The last line of the traceback, such as `ZeroDivisionError: ...`, or nil on success.
+    /// The type and message of the exception, such as `ZeroDivisionError: ...`, without
+    /// the stack frames, or nil on success. A message with line breaks spans several lines.
     let errorMessage: String?
 }
 
@@ -73,9 +74,21 @@ final class PythonInterpreter {
         guard let traceback = py_formatexc() else {
             return "Error"
         }
-        defer { free(traceback) }
-        let lines = String(cString: traceback).split(separator: "\n")
-        return lines.last.map(String.init) ?? "Error"
+        defer { py_free(traceback) }
+        let message = extractExceptionMessage(fromTraceback: String(cString: traceback))
+        return message.isEmpty ? "Error" : message
+    }
+
+    // A chained exception prints one traceback per exception, so only the last one counts.
+    // Stack frame lines are indented, and the message lines that follow them are not.
+    private static func extractExceptionMessage(fromTraceback traceback: String) -> String {
+        let lastTraceback =
+            traceback.components(separatedBy: "Traceback (most recent call last):").last
+            ?? traceback
+        return lastTraceback.split(separator: "\n", omittingEmptySubsequences: false)
+            .drop { line in line.isEmpty || line.first?.isWhitespace == true }
+            .joined(separator: "\n")
+            .trimmingCharacters(in: .newlines)
     }
 
     private static func installCallbacks() {
