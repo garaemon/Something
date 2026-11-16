@@ -105,11 +105,8 @@ final class AppDelegateScratchTests: XCTestCase {
 
     // A regular file where the folder should be makes creating the folder fail.
     func test_should_show_failed_save_in_subtitle() throws {
-        let folderURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("AppDelegateScratchTests-\(UUID().uuidString)")
-        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
         let appDelegate = makeAppDelegate()
-        appDelegate.scratchStore = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        let folderURL = appDelegate.scratchStore.fileURL.deletingLastPathComponent()
         appDelegate.openScratch()
         let controller = try XCTUnwrap(appDelegate.scratchWindowController)
         controller.textView.insertText("x", replacementRange: NSRange(location: 0, length: 0))
@@ -121,11 +118,8 @@ final class AppDelegateScratchTests: XCTestCase {
     }
 
     func test_should_clear_subtitle_when_a_later_save_succeeds() throws {
-        let folderURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("AppDelegateScratchTests-\(UUID().uuidString)")
-        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
         let appDelegate = makeAppDelegate()
-        appDelegate.scratchStore = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        let folderURL = appDelegate.scratchStore.fileURL.deletingLastPathComponent()
         appDelegate.openScratch()
         let controller = try XCTUnwrap(appDelegate.scratchWindowController)
         controller.textView.insertText("x", replacementRange: NSRange(location: 0, length: 0))
@@ -136,5 +130,17 @@ final class AppDelegateScratchTests: XCTestCase {
         controller.saveNow()
 
         XCTAssertEqual(controller.window.subtitle, "")
+    }
+
+    func test_should_close_unreadable_window_when_opened_again() throws {
+        let appDelegate = makeAppDelegate()
+        try appDelegate.scratchStore.saveText("")
+        try Data([0xFF, 0xFE, 0xFD]).write(to: appDelegate.scratchStore.fileURL)
+        appDelegate.openScratch()
+        let unreadableWindow = try XCTUnwrap(appDelegate.scratchWindowController?.window)
+
+        appDelegate.openScratch()
+
+        XCTAssertFalse(unreadableWindow.isVisible)
     }
 }

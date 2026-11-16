@@ -6,10 +6,12 @@ import XCTest
 final class ScratchAutosaverTests: XCTestCase {
     private var savedTexts: [String] = []
     private var savesSucceed = true
+    private var saveExpectation: XCTestExpectation?
 
     private func makeAutosaver(delay: TimeInterval = 60) -> ScratchAutosaver {
         ScratchAutosaver(delay: delay) { [unowned self] text in
             savedTexts.append(text)
+            saveExpectation?.fulfill()
             return savesSucceed
         }
     }
@@ -24,12 +26,12 @@ final class ScratchAutosaverTests: XCTestCase {
 
     func test_should_save_latest_text_after_delay() {
         let autosaver = makeAutosaver(delay: 0.01)
-        let saved = expectation(description: "saved")
+        // A second save would fulfill the expectation twice, which fails the test.
+        saveExpectation = expectation(description: "saved once")
         autosaver.scheduleSave("a")
         autosaver.scheduleSave("ab")
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { saved.fulfill() }
-        wait(for: [saved], timeout: 1)
+        waitForExpectations(timeout: 5)
 
         XCTAssertEqual(savedTexts, ["ab"])
     }

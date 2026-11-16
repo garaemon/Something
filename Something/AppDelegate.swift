@@ -371,7 +371,8 @@ extension AppDelegate {
 }
 
 extension AppDelegate {
-    /// Shows the Python scratch window, creating it on first use.
+    /// Shows the Python scratch window, creating it on first use, or again when the last
+    /// window could not read the scratch file.
     func openScratch() {
         let controller =
             scratchWindowController?.reuseIfShowingFile()
