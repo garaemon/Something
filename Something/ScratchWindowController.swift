@@ -12,8 +12,22 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     private let autosaver: ScratchAutosaver
     // Kept apart from `textView.isEditable`, which a run of the code may also turn off.
     private var isShowingFile = true
+    private var runner: ScratchRunner?
+    private var keyBindings = ScratchKeyBindings()
+    private var keyMonitor: Any?
 
-    init(store: ScratchStore) {
+    /// Called on the main thread after the results of a run are in the text.
+    var onRunFinished: (() -> Void)? {
+        get { runner?.onRunFinished }
+        set { runner?.onRunFinished = newValue }
+    }
+
+    /// `makeRunner` builds the runner of the blocks in the text view. Tests pass a runner
+    /// with a fake interpreter.
+    init(
+        store: ScratchStore,
+        makeRunner: @MainActor (NSTextView) -> ScratchRunner = { ScratchRunner(textView: $0) }
+    ) {
         let scrollView = NSTextView.scrollableTextView()
         guard let scrollingTextView = scrollView.documentView as? NSTextView else {
             preconditionFailure("NSTextView.scrollableTextView() holds no text view.")
@@ -41,6 +55,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         super.init()
         Self.configureForCode(textView)
         loadText(from: store)
+        runner = isShowingFile ? makeRunner(textView) : nil
         textView.delegate = self
         window.title = Self.windowTitle
         window.isReleasedWhenClosed = false
@@ -78,6 +93,50 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         NSApplication.shared.activate()
         window.makeKeyAndOrderFront(nil)
         window.makeFirstResponder(textView)
+        startMonitoringKeys()
+    }
+
+    /// Runs the scratch command of a key press in the editor, and returns nil to consume the
+    /// press, or returns the event for the text view to handle.
+    func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+        guard let runner, let key = event.charactersIgnoringModifiers?.lowercased() else {
+            return event
+        }
+        let modifiers = event.modifierFlags.intersection([.control, .option, .command, .shift])
+        switch keyBindings.resolve(key: key, isControlOnly: modifiers == .control) {
+        case .command(let command):
+            runner.perform(command)
+            return nil
+        case .prefix, .swallowed:
+            return nil
+        case .passThrough:
+            return event
+        }
+    }
+
+    // A local monitor sees the keys before the text view, which would insert a newline
+    // for C-j, without subclassing NSTextView.
+    private func startMonitoringKeys() {
+        guard keyMonitor == nil else {
+            return
+        }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            MainActor.assumeIsolated {
+                guard let self, event.window === self.window,
+                    self.window.firstResponder === self.textView
+                else {
+                    return event
+                }
+                return self.handleKeyDown(event)
+            }
+        }
+    }
+
+    private func stopMonitoringKeys() {
+        if let keyMonitor {
+            NSEvent.removeMonitor(keyMonitor)
+        }
+        keyMonitor = nil
     }
 
     func textDidChange(_ notification: Notification) {
@@ -85,6 +144,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     }
 
     func windowWillClose(_ notification: Notification) {
+        stopMonitoringKeys()
         autosaver.flush()
     }
 
