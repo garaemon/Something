@@ -2,6 +2,7 @@ import XCTest
 
 @testable import Something
 
+@MainActor
 final class ScratchAutosaverTests: XCTestCase {
     private var savedTexts: [String] = []
 

@@ -56,7 +56,7 @@ final class AppDelegateScratchTests: XCTestCase {
 
         controller.window.close()
 
-        XCTAssertTrue(appDelegate.scratchStore.loadText().hasPrefix("y = 2\n"))
+        XCTAssertTrue(try appDelegate.scratchStore.loadText().hasPrefix("y = 2\n"))
     }
 
     func test_should_list_scratch_in_launcher() throws {
@@ -67,5 +67,26 @@ final class AppDelegateScratchTests: XCTestCase {
         launcherViewModel.query = "scratch"
 
         XCTAssertTrue(launcherViewModel.candidates.map(\.name).contains(ScratchSource.candidateName))
+    }
+
+    func test_should_save_text_when_app_terminates() throws {
+        let appDelegate = makeAppDelegate()
+        appDelegate.openScratch()
+        let controller = try XCTUnwrap(appDelegate.scratchWindowController)
+        controller.textView.insertText("z = 3\n", replacementRange: NSRange(location: 0, length: 0))
+
+        appDelegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+
+        XCTAssertTrue(try appDelegate.scratchStore.loadText().hasPrefix("z = 3\n"))
+    }
+
+    func test_should_not_edit_a_file_that_cannot_be_read() throws {
+        let appDelegate = makeAppDelegate()
+        try appDelegate.scratchStore.saveText("")
+        try Data([0xFF, 0xFE, 0xFD]).write(to: appDelegate.scratchStore.fileURL)
+
+        appDelegate.openScratch()
+
+        XCTAssertEqual(appDelegate.scratchWindowController?.textView.isEditable, false)
     }
 }

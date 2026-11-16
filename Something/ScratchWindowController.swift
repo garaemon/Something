@@ -23,22 +23,36 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
             backing: .buffered,
             defer: false
         )
-        autosaver = ScratchAutosaver(saveText: { text in
+        // The subtitle stays until a later save succeeds, so that a failure does not go unseen.
+        autosaver = ScratchAutosaver(saveText: { [weak window] text in
             do {
                 try store.saveText(text)
+                window?.subtitle = ""
             } catch {
-                NSLog("Saving the scratch buffer to %@ failed: %@", store.fileURL.path, "\(error)")
+                window?.subtitle = "Not saved: \(error.localizedDescription)"
             }
         })
         super.init()
         Self.configureForCode(textView)
-        textView.string = store.loadText()
+        loadText(from: store)
         textView.delegate = self
         window.title = Self.windowTitle
         window.isReleasedWhenClosed = false
         window.contentView = scrollView
         window.delegate = self
         window.center()
+    }
+
+    // A file that exists but cannot be read stays read-only, so that no autosave
+    // replaces the content that the user may still recover.
+    private func loadText(from store: ScratchStore) {
+        do {
+            textView.string = try store.loadText()
+        } catch {
+            textView.string =
+                "# \(store.fileURL.path) cannot be read: \(error.localizedDescription)\n"
+            textView.isEditable = false
+        }
     }
 
     /// Brings the window to the front with the keyboard focus in the editor.

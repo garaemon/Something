@@ -19,10 +19,14 @@ struct ScratchStore {
 
     /// Returns the saved text, or `initialText` when no file exists yet.
     ///
-    /// A file that cannot be read as UTF-8 also yields `initialText`, and the next save
-    /// overwrites it.
-    func loadText() -> String {
-        (try? String(contentsOf: fileURL, encoding: .utf8)) ?? Self.initialText
+    /// Throws when the file exists but cannot be read as UTF-8, so that the caller does not
+    /// overwrite it with an empty buffer.
+    func loadText() throws -> String {
+        do {
+            return try String(contentsOf: fileURL, encoding: .utf8)
+        } catch CocoaError.fileReadNoSuchFile {
+            return Self.initialText
+        }
     }
 
     /// Replaces the file with `text`, and creates its folder when missing.

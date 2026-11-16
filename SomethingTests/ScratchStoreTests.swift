@@ -10,10 +10,10 @@ final class ScratchStoreTests: XCTestCase {
         return ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
     }
 
-    func test_should_load_initial_text_when_no_file_exists() {
+    func test_should_load_initial_text_when_no_file_exists() throws {
         let store = makeStore()
 
-        let text = store.loadText()
+        let text = try store.loadText()
 
         XCTAssertEqual(text, ScratchStore.initialText)
     }
@@ -22,7 +22,7 @@ final class ScratchStoreTests: XCTestCase {
         let store = makeStore()
         try store.saveText("x = 1\n")
 
-        let text = store.loadText()
+        let text = try store.loadText()
 
         XCTAssertEqual(text, "x = 1\n")
     }
@@ -39,7 +39,7 @@ final class ScratchStoreTests: XCTestCase {
         let store = makeStore()
         try store.saveText("")
 
-        let text = store.loadText()
+        let text = try store.loadText()
 
         XCTAssertEqual(text, "")
     }
@@ -48,5 +48,14 @@ final class ScratchStoreTests: XCTestCase {
         let store = ScratchStore.makeDefault()
 
         XCTAssertTrue(store.fileURL.path.hasSuffix("Application Support/Something/scratch.py"))
+    }
+
+    // Showing the initial text instead would let the next autosave overwrite the file.
+    func test_should_throw_when_file_is_not_utf8() throws {
+        let store = makeStore()
+        try store.saveText("")
+        try Data([0xFF, 0xFE, 0xFD]).write(to: store.fileURL)
+
+        XCTAssertThrowsError(try store.loadText())
     }
 }

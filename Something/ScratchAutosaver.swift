@@ -2,7 +2,8 @@ import Foundation
 
 /// Saves the latest text once the user pauses typing for `delay` seconds.
 ///
-/// Every call happens on the main thread, and the save runs on the main thread too.
+/// The save runs on the main thread.
+@MainActor
 final class ScratchAutosaver {
     private let delay: TimeInterval
     private let saveText: (String) -> Void
