@@ -6,14 +6,11 @@ import AppKit
 @MainActor
 final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDelegate {
     static let windowTitle = "*scratch*"
-    /// The subtitle while Python runs. A run blocked in C, such as `time.sleep`, can last
-    /// past the watchdog, and the read-only text would otherwise look frozen.
-    static let runningSubtitle = "Running…"
-    static let droppedResultsSubtitle = "Results dropped: the text changed during the run"
 
     let window: NSWindow
     let textView: NSTextView
     private let autosaver: ScratchAutosaver
+    private let subtitle: ScratchSubtitle
     // Kept apart from `textView.isEditable`, which a run of the code may also turn off.
     private var isShowingFile = true
     private var runner: ScratchRunner?
@@ -44,16 +41,19 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
             backing: .buffered,
             defer: false
         )
-        // The subtitle stays until a later save succeeds, so that a failure does not go unseen.
-        autosaver = ScratchAutosaver(saveText: { [weak window] text in
+        // The failure stays in the subtitle until a later save succeeds, so that it does not
+        // go unseen.
+        let subtitle = ScratchSubtitle(window: window)
+        self.subtitle = subtitle
+        autosaver = ScratchAutosaver(saveText: { text in
             do {
                 try store.saveText(text)
-                window?.subtitle = ""
+                subtitle.saveFailure = nil
                 return true
             } catch {
                 // The log also covers a save on close or on quit, where no subtitle shows.
                 NSLog("Saving the scratch buffer to %@ failed: %@", store.fileURL.path, "\(error)")
-                window?.subtitle = "Not saved: \(error.localizedDescription)"
+                subtitle.saveFailure = error.localizedDescription
                 return false
             }
         })
@@ -61,9 +61,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         Self.configureForCode(textView)
         loadText(from: store)
         runner = isShowingFile ? makeRunner(textView) : nil
-        runner?.onStatusChanged = { [weak window] status in
-            window?.subtitle = Self.makeSubtitle(for: status)
-        }
+        runner?.onStatusChanged = { status in subtitle.runStatus = status }
         textView.delegate = self
         window.title = Self.windowTitle
         window.isReleasedWhenClosed = false
@@ -162,14 +160,6 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     /// Saves the pending edits now, such as when the app quits.
     func saveNow() {
         autosaver.flush()
-    }
-
-    private static func makeSubtitle(for status: ScratchRunStatus) -> String {
-        switch status {
-        case .idle: ""
-        case .running: runningSubtitle
-        case .droppedResults: droppedResultsSubtitle
-        }
     }
 
     // Smart quotes and dashes would turn Python source into syntax errors.

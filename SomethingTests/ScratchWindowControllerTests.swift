@@ -102,6 +102,22 @@ final class ScratchWindowControllerTests: XCTestCase {
         let subtitleWhileRunning = controller.window.subtitle
         wait(for: [finished], timeout: 5)
 
-        XCTAssertEqual(subtitleWhileRunning, ScratchWindowController.runningSubtitle)
+        XCTAssertEqual(subtitleWhileRunning, ScratchSubtitle.runningText)
+    }
+
+    // Typing schedules an autosave, which can land while the block still runs.
+    func test_should_keep_running_subtitle_after_autosave_succeeds() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        controller.textView.string = "1 + 2"
+        controller.textView.insertText(" ", replacementRange: NSRange(location: 5, length: 0))
+        let finished = expectation(description: "run finished")
+        controller.onRunFinished = { finished.fulfill() }
+
+        _ = controller.handleKeyDown(makeKeyEvent("j", modifiers: .control))
+        controller.saveNow()
+        let subtitleAfterSave = controller.window.subtitle
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertEqual(subtitleAfterSave, ScratchSubtitle.runningText)
     }
 }

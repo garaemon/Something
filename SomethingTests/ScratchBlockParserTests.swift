@@ -180,4 +180,20 @@ final class ScratchBlockParserTests: XCTestCase {
 
         XCTAssertEqual(blocks.map(\.lineRange), [0..<5])
     }
+
+    func test_should_keep_decorator_with_wrapped_arguments_on_its_function() {
+        let lines = ["x = 1", "@cache(", "    size=1)", "def f():", "    return 1"]
+
+        let source = ScratchBlockParser.makePythonBlock(from: lines)
+
+        XCTAssertEqual(source.lastStatement, "@cache(\n    size=1)\ndef f():\n    return 1")
+    }
+
+    func test_should_keep_decorator_on_its_function_across_comment() {
+        let lines = ["x = 1", "@cache", "# note", "def f():", "    return 1"]
+
+        let source = ScratchBlockParser.makePythonBlock(from: lines)
+
+        XCTAssertEqual(source.lastStatement, "@cache\n# note\ndef f():\n    return 1")
+    }
 }

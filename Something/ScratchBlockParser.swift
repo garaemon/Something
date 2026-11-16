@@ -65,10 +65,15 @@ enum ScratchBlockParser {
     static func makePythonBlock(from blockLines: [String]) -> PythonBlock {
         var lineState = PythonLineState()
         var lastStatementStart = 0
+        // A decorator and the definition under it form one statement, even when the
+        // decorator wraps its arguments or a comment line sits between them.
+        var isAfterDecorator = false
         for (index, line) in blockLines.enumerated() {
-            let followsDecorator = index > 0 && blockLines[index - 1].hasPrefix("@")
-            if lineState == PythonLineState(), !followsDecorator, startsStatement(line) {
-                lastStatementStart = index
+            if lineState == PythonLineState(), startsStatement(line) {
+                if !isAfterDecorator {
+                    lastStatementStart = index
+                }
+                isAfterDecorator = line.hasPrefix("@")
             }
             lineState = PythonLineScanner.scan(line, from: lineState)
         }
