@@ -134,7 +134,46 @@ final class PythonSyntaxScannerTests: XCTestCase {
     func test_should_keep_result_prefix_inside_triple_quoted_string_as_string() {
         let tokens = findNamedTokens(in: "s = '''\n# => 3\n'''")
 
-        XCTAssertEqual(tokens[1], NamedToken(kind: .string, text: "# => 3"))
+        XCTAssertEqual(
+            tokens,
+            [
+                NamedToken(kind: .string, text: "'''"),
+                NamedToken(kind: .string, text: "# => 3"),
+                NamedToken(kind: .string, text: "'''"),
+            ]
+        )
+    }
+
+    func test_should_carry_prefixed_triple_quoted_string_across_lines() {
+        let tokens = findNamedTokens(in: "s = R\"\"\"a\nif\"\"\" or b")
+
+        XCTAssertEqual(
+            tokens,
+            [
+                NamedToken(kind: .string, text: "R\"\"\"a"),
+                NamedToken(kind: .string, text: "if\"\"\""),
+                NamedToken(kind: .keyword, text: "or"),
+            ]
+        )
+    }
+
+    func test_should_skip_escaped_quote_inside_triple_quoted_string() {
+        let tokens = findNamedTokens(in: #"s = '''a\''' or b''' and c"#)
+
+        XCTAssertEqual(
+            tokens,
+            [
+                NamedToken(kind: .string, text: #"'''a\''' or b'''"#),
+                NamedToken(kind: .keyword, text: "and"),
+            ]
+        )
+    }
+
+    // The text view also breaks a line at a lone carriage return.
+    func test_should_end_comment_at_carriage_return() {
+        let tokens = findNamedTokens(in: "# c\rif")
+
+        XCTAssertEqual(tokens.last, NamedToken(kind: .keyword, text: "if"))
     }
 
     // A character outside the Basic Multilingual Plane takes two UTF-16 units.

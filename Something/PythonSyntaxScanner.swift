@@ -25,7 +25,9 @@ struct PythonToken: Equatable {
 /// strings across lines.
 ///
 /// `PythonLineScanner` tracks the same strings for the block parser but keeps only the state
-/// at the end of each line, while the highlighter needs the span of each token.
+/// at the end of each line, while the highlighter needs the span of each token. A change to
+/// how either one reads strings, such as escapes, belongs in both, or the colors and the
+/// blocks that C-j runs disagree.
 enum PythonSyntaxScanner {
     /// Returns the tokens of `text` in order. Plain names, operators, and whitespace get no
     /// token.
@@ -33,8 +35,11 @@ enum PythonSyntaxScanner {
         var tokens: [PythonToken] = []
         var openTripleQuote: Unicode.Scalar?
         var lineStartOffset = 0
-        // Splitting the scalars, not the characters, keeps "\r\n" apart as the text view does.
-        let lines = text.unicodeScalars.split(separator: "\n", omittingEmptySubsequences: false)
+        // The text view breaks a line at "\r" as well as at "\n". Splitting the scalars, not
+        // the characters, also splits "\r\n", which Swift keeps as one Character.
+        let lines = text.unicodeScalars.split(omittingEmptySubsequences: false) {
+            $0 == "\n" || $0 == "\r"
+        }
         for line in lines {
             var tokenizer = PythonLineTokenizer(
                 scalars: Array(line),
