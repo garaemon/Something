@@ -26,7 +26,18 @@ jobs:
     - name: Install tools with mise
       uses: jdx/mise-action@v2
 
-    - name: Lint with swift-format, SwiftLint, and ShellCheck
+    # swift-syntax takes minutes to build from scratch.
+    - name: Cache the closure-label-lint build
+      uses: actions/cache@v4
+      with:
+        path: Tools/ClosureLabelLint/.build
+        key: closure-label-lint-${{ runner.os }}-${{ hashFiles('Tools/ClosureLabelLint/Package.resolved', 'Tools/ClosureLabelLint/Package.swift') }}
+        restore-keys: closure-label-lint-${{ runner.os }}-
+
+    - name: Test closure-label-lint
+      run: mise run test-lint-tools
+
+    - name: Lint with swift-format, SwiftLint, ShellCheck, and closure-label-lint
       run: mise run lint
 
   build:

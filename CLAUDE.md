@@ -50,9 +50,19 @@ Format the app sources with swift-format (`.swift-format`):
 mise run format
 ```
 
-Lint the app sources with swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail), and the shell scripts (`*.sh`, `*.bash`, and the hooks in `.githooks/`) with [ShellCheck](https://www.shellcheck.net):
+Lint the sources with these tools:
+
+- swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`) check the app sources. Tests are excluded, and warnings fail.
+- `closure-label-lint` (`Tools/ClosureLabelLint`) reports trailing closures that hide a closure label in the app sources. It is a swift-syntax package, and its first run builds swift-syntax for a few minutes.
+- [ShellCheck](https://www.shellcheck.net) checks the shell scripts (`*.sh`, `*.bash`, and the hooks in `.githooks/`).
+
 ```bash
 mise run lint
+```
+
+Run the unit tests of `closure-label-lint`:
+```bash
+mise run test-lint-tools
 ```
 
 Run the linter on every commit that stages a Swift file under `Something/` (once per clone; worktrees share the setting):

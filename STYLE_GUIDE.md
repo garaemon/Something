@@ -3,14 +3,15 @@
 The app sources follow the [Google Swift Style Guide](https://google.github.io/swift/), with these exceptions:
 
 - Indent with 4 spaces instead of 2, to match the Xcode default and the existing code.
-- Pass a closure with its argument label, such as `SettingsSource(openSettings: { ... })`, when the label says what the closure does. A trailing closure hides that label. Keep trailing closures where the label adds nothing, such as `map`, `filter`, and SwiftUI builders like `VStack { ... }` and `.onAppear { ... }`. No tool checks this rule, so reviewers do.
+- Pass a closure with its argument label, such as `SettingsSource(openSettings: { ... })`, when the label says what the closure does. A trailing closure hides that label. Keep trailing closures where the label adds nothing, such as `map`, `filter`, and SwiftUI builders like `VStack { ... }` and `.onAppear { ... }`. `closure-label-lint` checks this rule.
 
-Two tools enforce the guide:
+Three tools enforce the guide:
 
 - [swift-format](https://github.com/swiftlang/swift-format) formats the code. Xcode ships it, so it needs no install. `.swift-format` holds its settings.
 - [SwiftLint](https://github.com/realm/SwiftLint) checks the rules that swift-format does not. `.swiftlint.yml` holds its settings.
+- `closure-label-lint`, a Swift package in `Tools/ClosureLabelLint`, checks the closure label rule. See [Closure Labels](#closure-labels).
 
-Both tools skip `SomethingTests`.
+All three tools skip `SomethingTests`.
 
 ## Commands
 
@@ -57,6 +58,21 @@ No tool checks these rules of the guide, so reviewers do:
 Swift itself rejects some patterns that other C-family languages allow:
 
 - Braces after `if`, `guard`, `else`, `for`, and `while` are always required.
+
+## Closure Labels
+
+`closure-label-lint` reports a call that passes a trailing closure when the callee's last parameter is a labeled closure. It reads the syntax tree only, without type checking:
+
+1. It collects the `func` and `init` declarations under `Something/` whose last parameter is a labeled closure, and the structs whose memberwise initializer ends with a stored closure property.
+2. It reports each call with a trailing closure whose callee has one of those names.
+
+SwiftUI and the standard library are not declared in the project, so `VStack { ... }` and `map { ... }` never match. The tool matches callees by base name, so a method with the same name on another type can be reported wrongly. Rename one of the two in that case.
+
+The first run builds [swift-syntax](https://github.com/swiftlang/swift-syntax), which takes a few minutes. Run the unit tests of the tool:
+
+```bash
+mise run test-lint-tools
+```
 
 ## Exceptions to the Tools
 
