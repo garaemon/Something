@@ -16,7 +16,8 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     private var keyBindings = ScratchKeyBindings()
     private var keyMonitor: Any?
 
-    /// Called on the main thread after the results of a run are in the text.
+    /// Called on the main thread after a run or a reset ends. A window that could not read the
+    /// scratch file runs nothing, and drops the closure.
     var onRunFinished: (() -> Void)? {
         get { runner?.onRunFinished }
         set { runner?.onRunFinished = newValue }

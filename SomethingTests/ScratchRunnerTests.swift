@@ -141,10 +141,27 @@ final class ScratchRunnerTests: XCTestCase {
 
     func test_should_keep_text_read_only_while_running() {
         let (runner, textView) = makeRunner(text: "x", cursor: 0)
+        let finished = expectation(description: "run finished")
+        runner.onRunFinished = { finished.fulfill() }
 
         runner.perform(.runBlockAtCursor)
+        let isEditableWhileRunning = textView.isEditable
+        wait(for: [finished], timeout: 5)
 
-        XCTAssertFalse(textView.isEditable)
+        XCTAssertFalse(isEditableWhileRunning)
+    }
+
+    // Undo reaches the text view through the window even while it is read-only.
+    func test_should_drop_results_when_text_changed_during_run() {
+        let (runner, textView) = makeRunner(text: "x\n\ny", cursor: 0)
+        let finished = expectation(description: "run finished")
+        runner.onRunFinished = { finished.fulfill() }
+
+        runner.perform(.runBlockAtCursor)
+        textView.string = "z"
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertEqual(textView.string, "z")
     }
 
     func test_should_make_text_editable_after_run() {

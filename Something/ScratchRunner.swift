@@ -7,8 +7,8 @@ import AppKit
 /// when the results come back.
 @MainActor
 final class ScratchRunner {
-    /// Called on the main thread after the results of a run are in the text, or after a
-    /// reset ends.
+    /// Called on the main thread after a run or a reset ends. A run whose text changed
+    /// meanwhile, such as by undo, drops its results.
     var onRunFinished: (() -> Void)?
 
     private let textView: NSTextView
@@ -86,6 +86,12 @@ final class ScratchRunner {
 
     private func finishRun(blocks: [ScratchBlock], results: [PythonRunResult], lines: [String]) {
         textView.isEditable = true
+        // Undo still edits a read-only text view, and the results would land at stale offsets.
+        guard textView.string == lines.joined(separator: "\n") else {
+            isRunning = false
+            onRunFinished?()
+            return
+        }
         textView.undoManager?.beginUndoGrouping()
         // Bottom-up, so that each replacement leaves the offsets of the blocks above intact.
         for (block, result) in zip(blocks, results).reversed() {
