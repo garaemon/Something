@@ -2,9 +2,11 @@ import AppKit
 
 /// Colors the Python source in the scratch text view.
 ///
-/// The colors live in the text storage only. Neither the saved file nor the undo history
-/// records them, since the storage changes outside `shouldChangeText`. System colors follow
-/// the dark mode setting.
+/// The colors live in the text storage only:
+/// - The saved file holds the plain `string` of the text view, without attributes.
+/// - The undo history skips them, since the storage changes outside `shouldChangeText`.
+///
+/// System colors follow the dark mode setting.
 @MainActor
 final class ScratchHighlighter {
     private let textView: NSTextView
