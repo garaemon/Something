@@ -3,7 +3,15 @@ import Foundation
 /// Reads and writes the text of the scratch buffer as one file.
 struct ScratchStore {
     /// The text of a scratch buffer that has never been saved.
-    static let initialText = "# Scratch buffer for Python. Edits save automatically.\n\n"
+    static let initialText = """
+        # Scratch buffer for Python. Edits save automatically.
+        # C-j runs the block at the cursor, and the play button at the right of a block
+        # runs that block. C-c C-c runs every block, and C-c C-k forgets all variables.
+        # Results appear under each block as "# => " lines.
+
+        1 + 2
+
+        """
 
     let fileURL: URL
 
