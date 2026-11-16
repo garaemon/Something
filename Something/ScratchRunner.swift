@@ -48,13 +48,20 @@ final class ScratchRunner {
                 ofUTF16Offset: textView.selectedRange().location,
                 in: textView.string
             )
-            let block = ScratchBlockParser.findBlock(in: lines, containingLine: cursorLine)
-            run(block.map { [$0] } ?? [], in: lines)
+            runBlock(atLine: cursorLine)
         case .runAllBlocks:
             run(ScratchBlockParser.findBlocks(in: lines), in: lines)
         case .resetInterpreter:
             reset()
         }
+    }
+
+    /// Runs the block whose code or result lines hold the zero-based `lineIndex`, such as
+    /// from a Run button. Does nothing when no block holds the line or a command is running.
+    func runBlock(atLine lineIndex: Int) {
+        let lines = textView.string.components(separatedBy: "\n")
+        let block = ScratchBlockParser.findBlock(in: lines, containingLine: lineIndex)
+        run(block.map { [$0] } ?? [], in: lines)
     }
 
     // The reset waits on the interpreter queue, so it runs off the main thread too.
