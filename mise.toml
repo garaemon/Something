@@ -1,4 +1,5 @@
 [tools]
+jq = "1.8.1"
 shellcheck = "0.11.0"
 swiftlint = "0.65.1"
 xcodegen = "2.46.0"
@@ -27,9 +28,17 @@ depends = ["build"]
 run = "open $DERIVED_DATA_PATH/Build/Products/Debug/Something.app"
 
 [tasks.test]
-description = "Run the unit tests"
+description = "Run the unit tests and keep the result bundle with code coverage"
 depends = ["generate"]
-run = "xcodebuild -project Something.xcodeproj -scheme Something -configuration Debug -derivedDataPath $DERIVED_DATA_PATH test"
+# xcodebuild refuses to overwrite an existing result bundle.
+run = [
+  "rm -rf $DERIVED_DATA_PATH/Test.xcresult",
+  "xcodebuild -project Something.xcodeproj -scheme Something -configuration Debug -derivedDataPath $DERIVED_DATA_PATH -resultBundlePath $DERIVED_DATA_PATH/Test.xcresult test",
+]
+
+[tasks.coverage]
+description = "Print the code coverage of the last test run as Markdown"
+run = "scripts/coverage-report.sh $DERIVED_DATA_PATH/Test.xcresult"
 
 [tasks.format]
 description = "Format the app sources with swift-format"

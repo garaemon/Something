@@ -37,6 +37,14 @@ Run the unit tests (`SomethingTests`):
 mise run test
 ```
 
+The test run keeps its result bundle with code coverage in `build/Test.xcresult`.
+Print the coverage of the last test run as Markdown:
+```bash
+mise run coverage
+```
+
+CI posts the same report as a sticky comment on each pull request from this repository, and updates the comment on every push.
+
 Format the app sources with swift-format (`.swift-format`):
 ```bash
 mise run format

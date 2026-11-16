@@ -72,6 +72,9 @@ targets:
     scheme:
       testTargets:
         - SomethingTests
+      gatherCoverageData: true
+      coverageTargets:
+        - Something
 
   SomethingTests:
     type: bundle.unit-test
