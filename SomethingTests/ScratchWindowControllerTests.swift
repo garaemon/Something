@@ -120,4 +120,46 @@ final class ScratchWindowControllerTests: XCTestCase {
 
         XCTAssertEqual(subtitleAfterSave, ScratchSubtitle.runningText)
     }
+
+    func test_should_show_run_button_for_block_of_initial_text() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+
+        XCTAssertEqual(controller.runButtons?.buttons.count, 1)
+    }
+
+    func test_should_insert_result_on_run_button_click() {
+        let controller = makeController(runResult: PythonRunResult(output: "3\n", errorMessage: nil))
+        let finished = expectation(description: "run finished")
+        controller.onRunFinished = { finished.fulfill() }
+
+        controller.runButtons?.buttons.first?.performClick(nil)
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertTrue(controller.textView.string.contains("1 + 2\n# => 3\n"))
+    }
+
+    func test_should_add_run_button_for_typed_block() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        let endOffset = controller.textView.string.utf16.count
+
+        controller.textView.insertText(
+            "\nx = 1",
+            replacementRange: NSRange(location: endOffset, length: 0)
+        )
+
+        XCTAssertEqual(controller.runButtons?.buttons.count, 2)
+    }
+
+    func test_should_show_no_run_button_when_file_cannot_be_read() throws {
+        let folderURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ScratchWindowControllerTests-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let store = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        try store.saveText("")
+        try Data([0xFF, 0xFE]).write(to: store.fileURL)
+        let controller = ScratchWindowController(store: store)
+        addTeardownBlock { @MainActor in controller.window.close() }
+
+        XCTAssertNil(controller.runButtons)
+    }
 }

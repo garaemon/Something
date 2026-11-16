@@ -14,6 +14,8 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     // Kept apart from `textView.isEditable`, which a run of the code may also turn off.
     private var isShowingFile = true
     private var runner: ScratchRunner?
+    /// The Run buttons of the blocks, or nil when the window could not read the scratch file.
+    private(set) var runButtons: ScratchRunButtons?
     private var keyBindings = ScratchKeyBindings()
     private var keyMonitor: Any?
 
@@ -68,6 +70,12 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         window.contentView = scrollView
         window.delegate = self
         window.center()
+        if let runner {
+            runButtons = ScratchRunButtons(textView: textView) { [weak runner] lineIndex in
+                runner?.runBlock(atLine: lineIndex)
+            }
+        }
+        runButtons?.update()
     }
 
     // A file that exists but cannot be read stays read-only, so that no autosave
@@ -150,6 +158,12 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
 
     func textDidChange(_ notification: Notification) {
         autosaver.scheduleSave(textView.string)
+        runButtons?.update()
+    }
+
+    // A narrower window wraps long lines, which moves the blocks below them down.
+    func windowDidResize(_ notification: Notification) {
+        runButtons?.update()
     }
 
     func windowWillClose(_ notification: Notification) {
