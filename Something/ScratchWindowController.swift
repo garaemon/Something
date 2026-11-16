@@ -6,6 +6,10 @@ import AppKit
 @MainActor
 final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDelegate {
     static let windowTitle = "*scratch*"
+    /// The subtitle while Python runs. A run blocked in C, such as `time.sleep`, can last
+    /// past the watchdog, and the read-only text would otherwise look frozen.
+    static let runningSubtitle = "Running…"
+    static let droppedResultsSubtitle = "Results dropped: the text changed during the run"
 
     let window: NSWindow
     let textView: NSTextView
@@ -57,6 +61,9 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         Self.configureForCode(textView)
         loadText(from: store)
         runner = isShowingFile ? makeRunner(textView) : nil
+        runner?.onStatusChanged = { [weak window] status in
+            window?.subtitle = Self.makeSubtitle(for: status)
+        }
         textView.delegate = self
         window.title = Self.windowTitle
         window.isReleasedWhenClosed = false
@@ -155,6 +162,14 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     /// Saves the pending edits now, such as when the app quits.
     func saveNow() {
         autosaver.flush()
+    }
+
+    private static func makeSubtitle(for status: ScratchRunStatus) -> String {
+        switch status {
+        case .idle: ""
+        case .running: runningSubtitle
+        case .droppedResults: droppedResultsSubtitle
+        }
     }
 
     // Smart quotes and dashes would turn Python source into syntax errors.

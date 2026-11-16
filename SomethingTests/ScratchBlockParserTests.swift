@@ -174,4 +174,10 @@ final class ScratchBlockParserTests: XCTestCase {
 
         XCTAssertEqual(lines, ["# => 10%", "# => 20%"])
     }
+
+    func test_should_keep_except_after_blank_line_in_one_block() {
+        let blocks = findBlocks("try:\n    1 / 0\n\nexcept ZeroDivisionError:\n    pass")
+
+        XCTAssertEqual(blocks.map(\.lineRange), [0..<5])
+    }
 }

@@ -171,4 +171,28 @@ final class ScratchRunnerTests: XCTestCase {
 
         XCTAssertTrue(textView.isEditable)
     }
+
+    func test_should_report_running_when_run_starts() {
+        let (runner, _) = makeRunner(text: "x", cursor: 0)
+        var statuses: [ScratchRunStatus] = []
+        runner.onStatusChanged = { statuses.append($0) }
+
+        perform(.runBlockAtCursor, on: runner)
+
+        XCTAssertEqual(statuses, [.running, .idle])
+    }
+
+    func test_should_report_dropped_results_when_text_changed_during_run() {
+        let (runner, textView) = makeRunner(text: "x", cursor: 0)
+        var statuses: [ScratchRunStatus] = []
+        runner.onStatusChanged = { statuses.append($0) }
+        let finished = expectation(description: "run finished")
+        runner.onRunFinished = { finished.fulfill() }
+
+        runner.perform(.runBlockAtCursor)
+        textView.string = "z"
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertEqual(statuses.last, .droppedResults)
+    }
 }

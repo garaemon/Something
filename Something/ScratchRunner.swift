@@ -1,5 +1,14 @@
 import AppKit
 
+/// What the runner is doing, for the window to show.
+enum ScratchRunStatus: Equatable {
+    case idle
+    case running
+    /// The last run ended after the text changed, such as by undo, so its results were not
+    /// written.
+    case droppedResults
+}
+
 /// Runs the blocks of the scratch buffer and writes their results under them.
 ///
 /// Python runs off the main thread, since a run can take until the watchdog stops it. The
@@ -10,6 +19,8 @@ final class ScratchRunner {
     /// Called on the main thread after a run or a reset ends. A run whose text changed
     /// meanwhile, such as by undo, drops its results.
     var onRunFinished: (() -> Void)?
+    /// Called on the main thread when a run or a reset starts or ends.
+    var onStatusChanged: ((ScratchRunStatus) -> Void)?
 
     private let textView: NSTextView
     private let runPython: @Sendable (PythonBlock) -> PythonRunResult
@@ -52,13 +63,13 @@ final class ScratchRunner {
             return
         }
         isRunning = true
+        onStatusChanged?(.running)
         let resetPython = resetPython
         DispatchQueue.global(qos: .userInitiated).async {
             resetPython()
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
-                    self.isRunning = false
-                    self.onRunFinished?()
+                    self.endCommand(with: .idle)
                 }
             }
         }
@@ -69,6 +80,7 @@ final class ScratchRunner {
             return
         }
         isRunning = true
+        onStatusChanged?(.running)
         textView.isEditable = false
         let sources = blocks.map { block in
             ScratchBlockParser.makePythonBlock(from: Array(lines[block.lineRange]))
@@ -88,8 +100,7 @@ final class ScratchRunner {
         textView.isEditable = true
         // Undo still edits a read-only text view, and the results would land at stale offsets.
         guard textView.string == lines.joined(separator: "\n") else {
-            isRunning = false
-            onRunFinished?()
+            endCommand(with: .droppedResults)
             return
         }
         textView.undoManager?.beginUndoGrouping()
@@ -98,7 +109,12 @@ final class ScratchRunner {
             replaceOutput(of: block, with: ScratchBlockParser.formatResult(result), in: lines)
         }
         textView.undoManager?.endUndoGrouping()
+        endCommand(with: .idle)
+    }
+
+    private func endCommand(with status: ScratchRunStatus) {
         isRunning = false
+        onStatusChanged?(status)
         onRunFinished?()
     }
 

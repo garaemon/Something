@@ -103,7 +103,7 @@ enum ScratchBlockParser {
                 break
             } else if isBlank(lines[index]) {
                 let nextLine = lines[(index + 1)...].first { !isBlank($0) }
-                guard let nextLine, isIndented(nextLine) else {
+                guard let nextLine, isIndented(nextLine) || continuesStatement(nextLine) else {
                     break
                 }
             } else {
@@ -157,9 +157,13 @@ enum ScratchBlockParser {
         !isBlank(line) && !line.drop(while: \.isWhitespace).hasPrefix("#")
     }
 
-    // An `else:` or `except:` line continues the statement above instead of starting one.
     private static func startsStatement(_ line: String) -> Bool {
+        isCodeLine(line) && !isIndented(line) && !continuesStatement(line)
+    }
+
+    // An `else:` or `except:` line continues the statement above instead of starting one.
+    private static func continuesStatement(_ line: String) -> Bool {
         let firstWord = String(line.prefix { $0.isLetter || $0.isNumber || $0 == "_" })
-        return isCodeLine(line) && !isIndented(line) && !continuationKeywords.contains(firstWord)
+        return continuationKeywords.contains(firstWord)
     }
 }

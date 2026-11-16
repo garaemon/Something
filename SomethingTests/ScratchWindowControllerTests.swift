@@ -91,4 +91,17 @@ final class ScratchWindowControllerTests: XCTestCase {
 
         XCTAssertNotNil(passedEvent)
     }
+
+    func test_should_show_running_in_subtitle_during_run() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        controller.textView.string = "1 + 2"
+        let finished = expectation(description: "run finished")
+        controller.onRunFinished = { finished.fulfill() }
+
+        _ = controller.handleKeyDown(makeKeyEvent("j", modifiers: .control))
+        let subtitleWhileRunning = controller.window.subtitle
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertEqual(subtitleWhileRunning, ScratchWindowController.runningSubtitle)
+    }
 }
