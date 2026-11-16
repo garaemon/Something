@@ -12,6 +12,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var settingsWindow: NSWindow?
     private var settingsWindowCloseObserver: NSObjectProtocol?
     private var settingsSubscriptions: Set<AnyCancellable> = []
+    // Tests replace the store to keep off the user's real scratch file.
+    var scratchStore = ScratchStore.makeDefault()
+    private(set) var scratchWindowController: ScratchWindowController?
     var window: NSWindow?  // Keep a reference to the window
     // Add a strong reference to the new window controller
     var windowController: SomethingWindowController?
@@ -139,6 +142,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSHostingView(rootView: SettingsView(settings: settings))
     }
 
+    /// Shows the Python scratch window, creating it on first use.
+    func openScratch() {
+        let controller = scratchWindowController ?? ScratchWindowController(store: scratchStore)
+        scratchWindowController = controller
+        controller.show()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        scratchWindowController?.saveNow()
+    }
+
     func openWindow() {
         if let existingWindow = window, existingWindow.isVisible {
             NSApplication.shared.activate()
@@ -241,6 +255,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeRepositorySource(repositoryLoader.cachedItems),
             Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
+            ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
             WebSearchSource(
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
