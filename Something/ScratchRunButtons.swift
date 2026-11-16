@@ -7,7 +7,7 @@ import AppKit
 /// cover the end of a long line, which the text view does not wrap around them.
 @MainActor
 final class ScratchRunButtons {
-    static let toolTip = "Run this block (C-j)"
+    private static let toolTip = "Run this block (C-j)"
     private static let buttonSize = NSSize(width: 22, height: 18)
     private static let rightMargin: CGFloat = 4
 
@@ -98,7 +98,7 @@ final class ScratchRunButtons {
     private func findLineFrame(atUTF16Offset offset: Int) -> NSRect? {
         let frameInContainer =
             if let layoutManager = textView.textLayoutManager {
-                Self.findLineFrame(atUTF16Offset: offset, in: layoutManager)
+                Self.findTextKit2LineFrame(atUTF16Offset: offset, in: layoutManager)
             } else {
                 findTextKit1LineFrame(atUTF16Offset: offset)
             }
@@ -106,7 +106,7 @@ final class ScratchRunButtons {
         return frameInContainer?.offsetBy(dx: origin.x, dy: origin.y)
     }
 
-    private static func findLineFrame(
+    private static func findTextKit2LineFrame(
         atUTF16Offset offset: Int,
         in layoutManager: NSTextLayoutManager
     ) -> NSRect? {
