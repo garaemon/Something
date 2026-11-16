@@ -19,6 +19,19 @@ final class ScratchWindowControllerTests: XCTestCase {
         return controller
     }
 
+    // Bytes that are not UTF-8 make the scratch file unreadable.
+    private func makeControllerOfUnreadableFile() throws -> ScratchWindowController {
+        let folderURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ScratchWindowControllerTests-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let store = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        try store.saveText("")
+        try Data([0xFF, 0xFE]).write(to: store.fileURL)
+        let controller = ScratchWindowController(store: store)
+        addTeardownBlock { @MainActor in controller.window.close() }
+        return controller
+    }
+
     private func makeKeyEvent(_ key: String, modifiers: NSEvent.ModifierFlags) -> NSEvent {
         NSEvent.keyEvent(
             with: .keyDown,
@@ -64,14 +77,7 @@ final class ScratchWindowControllerTests: XCTestCase {
     }
 
     func test_should_pass_control_j_through_when_file_cannot_be_read() throws {
-        let folderURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ScratchWindowControllerTests-\(UUID().uuidString)")
-        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
-        let store = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
-        try store.saveText("")
-        try Data([0xFF, 0xFE]).write(to: store.fileURL)
-        let controller = ScratchWindowController(store: store)
-        addTeardownBlock { @MainActor in controller.window.close() }
+        let controller = try makeControllerOfUnreadableFile()
 
         let passedEvent = controller.handleKeyDown(makeKeyEvent("j", modifiers: .control))
 
@@ -151,14 +157,7 @@ final class ScratchWindowControllerTests: XCTestCase {
     }
 
     func test_should_show_no_run_button_when_file_cannot_be_read() throws {
-        let folderURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ScratchWindowControllerTests-\(UUID().uuidString)")
-        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
-        let store = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
-        try store.saveText("")
-        try Data([0xFF, 0xFE]).write(to: store.fileURL)
-        let controller = ScratchWindowController(store: store)
-        addTeardownBlock { @MainActor in controller.window.close() }
+        let controller = try makeControllerOfUnreadableFile()
 
         XCTAssertNil(controller.runButtons)
     }
