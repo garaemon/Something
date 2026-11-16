@@ -119,4 +119,22 @@ final class AppDelegateScratchTests: XCTestCase {
 
         XCTAssertTrue(controller.window.subtitle.hasPrefix("Not saved"))
     }
+
+    func test_should_clear_subtitle_when_a_later_save_succeeds() throws {
+        let folderURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AppDelegateScratchTests-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let appDelegate = makeAppDelegate()
+        appDelegate.scratchStore = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        appDelegate.openScratch()
+        let controller = try XCTUnwrap(appDelegate.scratchWindowController)
+        controller.textView.insertText("x", replacementRange: NSRange(location: 0, length: 0))
+        try Data().write(to: folderURL)
+        controller.saveNow()
+        try FileManager.default.removeItem(at: folderURL)
+
+        controller.saveNow()
+
+        XCTAssertEqual(controller.window.subtitle, "")
+    }
 }

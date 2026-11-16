@@ -10,6 +10,8 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     let window: NSWindow
     let textView: NSTextView
     private let autosaver: ScratchAutosaver
+    // Kept apart from `textView.isEditable`, which a run of the code may also turn off.
+    private var isShowingFile = true
 
     init(store: ScratchStore) {
         let scrollView = NSTextView.scrollableTextView()
@@ -30,6 +32,8 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
                 window?.subtitle = ""
                 return true
             } catch {
+                // The log also covers a save on close or on quit, where no subtitle shows.
+                NSLog("Saving the scratch buffer to %@ failed: %@", store.fileURL.path, "\(error)")
                 window?.subtitle = "Not saved: \(error.localizedDescription)"
                 return false
             }
@@ -54,6 +58,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
             textView.string =
                 "# \(store.fileURL.path) cannot be read: \(error.localizedDescription)\n"
             textView.isEditable = false
+            isShowingFile = false
         }
     }
 
@@ -61,7 +66,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     /// when it shows an error about reading the file, so that a new controller reads the file
     /// again in case the user fixed it.
     func reuseIfShowingFile() -> ScratchWindowController? {
-        if textView.isEditable {
+        if isShowingFile {
             return self
         }
         window.close()
