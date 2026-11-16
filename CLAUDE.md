@@ -44,6 +44,7 @@ mise run coverage
 ```
 
 Set `COVERAGE_BASE_REF` to add the coverage of the lines changed since that ref, and the uncovered ones among them.
+The changed lines come from the working tree, including uncommitted edits but not untracked files, so run the tests again after an edit.
 Only sources under `Something/` count, so vendored code such as `ThirdParty/` stays out:
 ```bash
 COVERAGE_BASE_REF=origin/main mise run coverage

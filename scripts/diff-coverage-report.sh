@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Prints, as Markdown, the line coverage of the lines that HEAD adds or changes
-# since the merge base with <base ref>, followed by the uncovered changed lines.
+# Prints, as Markdown, the line coverage of the lines that the working tree
+# adds or changes since the merge base with <base ref>, followed by the
+# uncovered changed lines. The working tree is what the result bundle was built
+# from, so its line numbers match. Untracked files do not count.
 # Only app sources under Something/ count, so that vendored code such as
 # ThirdParty/ stays out of the figure.
 # Usage: diff-coverage-report.sh <path to .xcresult> <base ref>
@@ -11,16 +13,19 @@ if [[ $# -ne 2 ]]; then
   echo "usage: $0 <path to .xcresult> <base ref>" >&2
   exit 2
 fi
-result_bundle_path="$1"
+result_bundle_path="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 base_ref="$2"
 covered_source_directory="Something/"
 
-repository_root=$(git rev-parse --show-toplevel)
+cd "$(git rev-parse --show-toplevel)"
+repository_root="$PWD"
+merge_base=$(git merge-base "$base_ref" HEAD)
+covered_file_list=$(xcrun xccov view --archive --file-list "$result_bundle_path")
 
-# Prints "<path>\t<line>" for each line that HEAD adds or changes.
+# Prints "<path>\t<line>" for each line that the working tree adds or changes.
 list_changed_lines() {
   git diff --unified=0 --no-color --no-renames --diff-filter=AM \
-    "$base_ref...HEAD" -- "$covered_source_directory" |
+    "$merge_base" -- "$covered_source_directory" |
     awk '
       /^\+\+\+ b\// { path = substr($0, 7); next }
       /^@@ / {
@@ -38,31 +43,36 @@ list_changed_lines() {
 
 # Prints "<path>\t<covered>\t<executable>\t<uncovered ranges>" for one file,
 # counting only its changed executable lines. Prints nothing for a file that
-# the result bundle does not cover.
+# the result bundle does not cover, such as a file outside the app target.
 summarize_file() {
   local relative_path="$1"
   local changed_lines_json="$2"
-  local line_coverage_json
-  if ! line_coverage_json=$(xcrun xccov view --archive --json \
-    --file "$repository_root/$relative_path" "$result_bundle_path" 2>/dev/null); then
+  local absolute_path="$repository_root/$relative_path"
+  if ! grep -qxF "$absolute_path" <<<"$covered_file_list"; then
+    # A result bundle that another checkout or an older commit built lacks the
+    # Swift file. Headers and resources never have coverage.
+    if [[ "$relative_path" == *.swift ]]; then
+      echo "warning: $relative_path is not in the result bundle; skipping it" >&2
+    fi
     return 0
   fi
-  jq -r --arg path "$relative_path" --argjson changed "$changed_lines_json" '
-    def ranges:
-      reduce .[] as $line ([];
-        if length > 0 and .[-1][1] + 1 == $line
-        then .[-1][1] = $line
-        else . + [[$line, $line]] end)
-      | map(if .[0] == .[1] then "\(.[0])" else "\(.[0])-\(.[1])" end)
-      | join(", ");
-    [.[][] | select(.isExecutable and (.line as $line | $changed | any(. == $line)))]
-    | select(length > 0)
-    | [$path,
-       (map(select(.executionCount > 0)) | length),
-       length,
-       (map(select(.executionCount == 0) | .line) | ranges)]
-    | @tsv
-  ' <<<"$line_coverage_json"
+  xcrun xccov view --archive --json --file "$absolute_path" "$result_bundle_path" |
+    jq -r --arg path "$relative_path" --argjson changed "$changed_lines_json" '
+      def format_line_ranges:
+        reduce .[] as $line ([];
+          if length > 0 and .[-1][1] + 1 == $line
+          then .[-1][1] = $line
+          else . + [[$line, $line]] end)
+        | map(if .[0] == .[1] then "\(.[0])" else "\(.[0])-\(.[1])" end)
+        | join(", ");
+      [.[][] | select(.isExecutable and (.line as $line | $changed | any(. == $line)))]
+      | select(length > 0)
+      | [$path,
+         (map(select(.executionCount > 0)) | length),
+         length,
+         (map(select(.executionCount == 0) | .line) | format_line_ranges)]
+      | @tsv
+    '
 }
 
 summarize_changed_files() {
@@ -106,4 +116,9 @@ print_report() {
   echo "</details>"
 }
 
-print_report "$(summarize_changed_files)"
+# Bash drops errexit inside command substitution, so the summaries go through a
+# file to let a failed git, xccov, or jq call stop the script.
+file_summaries_path=$(mktemp)
+trap 'rm -f "$file_summaries_path"' EXIT
+summarize_changed_files >"$file_summaries_path"
+print_report "$(cat "$file_summaries_path")"
