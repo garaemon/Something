@@ -14,6 +14,7 @@ struct ScratchBlock: Equatable {
 ///
 /// A block is a paragraph that holds code. A blank line ends the paragraph unless the next
 /// non-blank line is indented, which keeps a function body with blank lines in one block.
+/// Lines inside a triple-quoted string belong to the block of the string, whatever they hold.
 enum ScratchBlockParser {
     static let outputPrefix = "# => "
     static let errorPrefix = "# !! "
@@ -23,15 +24,21 @@ enum ScratchBlockParser {
 
     /// Returns every block of `lines`, top to bottom.
     static func findBlocks(in lines: [String]) -> [ScratchBlock] {
+        let startsInsideString = findLinesStartingInsideString(lines)
         var blocks: [ScratchBlock] = []
         var index = 0
         while index < lines.count {
             let line = lines[index]
-            if isBlank(line) || isOutputLine(line) || isIndented(line) {
+            let isInsideBlock = isIndented(line) || startsInsideString[index]
+            if isBlank(line) || isOutputLine(line) || isInsideBlock {
                 index += 1
                 continue
             }
-            let endIndex = findBlockEnd(in: lines, from: index)
+            let endIndex = findBlockEnd(
+                in: lines,
+                from: index,
+                startsInsideString: startsInsideString
+            )
             if lines[index...endIndex].contains(where: isCodeLine) {
                 let outputEnd = findOutputEnd(in: lines, after: endIndex)
                 blocks.append(
@@ -56,16 +63,14 @@ enum ScratchBlockParser {
     /// Splits the code lines of a block before its last top-level statement, so that the
     /// value of that statement can be echoed.
     static func makePythonBlock(from blockLines: [String]) -> PythonBlock {
-        var bracketDepth = 0
+        var lineState = PythonLineState()
         var lastStatementStart = 0
         for (index, line) in blockLines.enumerated() {
             let followsDecorator = index > 0 && blockLines[index - 1].hasPrefix("@")
-            if bracketDepth == 0, !followsDecorator, startsStatement(line) {
+            if lineState == PythonLineState(), !followsDecorator, startsStatement(line) {
                 lastStatementStart = index
             }
-            if isCodeLine(line) {
-                bracketDepth += countBracketDepthChange(line)
-            }
+            lineState = PythonLineScanner.scan(line, from: lineState)
         }
         return PythonBlock(
             leadingSource: blockLines[..<lastStatementStart].joined(separator: "\n"),
@@ -84,11 +89,19 @@ enum ScratchBlockParser {
         line.hasPrefix(outputPrefix) || line.hasPrefix(errorPrefix)
     }
 
-    private static func findBlockEnd(in lines: [String], from startIndex: Int) -> Int {
+    private static func findBlockEnd(
+        in lines: [String],
+        from startIndex: Int,
+        startsInsideString: [Bool]
+    ) -> Int {
         var endIndex = startIndex
         var index = startIndex + 1
-        while index < lines.count, !isOutputLine(lines[index]) {
-            if isBlank(lines[index]) {
+        while index < lines.count {
+            if startsInsideString[index] {
+                endIndex = index
+            } else if isOutputLine(lines[index]) {
+                break
+            } else if isBlank(lines[index]) {
                 let nextLine = lines[(index + 1)...].first { !isBlank($0) }
                 guard let nextLine, isIndented(nextLine) else {
                     break
@@ -113,8 +126,23 @@ enum ScratchBlockParser {
         guard !text.isEmpty else {
             return []
         }
-        let trimmedText = text.hasSuffix("\n") ? String(text.dropLast()) : text
-        return trimmedText.components(separatedBy: "\n")
+        // A carriage return, such as from a progress display, also starts a line in the
+        // text view, so it needs a prefix of its own.
+        let trimmedText = text.last?.isNewline == true ? String(text.dropLast()) : text
+        return trimmedText.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .map(String.init)
+    }
+
+    // The bracket depth is not carried over, so that a stray bracket in one block does not
+    // spill into the blocks below.
+    private static func findLinesStartingInsideString(_ lines: [String]) -> [Bool] {
+        var openTripleQuote: String?
+        return lines.map { line in
+            let startsInsideString = openTripleQuote != nil
+            let startState = PythonLineState(openTripleQuote: openTripleQuote)
+            openTripleQuote = PythonLineScanner.scan(line, from: startState).openTripleQuote
+            return startsInsideString
+        }
     }
 
     private static func isBlank(_ line: String) -> Bool {
@@ -133,33 +161,5 @@ enum ScratchBlockParser {
     private static func startsStatement(_ line: String) -> Bool {
         let firstWord = String(line.prefix { $0.isLetter || $0.isNumber || $0 == "_" })
         return isCodeLine(line) && !isIndented(line) && !continuationKeywords.contains(firstWord)
-    }
-
-    // Skips brackets inside string literals and after a comment marker. A string that
-    // spans lines, such as a triple-quoted one, is not tracked.
-    private static func countBracketDepthChange(_ line: String) -> Int {
-        var depthChange = 0
-        var openQuote: Character?
-        var isEscaped = false
-        for character in line {
-            if let quote = openQuote {
-                if isEscaped {
-                    isEscaped = false
-                } else if character == "\\" {
-                    isEscaped = true
-                } else if character == quote {
-                    openQuote = nil
-                }
-                continue
-            }
-            switch character {
-            case "\"", "'": openQuote = character
-            case "#": return depthChange
-            case "(", "[", "{": depthChange += 1
-            case ")", "]", "}": depthChange -= 1
-            default: break
-            }
-        }
-        return depthChange
     }
 }

@@ -138,4 +138,40 @@ final class ScratchBlockParserTests: XCTestCase {
 
         XCTAssertEqual(source.lastStatement, "case")
     }
+
+    func test_should_keep_blank_line_inside_triple_quoted_string_in_one_block() {
+        let blocks = findBlocks("text = \"\"\"\nfirst\n\nsecond\n\"\"\"\ntext")
+
+        XCTAssertEqual(blocks.map(\.lineRange), [0..<6])
+    }
+
+    func test_should_not_treat_result_prefix_inside_string_as_result_line() {
+        let blocks = findBlocks("text = \"\"\"\n# => not a result\n\"\"\"")
+
+        XCTAssertEqual(blocks.map(\.lineRange), [0..<3])
+    }
+
+    func test_should_keep_triple_quoted_string_whole_in_last_statement() {
+        let lines = ["x = 1", "text = \"\"\"", "a", "b", "\"\"\""]
+
+        let source = ScratchBlockParser.makePythonBlock(from: lines)
+
+        XCTAssertEqual(source.lastStatement, "text = \"\"\"\na\nb\n\"\"\"")
+    }
+
+    func test_should_start_statement_after_one_line_triple_quoted_string() {
+        let lines = ["text = \"\"\"a\"\"\"", "text"]
+
+        let source = ScratchBlockParser.makePythonBlock(from: lines)
+
+        XCTAssertEqual(source.lastStatement, "text")
+    }
+
+    func test_should_split_output_on_carriage_returns() {
+        let result = PythonRunResult(output: "10%\r20%\n", errorMessage: nil)
+
+        let lines = ScratchBlockParser.formatResult(result)
+
+        XCTAssertEqual(lines, ["# => 10%", "# => 20%"])
+    }
 }
