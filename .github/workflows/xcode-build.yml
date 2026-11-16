@@ -19,7 +19,7 @@ jobs:
     - name: Install tools with mise
       uses: jdx/mise-action@v2
 
-    - name: Lint with SwiftLint
+    - name: Lint with swift-format, SwiftLint, and ShellCheck
       run: mise run lint
 
   build:

@@ -42,7 +42,7 @@ Format the app sources with swift-format (`.swift-format`):
 mise run format
 ```
 
-Lint the app sources with swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail):
+Lint the app sources with swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail), and the shell scripts (`*.sh`, `*.bash`, and the hooks in `.githooks/`) with [ShellCheck](https://www.shellcheck.net):
 ```bash
 mise run lint
 ```
