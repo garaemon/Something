@@ -4,7 +4,7 @@ The scratch buffer runs Python on [pocketpy](https://github.com/pocketpy/pocketp
 
 - Version: v2.2.0
 - Files: `pocketpy.c` and `pocketpy.h`, the single-file build from the [v2.2.0 release](https://github.com/pocketpy/pocketpy/releases/tag/v2.2.0), unmodified.
-- License: MIT, in `LICENSE`.
+- License: MIT, in `LICENSE`. The app bundles the file as `Contents/Resources/LICENSE`.
 
 To upgrade, download both files from a newer release, replace them here, and run `mise run test`.
 
