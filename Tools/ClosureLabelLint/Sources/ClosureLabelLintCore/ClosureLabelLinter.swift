@@ -12,7 +12,7 @@ public struct LintSource: Sendable {
     }
 }
 
-/// A call that passes a trailing closure to a callee whose last parameter is a labeled closure.
+/// A call whose trailing closure fills a labeled closure parameter and hides its label.
 public struct LintViolation: Equatable, Sendable, CustomStringConvertible {
     public let path: String
     /// 1-based line of the trailing closure's `{`.

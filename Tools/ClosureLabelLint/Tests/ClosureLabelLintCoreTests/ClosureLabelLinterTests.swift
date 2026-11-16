@@ -119,16 +119,84 @@ private func lint(_ text: String) -> [LintViolation] {
     #expect(violations.isEmpty)
 }
 
-@Test func should_skip_static_and_computed_properties_for_memberwise_initializer() {
+@Test func should_skip_static_property_for_memberwise_initializer() {
     let violations = lint(
         """
         struct Source {
             let title: String
-            static let fallback: () -> Void = {}
+            static var fallback: () -> Void = {}
+        }
+        let source = Source { }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_skip_computed_property_for_memberwise_initializer() {
+    let violations = lint(
+        """
+        struct Source {
+            let title: String
             var action: () -> Void { {} }
         }
-        func make(_ build: () -> Source) {}
-        make { Source(title: "x") }
+        let source = Source { }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_skip_initialized_let_for_memberwise_initializer() {
+    let violations = lint(
+        """
+        struct Source {
+            let action: () -> Void
+            let suffix: String = ""
+        }
+        let source = Source { }
+        """
+    )
+
+    #expect(violations.map(\.label) == ["action"])
+}
+
+@Test func should_keep_initialized_var_for_memberwise_initializer() {
+    let violations = lint(
+        """
+        struct Source {
+            let title: String
+            var action: () -> Void = {}
+        }
+        let source = Source(title: "x") { }
+        """
+    )
+
+    #expect(violations.map(\.label) == ["action"])
+}
+
+@Test func should_report_trailing_closure_of_actor_initializer() {
+    let violations = lint(
+        """
+        actor Worker {
+            init(onFinish: @escaping () -> Void) {}
+        }
+        let worker = Worker { }
+        """
+    )
+
+    #expect(violations.map(\.calleeName) == ["Worker"])
+}
+
+@Test func should_skip_initializer_requirement_of_nested_protocol() {
+    let violations = lint(
+        """
+        enum Namespace {
+            protocol Factory {
+                init(build: @escaping () -> Void)
+            }
+        }
+        let value = Namespace { }
         """
     )
 
@@ -157,11 +225,51 @@ private func lint(_ text: String) -> [LintViolation] {
     #expect(violations.isEmpty)
 }
 
-@Test func should_report_nothing_when_last_parameter_is_not_closure() {
+@Test func should_report_closure_followed_by_defaulted_parameters() {
     let violations = lint(
         """
         func run(action: () -> Void, count: Int = 1) {}
         run { }
+        """
+    )
+
+    #expect(violations.map(\.label) == ["action"])
+}
+
+@Test func should_report_nothing_when_closure_is_followed_by_required_parameter() {
+    let violations = lint(
+        """
+        func run(action: () -> Void, count: Int) {}
+        run { }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_report_memberwise_closure_followed_by_omittable_properties() {
+    let violations = lint(
+        """
+        struct Row {
+            let onTap: () -> Void
+            var isHovered = false
+            var subtitle: String?
+        }
+        let row = Row { }
+        """
+    )
+
+    #expect(violations.map(\.label) == ["onTap"])
+}
+
+@Test func should_report_nothing_when_memberwise_closure_is_followed_by_required_property() {
+    let violations = lint(
+        """
+        struct Row {
+            let onTap: () -> Void
+            let title: String
+        }
+        let row = Row { }
         """
     )
 
@@ -218,4 +326,96 @@ private func lint(_ text: String) -> [LintViolation] {
                 + "instead of as a trailing closure (closure_label)"
         ]
     )
+}
+
+@Test func should_report_nothing_when_earlier_parameter_takes_closure() {
+    let violations = lint(
+        """
+        func animate(changes: () -> Void, completion: (() -> Void)? = nil) {}
+        animate { }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_report_nothing_when_earlier_memberwise_parameter_takes_closure() {
+    let violations = lint(
+        """
+        struct Animation {
+            let changes: () -> Void
+            var completion: (() -> Void)? = nil
+        }
+        let animation = Animation { }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_keep_observed_property_for_memberwise_initializer() {
+    let violations = lint(
+        """
+        struct Source {
+            let title: String
+            var action: () -> Void { didSet { print("changed") } }
+        }
+        let source = Source(title: "x") { }
+        """
+    )
+
+    #expect(violations.map(\.label) == ["action"])
+}
+
+@Test func should_report_nothing_for_result_builder_property() {
+    let violations = lint(
+        """
+        struct Card<Content: View>: View {
+            @ViewBuilder let content: () -> Content
+        }
+        let card = Card { Text("a") }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_report_nothing_for_result_builder_parameter() {
+    let violations = lint(
+        """
+        func section(@ViewBuilder content: () -> some View) {}
+        section { Text("a") }
+        """
+    )
+
+    #expect(violations.isEmpty)
+}
+
+@Test func should_report_trailing_closure_of_generic_specialized_call() {
+    let violations = lint(
+        """
+        struct Box<Value> {
+            let onChange: (Value) -> Void
+        }
+        let box = Box<Int> { _ in }
+        """
+    )
+
+    #expect(violations.map(\.calleeName) == ["Box"])
+}
+
+@Test func should_report_trailing_closure_of_initializer_in_extension_of_member_type() {
+    let violations = lint(
+        """
+        enum Namespace {
+            struct Source {}
+        }
+        extension Namespace.Source {
+            init(openSettings: @escaping () -> Void) { self.init() }
+        }
+        let source = Namespace.Source { }
+        """
+    )
+
+    #expect(violations.map(\.calleeName) == ["Source"])
 }
