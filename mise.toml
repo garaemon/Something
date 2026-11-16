@@ -1,4 +1,5 @@
 [tools]
+shellcheck = "0.11.0"
 swiftlint = "0.65.1"
 xcodegen = "2.46.0"
 
@@ -35,10 +36,13 @@ description = "Format the app sources with swift-format"
 run = "xcrun swift-format format --in-place --recursive Something"
 
 [tasks.lint]
-description = "Lint the app sources with swift-format and SwiftLint"
+description = "Lint the app sources with swift-format and SwiftLint, and the shell scripts with ShellCheck"
+# The Git hooks have no file extension, so .githooks is listed by path. Untracked
+# scripts are included so that a new script fails before its first commit.
 run = [
   "xcrun swift-format lint --strict --recursive Something",
   "swiftlint lint --strict",
+  "git ls-files -z --cached --others --exclude-standard -- '*.sh' '*.bash' '.githooks/*' | xargs -0 shellcheck",
 ]
 
 [tasks.install-hooks]
