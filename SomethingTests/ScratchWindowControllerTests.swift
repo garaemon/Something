@@ -176,4 +176,18 @@ final class ScratchWindowControllerTests: XCTestCase {
 
         XCTAssertGreaterThan(lowerButton.frame.minY, wideMinY)
     }
+
+    // A run would send the uncommitted kana to Python and lock the text mid-composition.
+    func test_should_not_run_on_run_button_click_while_composing_text() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        controller.textView.setMarkedText(
+            "\u{304B}",
+            selectedRange: NSRange(location: 1, length: 0),
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
+
+        controller.runButtons?.buttons.first?.performClick(nil)
+
+        XCTAssertNotEqual(controller.window.subtitle, ScratchSubtitle.runningText)
+    }
 }

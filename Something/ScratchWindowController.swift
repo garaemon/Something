@@ -70,12 +70,21 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         window.contentView = scrollView
         window.delegate = self
         window.center()
-        if let runner {
-            runButtons = ScratchRunButtons(textView: textView) { [weak runner] lineIndex in
-                runner?.runBlock(atLine: lineIndex)
+        if runner != nil {
+            runButtons = ScratchRunButtons(textView: textView) { [weak self] lineIndex in
+                self?.runBlockUnlessComposing(atLine: lineIndex)
             }
         }
         runButtons?.update()
+    }
+
+    // A click does not commit the text that an input method composes, and C-j skips a run
+    // then too.
+    private func runBlockUnlessComposing(atLine lineIndex: Int) {
+        guard !textView.hasMarkedText() else {
+            return
+        }
+        runner?.runBlock(atLine: lineIndex)
     }
 
     // A file that exists but cannot be read stays read-only, so that no autosave
