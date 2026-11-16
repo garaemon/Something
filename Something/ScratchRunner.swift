@@ -41,7 +41,6 @@ final class ScratchRunner {
 
     /// Starts `command`. A command that starts while another is in progress does nothing.
     func perform(_ command: ScratchCommand) {
-        let lines = textView.string.components(separatedBy: "\n")
         switch command {
         case .runBlockAtCursor:
             let cursorLine = Self.findLineIndex(
@@ -50,6 +49,7 @@ final class ScratchRunner {
             )
             runBlock(atLine: cursorLine)
         case .runAllBlocks:
+            let lines = textView.string.components(separatedBy: "\n")
             run(ScratchBlockParser.findBlocks(in: lines), in: lines)
         case .resetInterpreter:
             reset()
