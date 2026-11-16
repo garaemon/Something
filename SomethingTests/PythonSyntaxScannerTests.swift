@@ -195,4 +195,30 @@ final class PythonSyntaxScannerTests: XCTestCase {
 
         XCTAssertEqual(tokens.last, NamedToken(kind: .keyword, text: "if"))
     }
+
+    func test_should_find_indented_decorator() {
+        let tokens = findNamedTokens(in: "class A:\n    @staticmethod\n    def f(): pass")
+
+        XCTAssertEqual(
+            tokens,
+            [
+                NamedToken(kind: .keyword, text: "class"),
+                NamedToken(kind: .decorator, text: "@staticmethod"),
+                NamedToken(kind: .keyword, text: "def"),
+                NamedToken(kind: .keyword, text: "pass"),
+            ]
+        )
+    }
+
+    func test_should_end_string_after_escaped_backslash() {
+        let tokens = findNamedTokens(in: #"s = 'a\\' or b"#)
+
+        XCTAssertEqual(
+            tokens,
+            [
+                NamedToken(kind: .string, text: #"'a\\'"#),
+                NamedToken(kind: .keyword, text: "or"),
+            ]
+        )
+    }
 }
