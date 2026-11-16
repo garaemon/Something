@@ -111,12 +111,65 @@ final class PythonInterpreterTests: XCTestCase {
         XCTAssertEqual(result.errorMessage?.hasPrefix("NameError"), true)
     }
 
-    func test_should_capture_output_after_reset() {
+    func test_should_capture_output_of_a_run_after_reset() {
+        _ = interpreter.run(PythonBlock(lastStatement: "print('before')"))
         interpreter.reset()
 
         let result = interpreter.run(PythonBlock(lastStatement: "print('again')"))
 
         XCTAssertEqual(result.output, "again\n")
+    }
+
+    func test_should_read_empty_line_from_input_instead_of_stdin() {
+        let result = interpreter.run(PythonBlock(lastStatement: "input('name? ')"))
+
+        XCTAssertEqual(result.output, "name? ''\n")
+    }
+
+    func test_should_cap_output_of_a_print_loop() {
+        let block = PythonBlock(lastStatement: "for i in range(2000):\n    print('x' * 1000)\n")
+
+        let result = interpreter.run(block)
+
+        XCTAssertLessThanOrEqual(
+            result.output.utf8.count,
+            PythonInterpreter.maxOutputByteCount + PythonInterpreter.truncationNotice.utf8.count
+        )
+    }
+
+    func test_should_keep_head_of_one_print_larger_than_cap() {
+        let block = PythonBlock(
+            lastStatement: "print('x' * \(PythonInterpreter.maxOutputByteCount + 50_000))"
+        )
+
+        let result = interpreter.run(block)
+
+        XCTAssertEqual(
+            result.output,
+            String(repeating: "x", count: PythonInterpreter.maxOutputByteCount)
+                + PythonInterpreter.truncationNotice
+        )
+    }
+
+    // Two ASCII bytes put the cap in the middle of a three-byte character.
+    func test_should_keep_whole_multibyte_characters_up_to_cap() {
+        let block = PythonBlock(lastStatement: "print('xx' + chr(0x3042) * 50000)")
+        let wholeCharacterCount = (PythonInterpreter.maxOutputByteCount - 2) / 3
+
+        let result = interpreter.run(block)
+
+        XCTAssertEqual(
+            result.output,
+            "xx" + String(repeating: "\u{3042}", count: wholeCharacterCount)
+                + PythonInterpreter.truncationNotice
+        )
+    }
+
+    // exit() in pocketpy calls the C exit() and would quit the whole app.
+    func test_should_raise_system_exit_instead_of_quitting_on_exit() {
+        let result = interpreter.run(PythonBlock(lastStatement: "exit(3)"))
+
+        XCTAssertEqual(result.errorMessage?.hasPrefix("SystemExit"), true)
     }
 
     func test_should_keep_exception_type_of_multiline_message() {
@@ -131,5 +184,13 @@ final class PythonInterpreterTests: XCTestCase {
         let result = interpreter.run(PythonBlock(lastStatement: source))
 
         XCTAssertEqual(result.errorMessage?.hasPrefix("KeyError"), true)
+    }
+
+    func test_should_end_capped_output_with_truncation_notice() {
+        let block = PythonBlock(lastStatement: "for i in range(2000):\n    print('x' * 1000)\n")
+
+        let result = interpreter.run(block)
+
+        XCTAssertTrue(result.output.hasSuffix(PythonInterpreter.truncationNotice))
     }
 }

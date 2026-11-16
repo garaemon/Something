@@ -25,6 +25,11 @@ struct PythonRunResult: Equatable {
 final class PythonInterpreter {
     static let shared = PythonInterpreter()
 
+    /// The most printed output, in UTF-8 bytes, that one run keeps.
+    static let maxOutputByteCount = 100_000
+    /// Text that ends the output of a run that printed more than `maxOutputByteCount`.
+    static let truncationNotice = "[output truncated]\n"
+
     private static let sourceFilename = "<scratch>"
 
     private let queue = DispatchQueue(label: "com.garaemon.Something.python")
@@ -33,22 +38,34 @@ final class PythonInterpreter {
         queue.sync {
             py_initialize()
             Self.installCallbacks()
+            Self.replaceExit()
         }
     }
 
-    /// Runs `block`, and stops it with `TimeoutError` after `timeoutMilliseconds`.
+    /// Runs `block`, and stops it with `TimeoutError` once it uses up `timeoutMilliseconds`.
     ///
-    /// The last statement does not run when the leading source raises.
+    /// The last statement does not run when the leading source raises. `input()` reads an
+    /// empty line instead of the standard input of the app.
+    ///
+    /// The pocketpy watchdog has two limits:
+    /// - It counts the CPU time of the whole process, so busy threads elsewhere in the app
+    ///   end a run early.
+    /// - It checks the time between bytecodes only, so a long call into C, such as
+    ///   `time.sleep(600)`, runs to the end and blocks the queue meanwhile.
     func run(_ block: PythonBlock, timeoutMilliseconds: Int = 2000) -> PythonRunResult {
         queue.sync {
-            PythonOutputCapture.text = ""
+            PythonOutputCapture.reset()
             py_watchdog_begin(Int64(timeoutMilliseconds))
             defer { py_watchdog_end() }
             let succeeded =
                 Self.execute(block.leadingSource, mode: EXEC_MODE)
                 && Self.execute(block.lastStatement, mode: SINGLE_MODE)
             let errorMessage = succeeded ? nil : Self.takeErrorMessage()
-            return PythonRunResult(output: PythonOutputCapture.text, errorMessage: errorMessage)
+            let notice = PythonOutputCapture.isTruncated ? Self.truncationNotice : ""
+            return PythonRunResult(
+                output: PythonOutputCapture.text + notice,
+                errorMessage: errorMessage
+            )
         }
     }
 
@@ -57,6 +74,7 @@ final class PythonInterpreter {
         queue.sync {
             py_resetvm()
             Self.installCallbacks()
+            Self.replaceExit()
         }
     }
 
@@ -96,13 +114,62 @@ final class PythonInterpreter {
             guard let text else {
                 return
             }
-            PythonOutputCapture.text += String(cString: text)
+            PythonOutputCapture.append(String(cString: text))
         }
+        // The default reads the standard input of the app, which waits forever when the
+        // app runs from Xcode, and the watchdog cannot stop a wait inside C.
+        py_callbacks().pointee.getchr = { EOF }
+    }
+
+    // The builtin exit() of pocketpy calls the C exit(), which would quit the whole app.
+    // Raising SystemExit ends only the run, as the error of the block.
+    private static func replaceExit() {
+        let source = "def exit(code=0):\n    raise SystemExit(code)\n"
+        let succeeded = py_exec(source, "<setup>", EXEC_MODE, py_getmodule("builtins"))
+        precondition(succeeded, "Replacing the builtin exit() of pocketpy failed.")
     }
 }
 
 // The print callback is a C function pointer, which cannot capture the interpreter,
 // so printed text collects here. Only the interpreter queue touches it.
 private enum PythonOutputCapture {
-    static var text = ""
+    static private(set) var text = ""
+    static private(set) var isTruncated = false
+    private static var byteCount = 0
+
+    static func reset() {
+        text = ""
+        isTruncated = false
+        byteCount = 0
+    }
+
+    // A print loop can produce megabytes before the watchdog fires, and the scratch
+    // view would then insert all of it.
+    static func append(_ chunk: String) {
+        guard !isTruncated else {
+            return
+        }
+        let remainingByteCount = PythonInterpreter.maxOutputByteCount - byteCount
+        let chunkByteCount = chunk.utf8.count
+        if chunkByteCount <= remainingByteCount {
+            text += chunk
+            byteCount += chunkByteCount
+            return
+        }
+        let head = takeUTF8Prefix(of: chunk, maxByteCount: remainingByteCount)
+        text += head
+        byteCount += head.utf8.count
+        isTruncated = true
+    }
+
+    // Stops before a multibyte character that does not fit whole, so that the cut leaves
+    // no broken character behind.
+    private static func takeUTF8Prefix(of chunk: String, maxByteCount: Int) -> String {
+        let bytes = chunk.utf8
+        let fittingCutCount = (0...maxByteCount).reversed().first { cutCount in
+            let cutIndex = bytes.index(bytes.startIndex, offsetBy: cutCount)
+            return cutIndex.samePosition(in: chunk.unicodeScalars) != nil
+        }
+        return String(bytes.prefix(fittingCutCount ?? 0)) ?? ""
+    }
 }
