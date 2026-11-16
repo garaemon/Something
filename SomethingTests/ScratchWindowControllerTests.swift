@@ -190,4 +190,33 @@ final class ScratchWindowControllerTests: XCTestCase {
 
         XCTAssertNotEqual(controller.window.subtitle, ScratchSubtitle.runningText)
     }
+
+    func test_should_color_comment_of_initial_text() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+
+        let color = controller.textView.textStorage?.attribute(
+            .foregroundColor,
+            at: 0,
+            effectiveRange: nil
+        ) as? NSColor
+
+        XCTAssertEqual(color, ScratchHighlighter.color(for: .comment))
+    }
+
+    func test_should_color_typed_keyword() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        let endOffset = controller.textView.string.utf16.count
+
+        controller.textView.insertText(
+            "\nif",
+            replacementRange: NSRange(location: endOffset, length: 0)
+        )
+        let color = controller.textView.textStorage?.attribute(
+            .foregroundColor,
+            at: endOffset + 1,
+            effectiveRange: nil
+        ) as? NSColor
+
+        XCTAssertEqual(color, ScratchHighlighter.color(for: .keyword))
+    }
 }

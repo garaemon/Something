@@ -11,6 +11,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     let textView: NSTextView
     private let autosaver: ScratchAutosaver
     private let subtitle: ScratchSubtitle
+    private let highlighter: ScratchHighlighter
     // Kept apart from `textView.isEditable`, which a run of the code may also turn off.
     private var isShowingFile = true
     private var runner: ScratchRunner?
@@ -37,6 +38,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
             preconditionFailure("NSTextView.scrollableTextView() holds no text view.")
         }
         textView = scrollingTextView
+        highlighter = ScratchHighlighter(textView: scrollingTextView)
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 480),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -75,6 +77,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
                 self?.runBlockUnlessComposing(atLine: lineIndex)
             }
         }
+        highlighter.update()
         runButtons?.update()
     }
 
@@ -167,6 +170,7 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
 
     func textDidChange(_ notification: Notification) {
         autosaver.scheduleSave(textView.string)
+        highlighter.update()
         runButtons?.update()
     }
 
