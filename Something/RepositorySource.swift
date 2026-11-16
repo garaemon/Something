@@ -19,7 +19,9 @@ struct RepositorySource: CandidateSource {
             name: repository.name,
             icon: .folder,
             kind: .repository,
-            actions: [LauncherAction(title: "Open in Finder") { openRepository(repository) }]
+            actions: [
+                LauncherAction(title: "Open in Finder", perform: { openRepository(repository) })
+            ]
         )
     }
 }

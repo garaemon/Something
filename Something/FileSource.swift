@@ -31,10 +31,10 @@ struct FileSource: CandidateSource {
             icon: .fileType(extension: file.url.pathExtension.lowercased()),
             kind: .file,
             actions: [
-                LauncherAction(title: "Open") { openFile(file) },
+                LauncherAction(title: "Open", perform: { openFile(file) }),
                 // Unreachable until the launcher can pick a non-default action.
                 // https://github.com/garaemon/Something/issues/20
-                LauncherAction(title: "Reveal in Finder") { revealFile(file) },
+                LauncherAction(title: "Reveal in Finder", perform: { revealFile(file) }),
             ]
         )
     }

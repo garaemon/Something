@@ -16,7 +16,7 @@ struct ApplicationSource: CandidateSource {
             name: application.name,
             icon: .applicationBundle(application),
             kind: .application,
-            actions: [LauncherAction(title: "Open") { launchApplication(application) }]
+            actions: [LauncherAction(title: "Open", perform: { launchApplication(application) })]
         )
     }
 }

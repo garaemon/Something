@@ -18,7 +18,7 @@ struct WebSearchSource: CandidateSource {
     // Return keeps the launcher open instead of closing it for nothing.
     private func makeCandidate(for search: WebSearch) -> LauncherCandidate {
         let actions = search.url.map { url in
-            [LauncherAction(title: "Open in Browser") { openURL(url) }]
+            [LauncherAction(title: "Open in Browser", perform: { openURL(url) })]
         }
         return LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: search),
