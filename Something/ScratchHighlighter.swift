@@ -28,24 +28,56 @@ final class ScratchHighlighter {
     }
 
     /// Colors the whole text again. Call after the text changes.
+    ///
+    /// Only the ranges whose color changes are written, since a write marks its range edited
+    /// and TextKit 2 then lays that range out again.
     func update() {
         guard let textStorage = textView.textStorage else {
             return
         }
         let tokens = PythonSyntaxScanner.findTokens(in: textStorage.string)
-        textStorage.beginEditing()
-        textStorage.addAttribute(
-            .foregroundColor,
-            value: NSColor.textColor,
-            range: NSRange(location: 0, length: textStorage.length)
-        )
+        var coloredRanges: [(range: NSRange, color: NSColor)] = []
+        var plainStart = 0
         for token in tokens {
-            textStorage.addAttribute(
-                .foregroundColor,
-                value: Self.color(for: token.kind),
-                range: token.range
+            coloredRanges.append(
+                (Self.makeRange(from: plainStart, to: token.range.location), .textColor)
             )
+            coloredRanges.append((token.range, Self.color(for: token.kind)))
+            plainStart = NSMaxRange(token.range)
+        }
+        coloredRanges.append((Self.makeRange(from: plainStart, to: textStorage.length), .textColor))
+        let changes = coloredRanges.flatMap { range, color in
+            Self.findChangedRanges(in: range, to: color, of: textStorage).map { ($0, color) }
+        }
+        guard !changes.isEmpty else {
+            return
+        }
+        textStorage.beginEditing()
+        for (range, color) in changes {
+            textStorage.addAttribute(.foregroundColor, value: color, range: range)
         }
         textStorage.endEditing()
+    }
+
+    private static func makeRange(from start: Int, to end: Int) -> NSRange {
+        NSRange(location: start, length: max(end - start, 0))
+    }
+
+    // Returns the parts of `range` whose color differs from `color`.
+    private static func findChangedRanges(
+        in range: NSRange,
+        to color: NSColor,
+        of textStorage: NSTextStorage
+    ) -> [NSRange] {
+        guard range.length > 0 else {
+            return []
+        }
+        var changedRanges: [NSRange] = []
+        textStorage.enumerateAttribute(.foregroundColor, in: range) { value, subrange, _ in
+            if value as? NSColor != color {
+                changedRanges.append(subrange)
+            }
+        }
+        return changedRanges
     }
 }

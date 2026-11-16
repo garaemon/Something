@@ -63,4 +63,20 @@ final class ScratchHighlighterTests: XCTestCase {
 
         XCTAssertNotEqual(findColor(at: 0, in: textView), findColor(at: 7, in: textView))
     }
+
+    // An attribute write marks its range edited, and TextKit 2 then lays the range out again.
+    func test_should_not_edit_text_storage_when_colors_are_unchanged() {
+        let (highlighter, textView) = makeHighlightedTextView(text: "def f(): return 'x'  # c")
+        var editCount = 0
+        let observer = NotificationCenter.default.addObserver(
+            forName: NSTextStorage.didProcessEditingNotification,
+            object: textView.textStorage,
+            queue: nil
+        ) { _ in editCount += 1 }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        highlighter.update()
+
+        XCTAssertEqual(editCount, 0)
+    }
 }
