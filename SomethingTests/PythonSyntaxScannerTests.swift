@@ -188,4 +188,11 @@ final class PythonSyntaxScannerTests: XCTestCase {
 
         XCTAssertEqual(tokens, [NamedToken(kind: .number, text: "1")])
     }
+
+    // Swift keeps "\r\n" as one Character, which a split by Character would miss.
+    func test_should_end_comment_at_carriage_return_and_line_feed() {
+        let tokens = findNamedTokens(in: "# c\r\nif")
+
+        XCTAssertEqual(tokens.last, NamedToken(kind: .keyword, text: "if"))
+    }
 }
