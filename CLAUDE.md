@@ -71,6 +71,7 @@ mise run install-hooks
 ```
 
 The hook lives in `.githooks/pre-commit`. `git commit --no-verify` skips it.
+Each worktree keeps its own `Tools/ClosureLabelLint/.build`, so the first hook run in a new worktree builds swift-syntax for a few minutes. Run `mise run lint` once after creating a worktree to build it up front.
 
 The code follows the Google Swift Style Guide with 4-space indentation. Read [STYLE_GUIDE.md](STYLE_GUIDE.md) before writing Swift code, and run `mise run format` after editing it.
 

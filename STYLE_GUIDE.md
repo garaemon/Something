@@ -21,7 +21,7 @@ Format the app sources in place:
 mise run format
 ```
 
-Check the app sources with both tools. Any finding fails the task, and CI runs it on every pull request:
+Check the app sources with all three tools. Any finding fails the task, and CI runs it on every pull request:
 
 ```bash
 mise run lint
@@ -61,10 +61,12 @@ Swift itself rejects some patterns that other C-family languages allow:
 
 ## Closure Labels
 
-`closure-label-lint` reports a call that passes a trailing closure when the callee's last parameter is a labeled closure. It reads the syntax tree only, without type checking:
+`closure-label-lint` reports a call whose trailing closure fills a labeled closure parameter. It reads the syntax tree only, without type checking:
 
-1. It collects the `func` and `init` declarations under `Something/` whose last parameter is a labeled closure, and the structs whose memberwise initializer ends with a stored closure property.
+1. It collects the `func` and `init` declarations under `Something/` with one labeled closure parameter followed only by parameters with default values, and the structs whose memberwise initializer has the same shape.
 2. It reports each call with a trailing closure whose callee has one of those names.
+
+The tool skips a closure with a result builder attribute, such as `@ViewBuilder`, by the `Builder` suffix of its name. The tool skips a callee that takes more than one closure, because Swift binds a trailing closure to the first parameter that accepts one ([SE-0286](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0286-forward-scan-trailing-closures.md)).
 
 SwiftUI and the standard library are not declared in the project, so `VStack { ... }` and `map { ... }` never match. The tool matches callees by base name, so a method with the same name on another type can be reported wrongly. Rename one of the two in that case.
 
