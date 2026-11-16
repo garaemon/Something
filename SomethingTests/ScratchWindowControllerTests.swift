@@ -162,4 +162,19 @@ final class ScratchWindowControllerTests: XCTestCase {
 
         XCTAssertNil(controller.runButtons)
     }
+
+    func test_should_move_run_button_down_when_narrower_window_wraps_line_above() throws {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        let longLine = "x = '" + String(repeating: "a", count: 60) + "'"
+        controller.textView.insertText(
+            longLine + "\n\nb",
+            replacementRange: NSRange(location: 0, length: controller.textView.string.utf16.count)
+        )
+        let lowerButton = try XCTUnwrap(controller.runButtons?.buttons.last)
+        let wideMinY = lowerButton.frame.minY
+
+        controller.window.setContentSize(NSSize(width: 250, height: 480))
+
+        XCTAssertGreaterThan(lowerButton.frame.minY, wideMinY)
+    }
 }
