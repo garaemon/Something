@@ -49,9 +49,7 @@ final class ScratchHighlighterTests: XCTestCase {
     }
 
     func test_should_color_every_kind_apart_from_text() {
-        let kinds: [PythonTokenKind] = [
-            .keyword, .builtin, .string, .comment, .number, .decorator, .result, .error,
-        ]
+        let kinds = PythonTokenKind.allCases
 
         let colors = Set(kinds.map(ScratchHighlighter.color(for:)))
 

@@ -1,7 +1,7 @@
 import Foundation
 
 /// What a highlighted span of the scratch buffer holds.
-enum PythonTokenKind: Equatable {
+enum PythonTokenKind: Equatable, CaseIterable {
     case keyword
     case builtin
     case string
