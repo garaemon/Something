@@ -99,7 +99,10 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
     /// Runs the scratch command of a key press in the editor, and returns nil to consume the
     /// press, or returns the event for the text view to handle.
     func handleKeyDown(_ event: NSEvent) -> NSEvent? {
-        guard let runner, let key = event.charactersIgnoringModifiers?.lowercased() else {
+        // An input method that composes text, such as Japanese kana, uses C-j and C-c.
+        guard let runner, !textView.hasMarkedText(),
+            let key = event.charactersIgnoringModifiers?.lowercased()
+        else {
             return event
         }
         let modifiers = event.modifierFlags.intersection([.control, .option, .command, .shift])

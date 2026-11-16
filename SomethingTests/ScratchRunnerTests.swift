@@ -93,8 +93,12 @@ final class ScratchRunnerTests: XCTestCase {
 
     func test_should_not_run_anything_from_blank_line() {
         let (runner, _) = makeRunner(text: "a\n\nb", cursor: 2)
+        let finished = expectation(description: "run finished")
+        finished.isInverted = true
+        runner.onRunFinished = { finished.fulfill() }
 
         runner.perform(.runBlockAtCursor)
+        wait(for: [finished], timeout: 0.5)
 
         XCTAssertEqual(ranBlocks, [])
     }
@@ -102,9 +106,22 @@ final class ScratchRunnerTests: XCTestCase {
     func test_should_reset_interpreter() {
         let (runner, _) = makeRunner(text: "a", cursor: 0)
 
-        runner.perform(.resetInterpreter)
+        perform(.resetInterpreter, on: runner)
 
         XCTAssertEqual(resetCount, 1)
+    }
+
+    // A reset waits for the interpreter queue, so it would block until the run ends.
+    func test_should_ignore_reset_while_running() {
+        let (runner, _) = makeRunner(text: "a", cursor: 0)
+        let finished = expectation(description: "run finished")
+        runner.onRunFinished = { finished.fulfill() }
+        runner.perform(.runBlockAtCursor)
+
+        runner.perform(.resetInterpreter)
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertEqual(resetCount, 0)
     }
 
     func test_should_undo_inserted_result() {

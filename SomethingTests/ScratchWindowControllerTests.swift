@@ -77,4 +77,18 @@ final class ScratchWindowControllerTests: XCTestCase {
 
         XCTAssertNotNil(passedEvent)
     }
+
+    // An input method composing text, such as Japanese kana, uses C-j and C-c itself.
+    func test_should_pass_control_j_through_while_composing_text() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        controller.textView.setMarkedText(
+            "\u{304B}",
+            selectedRange: NSRange(location: 1, length: 0),
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
+
+        let passedEvent = controller.handleKeyDown(makeKeyEvent("j", modifiers: .control))
+
+        XCTAssertNotNil(passedEvent)
+    }
 }

@@ -7,7 +7,8 @@ import AppKit
 /// when the results come back.
 @MainActor
 final class ScratchRunner {
-    /// Called on the main thread after the results of a run are in the text.
+    /// Called on the main thread after the results of a run are in the text, or after a
+    /// reset ends.
     var onRunFinished: (() -> Void)?
 
     private let textView: NSTextView
@@ -27,7 +28,7 @@ final class ScratchRunner {
         self.resetPython = resetPython
     }
 
-    /// Starts `command`. A run that starts while another is in progress does nothing.
+    /// Starts `command`. A command that starts while another is in progress does nothing.
     func perform(_ command: ScratchCommand) {
         let lines = textView.string.components(separatedBy: "\n")
         switch command {
@@ -41,7 +42,25 @@ final class ScratchRunner {
         case .runAllBlocks:
             run(ScratchBlockParser.findBlocks(in: lines), in: lines)
         case .resetInterpreter:
+            reset()
+        }
+    }
+
+    // The reset waits on the interpreter queue, so it runs off the main thread too.
+    private func reset() {
+        guard !isRunning else {
+            return
+        }
+        isRunning = true
+        let resetPython = resetPython
+        DispatchQueue.global(qos: .userInitiated).async {
             resetPython()
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    self.isRunning = false
+                    self.onRunFinished?()
+                }
+            }
         }
     }
 
@@ -84,14 +103,20 @@ final class ScratchRunner {
         with resultLines: [String],
         in lines: [String]
     ) {
-        let start = Self.findEndOffset(ofLine: block.lineRange.upperBound - 1, in: lines)
-        let end = Self.findEndOffset(ofLine: block.outputRange.upperBound - 1, in: lines)
-        let range = NSRange(location: start, length: end - start)
-        let replacement = resultLines.map { "\n" + $0 }.joined()
-        guard textView.shouldChangeText(in: range, replacementString: replacement) else {
+        let codeEndOffset = Self.findEndOffset(ofLine: block.lineRange.upperBound - 1, in: lines)
+        let outputEndOffset = Self.findEndOffset(
+            ofLine: block.outputRange.upperBound - 1,
+            in: lines
+        )
+        let outputRange = NSRange(
+            location: codeEndOffset,
+            length: outputEndOffset - codeEndOffset
+        )
+        let outputText = resultLines.map { "\n" + $0 }.joined()
+        guard textView.shouldChangeText(in: outputRange, replacementString: outputText) else {
             return
         }
-        textView.textStorage?.replaceCharacters(in: range, with: replacement)
+        textView.textStorage?.replaceCharacters(in: outputRange, with: outputText)
         textView.didChangeText()
     }
 

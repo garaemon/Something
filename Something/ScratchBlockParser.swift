@@ -2,7 +2,8 @@ import Foundation
 
 /// One block of the scratch buffer, as half-open ranges of zero-based line indices.
 struct ScratchBlock: Equatable {
-    /// The lines of code, from the first line of the paragraph to its last code line.
+    /// The lines of the paragraph, up to the line before its first result line or the
+    /// blank line that ends it. Trailing comment lines belong to it.
     let lineRange: Range<Int>
     /// The result lines right under the code, empty when the block has none.
     let outputRange: Range<Int>
@@ -17,7 +18,8 @@ enum ScratchBlockParser {
     static let outputPrefix = "# => "
     static let errorPrefix = "# !! "
 
-    private static let continuationKeywords = ["elif", "else", "except", "finally", "case"]
+    // `case` is left out: it is indented under `match`, so it never starts in column zero.
+    private static let continuationKeywords = ["elif", "else", "except", "finally"]
 
     /// Returns every block of `lines`, top to bottom.
     static func findBlocks(in lines: [String]) -> [ScratchBlock] {
@@ -55,19 +57,19 @@ enum ScratchBlockParser {
     /// value of that statement can be echoed.
     static func makePythonBlock(from blockLines: [String]) -> PythonBlock {
         var bracketDepth = 0
-        var lastStart = 0
+        var lastStatementStart = 0
         for (index, line) in blockLines.enumerated() {
             let followsDecorator = index > 0 && blockLines[index - 1].hasPrefix("@")
             if bracketDepth == 0, !followsDecorator, startsStatement(line) {
-                lastStart = index
+                lastStatementStart = index
             }
             if isCodeLine(line) {
                 bracketDepth += countBracketDepthChange(line)
             }
         }
         return PythonBlock(
-            leadingSource: blockLines[..<lastStart].joined(separator: "\n"),
-            lastStatement: blockLines[lastStart...].joined(separator: "\n")
+            leadingSource: blockLines[..<lastStatementStart].joined(separator: "\n"),
+            lastStatement: blockLines[lastStatementStart...].joined(separator: "\n")
         )
     }
 
@@ -129,7 +131,7 @@ enum ScratchBlockParser {
 
     // An `else:` or `except:` line continues the statement above instead of starting one.
     private static func startsStatement(_ line: String) -> Bool {
-        let firstWord = String(line.prefix { $0.isLetter })
+        let firstWord = String(line.prefix { $0.isLetter || $0.isNumber || $0 == "_" })
         return isCodeLine(line) && !isIndented(line) && !continuationKeywords.contains(firstWord)
     }
 

@@ -122,4 +122,20 @@ final class ScratchBlockParserTests: XCTestCase {
 
         XCTAssertEqual(lines, ["# => a", "# => ", "# => b"])
     }
+
+    func test_should_start_statement_at_identifier_that_begins_with_keyword() {
+        let lines = ["else_count = 1", "else_count"]
+
+        let source = ScratchBlockParser.makePythonBlock(from: lines)
+
+        XCTAssertEqual(source.lastStatement, "else_count")
+    }
+
+    func test_should_start_statement_at_case_in_column_zero() {
+        let lines = ["case = 1", "case"]
+
+        let source = ScratchBlockParser.makePythonBlock(from: lines)
+
+        XCTAssertEqual(source.lastStatement, "case")
+    }
 }
