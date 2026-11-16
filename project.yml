@@ -28,11 +28,25 @@ targets:
       Release: Configs/Signing.xcconfig
     sources:
       - Something
+      # Vendored C code keeps its upstream warnings; see its README.
+      - path: ThirdParty/pocketpy
+        compilerFlags:
+          - -w
+        excludes:
+          - README.md
+          - LICENSE
+      # The MIT license of pocketpy asks the app to carry its copyright notice.
+      - path: ThirdParty/pocketpy/LICENSE
+        buildPhase: resources
     dependencies:
       - package: HotKey
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.garaemon.Something
+        SWIFT_OBJC_BRIDGING_HEADER: Something/Something-Bridging-Header.h
+        HEADER_SEARCH_PATHS: $(inherited) $(SRCROOT)/ThirdParty/pocketpy
+        # Lets a scratch run that loops forever end with TimeoutError.
+        GCC_PREPROCESSOR_DEFINITIONS: $(inherited) PK_ENABLE_WATCHDOG=1
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: YES
