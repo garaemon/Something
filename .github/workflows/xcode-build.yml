@@ -8,6 +8,13 @@ on:
     branches:
       - main # Or your default branch name
 
+# A new push to a pull request cancels the run of the older push, which would
+# otherwise finish later and overwrite the newer coverage comment. Each push to
+# main gets a group of its own, so that every run on main finishes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: macos-latest
@@ -24,6 +31,12 @@ jobs:
 
   build:
     runs-on: macos-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      # The token of a pull request from a fork cannot write comments.
+      CAN_COMMENT_ON_PULL_REQUEST: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
 
     steps:
     - name: Checkout code
@@ -42,3 +55,27 @@ jobs:
 
     - name: Run unit tests
       run: mise run test
+
+    - name: Report code coverage
+      run: |
+        mise run coverage > coverage.md
+        cat coverage.md >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Post code coverage to the pull request
+      if: env.CAN_COMMENT_ON_PULL_REQUEST == 'true'
+      uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+      with:
+        header: coverage
+        path: coverage.md
+
+    # Replaces the report of an earlier push, which no longer matches the code.
+    - name: Mark code coverage as unavailable
+      if: failure() && env.CAN_COMMENT_ON_PULL_REQUEST == 'true'
+      uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+      with:
+        header: coverage
+        message: |
+          ## Unit Test Coverage
+
+          Coverage is unavailable because a step of the build job failed.
+          See the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
