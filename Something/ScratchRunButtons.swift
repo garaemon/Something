@@ -27,10 +27,13 @@ final class ScratchRunButtons {
 
     /// Places the buttons again from the current text and layout. Call after the text or the
     /// width of the text view changes.
+    ///
+    /// Each call parses the whole buffer and lays it out up to the last block, which stays
+    /// cheap for a scratch buffer of a few hundred lines.
     func update() {
         let lines = textView.string.components(separatedBy: "\n")
         let startLines = ScratchBlockParser.findBlocks(in: lines).map(\.lineRange.lowerBound)
-        resizeButtons(to: startLines.count)
+        adjustButtonCount(to: startLines.count)
         blockStartLines = startLines
         let lineStartOffsets = findLineStartOffsets(of: lines)
         for (button, startLine) in zip(buttons, startLines) {
@@ -48,7 +51,7 @@ final class ScratchRunButtons {
         }
     }
 
-    private func resizeButtons(to count: Int) {
+    private func adjustButtonCount(to count: Int) {
         while buttons.count > count {
             buttons.removeLast().removeFromSuperview()
         }
@@ -91,11 +94,23 @@ final class ScratchRunButtons {
         }
     }
 
-    // Returns the frame of the line at `offset` in the coordinates of the text view, or nil
-    // when the text view has no TextKit 2 layout.
+    // Returns the frame of the line at `offset` in the coordinates of the text view.
     private func findLineFrame(atUTF16Offset offset: Int) -> NSRect? {
-        guard let layoutManager = textView.textLayoutManager,
-            let contentManager = layoutManager.textContentManager,
+        let frameInContainer =
+            if let layoutManager = textView.textLayoutManager {
+                Self.findLineFrame(atUTF16Offset: offset, in: layoutManager)
+            } else {
+                findTextKit1LineFrame(atUTF16Offset: offset)
+            }
+        let origin = textView.textContainerOrigin
+        return frameInContainer?.offsetBy(dx: origin.x, dy: origin.y)
+    }
+
+    private static func findLineFrame(
+        atUTF16Offset offset: Int,
+        in layoutManager: NSTextLayoutManager
+    ) -> NSRect? {
+        guard let contentManager = layoutManager.textContentManager,
             let location = contentManager.location(
                 contentManager.documentRange.location,
                 offsetBy: offset
@@ -113,12 +128,25 @@ final class ScratchRunButtons {
         }
         let fragmentFrame = fragment.layoutFragmentFrame
         let lineBounds = fragment.textLineFragments.first?.typographicBounds ?? fragmentFrame
-        let origin = textView.textContainerOrigin
         return NSRect(
-            x: fragmentFrame.minX + origin.x,
-            y: fragmentFrame.minY + lineBounds.minY + origin.y,
+            x: fragmentFrame.minX,
+            y: fragmentFrame.minY + lineBounds.minY,
             width: fragmentFrame.width,
             height: lineBounds.height
         )
+    }
+
+    // A text view drops TextKit 2 for good once any code reads its `layoutManager`, so this
+    // path reads it only after `textLayoutManager` is already nil.
+    private func findTextKit1LineFrame(atUTF16Offset offset: Int) -> NSRect? {
+        guard let layoutManager = textView.layoutManager else {
+            return nil
+        }
+        let glyphIndex = layoutManager.glyphIndexForCharacter(at: offset)
+        guard glyphIndex < layoutManager.numberOfGlyphs else {
+            return nil
+        }
+        layoutManager.ensureLayout(forGlyphRange: NSRange(location: 0, length: glyphIndex + 1))
+        return layoutManager.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: nil)
     }
 }

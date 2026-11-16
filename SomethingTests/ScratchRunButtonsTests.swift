@@ -69,12 +69,12 @@ final class ScratchRunButtonsTests: XCTestCase {
 
     func test_should_center_button_on_first_line_of_block() {
         let (runButtons, textView) = makeRunButtons(text: "a\n\nb")
-        let lineHeight = textView.font!.boundingRectForFont.height
+        let lineHeight = NSLayoutManager().defaultLineHeight(for: textView.font!)
 
         XCTAssertEqual(
             runButtons.buttons[1].frame.midY,
             textView.textContainerOrigin.y + lineHeight * 2.5,
-            accuracy: lineHeight / 2
+            accuracy: 2
         )
     }
 
@@ -83,5 +83,18 @@ final class ScratchRunButtonsTests: XCTestCase {
         let (runButtons, _) = makeRunButtons(text: "a")
 
         XCTAssertFalse(runButtons.buttons[0].acceptsFirstResponder)
+    }
+
+    // A text view falls back to TextKit 1 for good, such as when code reads its
+    // layoutManager, and the buttons still need a place then.
+    func test_should_place_buttons_in_textkit1_text_view() {
+        let textView = NSTextView(usingTextLayoutManager: false)
+        textView.frame = NSRect(x: 0, y: 0, width: 400, height: 300)
+        textView.string = "a\n\n\n\nb"
+        let runButtons = ScratchRunButtons(textView: textView) { _ in }
+
+        runButtons.update()
+
+        XCTAssertGreaterThan(runButtons.buttons[1].frame.minY, runButtons.buttons[0].frame.maxY)
     }
 }
