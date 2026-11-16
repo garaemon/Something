@@ -83,6 +83,17 @@ final class ScratchRunnerTests: XCTestCase {
         XCTAssertEqual(textView.string, "x\n# => 1")
     }
 
+    func test_should_run_block_at_given_line_instead_of_cursor() {
+        let (runner, textView) = makeRunner(text: "a\n\nb", cursor: 0)
+        let finished = expectation(description: "run finished")
+        runner.onRunFinished = { finished.fulfill() }
+
+        runner.runBlock(atLine: 2)
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertEqual(textView.string, "a\n\nb\n# => 1")
+    }
+
     func test_should_run_every_block_in_order() {
         let (runner, textView) = makeRunner(text: "a\n\nb", cursor: 0)
 

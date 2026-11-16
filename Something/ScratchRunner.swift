@@ -41,20 +41,27 @@ final class ScratchRunner {
 
     /// Starts `command`. A command that starts while another is in progress does nothing.
     func perform(_ command: ScratchCommand) {
-        let lines = textView.string.components(separatedBy: "\n")
         switch command {
         case .runBlockAtCursor:
             let cursorLine = Self.findLineIndex(
                 ofUTF16Offset: textView.selectedRange().location,
                 in: textView.string
             )
-            let block = ScratchBlockParser.findBlock(in: lines, containingLine: cursorLine)
-            run(block.map { [$0] } ?? [], in: lines)
+            runBlock(atLine: cursorLine)
         case .runAllBlocks:
+            let lines = textView.string.components(separatedBy: "\n")
             run(ScratchBlockParser.findBlocks(in: lines), in: lines)
         case .resetInterpreter:
             reset()
         }
+    }
+
+    /// Runs the block whose code or result lines hold the zero-based `lineIndex`, such as
+    /// from a Run button. Does nothing when no block holds the line or a command is running.
+    func runBlock(atLine lineIndex: Int) {
+        let lines = textView.string.components(separatedBy: "\n")
+        let block = ScratchBlockParser.findBlock(in: lines, containingLine: lineIndex)
+        run(block.map { [$0] } ?? [], in: lines)
     }
 
     // The reset waits on the interpreter queue, so it runs off the main thread too.

@@ -19,6 +19,19 @@ final class ScratchWindowControllerTests: XCTestCase {
         return controller
     }
 
+    // Bytes that are not UTF-8 make the scratch file unreadable.
+    private func makeControllerOfUnreadableFile() throws -> ScratchWindowController {
+        let folderURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ScratchWindowControllerTests-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let store = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        try store.saveText("")
+        try Data([0xFF, 0xFE]).write(to: store.fileURL)
+        let controller = ScratchWindowController(store: store)
+        addTeardownBlock { @MainActor in controller.window.close() }
+        return controller
+    }
+
     private func makeKeyEvent(_ key: String, modifiers: NSEvent.ModifierFlags) -> NSEvent {
         NSEvent.keyEvent(
             with: .keyDown,
@@ -64,14 +77,7 @@ final class ScratchWindowControllerTests: XCTestCase {
     }
 
     func test_should_pass_control_j_through_when_file_cannot_be_read() throws {
-        let folderURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ScratchWindowControllerTests-\(UUID().uuidString)")
-        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
-        let store = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
-        try store.saveText("")
-        try Data([0xFF, 0xFE]).write(to: store.fileURL)
-        let controller = ScratchWindowController(store: store)
-        addTeardownBlock { @MainActor in controller.window.close() }
+        let controller = try makeControllerOfUnreadableFile()
 
         let passedEvent = controller.handleKeyDown(makeKeyEvent("j", modifiers: .control))
 
@@ -119,5 +125,69 @@ final class ScratchWindowControllerTests: XCTestCase {
         wait(for: [finished], timeout: 5)
 
         XCTAssertEqual(subtitleAfterSave, ScratchSubtitle.runningText)
+    }
+
+    func test_should_show_run_button_for_block_of_initial_text() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+
+        XCTAssertEqual(controller.runButtons?.buttons.count, 1)
+    }
+
+    func test_should_insert_result_on_run_button_click() {
+        let controller = makeController(runResult: PythonRunResult(output: "3\n", errorMessage: nil))
+        let finished = expectation(description: "run finished")
+        controller.onRunFinished = { finished.fulfill() }
+
+        controller.runButtons?.buttons.first?.performClick(nil)
+        wait(for: [finished], timeout: 5)
+
+        XCTAssertTrue(controller.textView.string.contains("1 + 2\n# => 3\n"))
+    }
+
+    func test_should_add_run_button_for_typed_block() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        let endOffset = controller.textView.string.utf16.count
+
+        controller.textView.insertText(
+            "\nx = 1",
+            replacementRange: NSRange(location: endOffset, length: 0)
+        )
+
+        XCTAssertEqual(controller.runButtons?.buttons.count, 2)
+    }
+
+    func test_should_show_no_run_button_when_file_cannot_be_read() throws {
+        let controller = try makeControllerOfUnreadableFile()
+
+        XCTAssertNil(controller.runButtons)
+    }
+
+    func test_should_move_run_button_down_when_narrower_window_wraps_line_above() throws {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        let longLine = "x = '" + String(repeating: "a", count: 60) + "'"
+        controller.textView.insertText(
+            longLine + "\n\nb",
+            replacementRange: NSRange(location: 0, length: controller.textView.string.utf16.count)
+        )
+        let lowerButton = try XCTUnwrap(controller.runButtons?.buttons.last)
+        let wideMinY = lowerButton.frame.minY
+
+        controller.window.setContentSize(NSSize(width: 250, height: 480))
+
+        XCTAssertGreaterThan(lowerButton.frame.minY, wideMinY)
+    }
+
+    // A run would send the uncommitted kana to Python and lock the text mid-composition.
+    func test_should_not_run_on_run_button_click_while_composing_text() {
+        let controller = makeController(runResult: PythonRunResult(output: "", errorMessage: nil))
+        controller.textView.setMarkedText(
+            "\u{304B}",
+            selectedRange: NSRange(location: 1, length: 0),
+            replacementRange: NSRange(location: NSNotFound, length: 0)
+        )
+
+        controller.runButtons?.buttons.first?.performClick(nil)
+
+        XCTAssertNotEqual(controller.window.subtitle, ScratchSubtitle.runningText)
     }
 }
