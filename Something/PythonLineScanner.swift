@@ -12,6 +12,8 @@ struct PythonLineState: Equatable {
 /// top-level statement starts without a full Python tokenizer.
 ///
 /// A backslash at the end of a line, which also continues a statement, is not tracked.
+/// `PythonSyntaxScanner` reads strings the same way for the highlighter, and a change to one
+/// belongs in the other.
 enum PythonLineScanner {
     /// Returns the state at the end of `line`, given the state at its start.
     static func scan(_ line: String, from startState: PythonLineState) -> PythonLineState {
