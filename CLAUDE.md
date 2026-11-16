@@ -43,7 +43,13 @@ Print the coverage of the last test run as Markdown:
 mise run coverage
 ```
 
-CI posts the same report as a sticky comment on each pull request from this repository, and updates the comment on every push.
+Set `COVERAGE_BASE_REF` to add the coverage of the lines changed since that ref, and the uncovered ones among them.
+Only sources under `Something/` count, so vendored code such as `ThirdParty/` stays out:
+```bash
+COVERAGE_BASE_REF=origin/main mise run coverage
+```
+
+CI posts the same report, with the changed lines measured against the base branch, as a sticky comment on each pull request from this repository, and updates the comment on every push.
 
 Format the app sources with swift-format (`.swift-format`):
 ```bash
