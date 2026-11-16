@@ -38,24 +38,26 @@ final class ScratchHighlighter {
             return
         }
         let tokens = PythonSyntaxScanner.findTokens(in: textStorage.string)
-        var coloredRanges: [(range: NSRange, color: NSColor)] = []
+        var targetColorRanges: [(range: NSRange, color: NSColor)] = []
         var plainStart = 0
         for token in tokens {
-            coloredRanges.append(
+            targetColorRanges.append(
                 (Self.makeRange(from: plainStart, to: token.range.location), .textColor)
             )
-            coloredRanges.append((token.range, Self.color(for: token.kind)))
+            targetColorRanges.append((token.range, Self.color(for: token.kind)))
             plainStart = NSMaxRange(token.range)
         }
-        coloredRanges.append((Self.makeRange(from: plainStart, to: textStorage.length), .textColor))
-        let changes = coloredRanges.flatMap { range, color in
+        targetColorRanges.append(
+            (Self.makeRange(from: plainStart, to: textStorage.length), .textColor)
+        )
+        let staleColorRanges = targetColorRanges.flatMap { range, color in
             Self.findChangedRanges(in: range, to: color, of: textStorage).map { ($0, color) }
         }
-        guard !changes.isEmpty else {
+        guard !staleColorRanges.isEmpty else {
             return
         }
         textStorage.beginEditing()
-        for (range, color) in changes {
+        for (range, color) in staleColorRanges {
             textStorage.addAttribute(.foregroundColor, value: color, range: range)
         }
         textStorage.endEditing()
