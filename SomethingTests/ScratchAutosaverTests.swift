@@ -5,9 +5,13 @@ import XCTest
 @MainActor
 final class ScratchAutosaverTests: XCTestCase {
     private var savedTexts: [String] = []
+    private var savesSucceed = true
 
     private func makeAutosaver(delay: TimeInterval = 60) -> ScratchAutosaver {
-        ScratchAutosaver(delay: delay, saveText: { [unowned self] in savedTexts.append($0) })
+        ScratchAutosaver(delay: delay) { [unowned self] text in
+            savedTexts.append(text)
+            return savesSucceed
+        }
     }
 
     func test_should_not_save_before_delay() {
@@ -57,5 +61,17 @@ final class ScratchAutosaverTests: XCTestCase {
         autosaver.flush()
 
         XCTAssertEqual(savedTexts, [])
+    }
+
+    func test_should_retry_failed_save_on_next_flush() {
+        let autosaver = makeAutosaver()
+        autosaver.scheduleSave("a")
+        savesSucceed = false
+        autosaver.flush()
+        savesSucceed = true
+
+        autosaver.flush()
+
+        XCTAssertEqual(savedTexts, ["a", "a"])
     }
 }

@@ -28,8 +28,10 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
             do {
                 try store.saveText(text)
                 window?.subtitle = ""
+                return true
             } catch {
                 window?.subtitle = "Not saved: \(error.localizedDescription)"
+                return false
             }
         })
         super.init()
@@ -53,6 +55,17 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
                 "# \(store.fileURL.path) cannot be read: \(error.localizedDescription)\n"
             textView.isEditable = false
         }
+    }
+
+    /// Returns this controller when it shows the scratch file, and closes it and returns nil
+    /// when it shows an error about reading the file, so that a new controller reads the file
+    /// again in case the user fixed it.
+    func reuseIfShowingFile() -> ScratchWindowController? {
+        if textView.isEditable {
+            return self
+        }
+        window.close()
+        return nil
     }
 
     /// Brings the window to the front with the keyboard focus in the editor.

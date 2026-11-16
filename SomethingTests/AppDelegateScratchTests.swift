@@ -89,4 +89,34 @@ final class AppDelegateScratchTests: XCTestCase {
 
         XCTAssertEqual(appDelegate.scratchWindowController?.textView.isEditable, false)
     }
+
+    func test_should_edit_again_after_unreadable_file_is_fixed() throws {
+        let appDelegate = makeAppDelegate()
+        try appDelegate.scratchStore.saveText("")
+        try Data([0xFF, 0xFE, 0xFD]).write(to: appDelegate.scratchStore.fileURL)
+        appDelegate.openScratch()
+        appDelegate.scratchWindowController?.window.close()
+        try appDelegate.scratchStore.saveText("x = 1\n")
+
+        appDelegate.openScratch()
+
+        XCTAssertEqual(appDelegate.scratchWindowController?.textView.string, "x = 1\n")
+    }
+
+    // A regular file where the folder should be makes creating the folder fail.
+    func test_should_show_failed_save_in_subtitle() throws {
+        let folderURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AppDelegateScratchTests-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let appDelegate = makeAppDelegate()
+        appDelegate.scratchStore = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
+        appDelegate.openScratch()
+        let controller = try XCTUnwrap(appDelegate.scratchWindowController)
+        controller.textView.insertText("x", replacementRange: NSRange(location: 0, length: 0))
+        try Data().write(to: folderURL)
+
+        controller.saveNow()
+
+        XCTAssertTrue(controller.window.subtitle.hasPrefix("Not saved"))
+    }
 }

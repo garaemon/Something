@@ -6,11 +6,12 @@ import Foundation
 @MainActor
 final class ScratchAutosaver {
     private let delay: TimeInterval
-    private let saveText: (String) -> Void
+    private let saveText: (String) -> Bool
     private var pendingText: String?
     private var pendingSave: DispatchWorkItem?
 
-    init(delay: TimeInterval = 1, saveText: @escaping (String) -> Void) {
+    /// `saveText` returns whether the save succeeded. A failed save keeps the text pending.
+    init(delay: TimeInterval = 1, saveText: @escaping (String) -> Bool) {
         self.delay = delay
         self.saveText = saveText
     }
@@ -31,7 +32,9 @@ final class ScratchAutosaver {
         guard let text = pendingText else {
             return
         }
-        pendingText = nil
-        saveText(text)
+        // A failed save stays pending, so that the next flush, such as on quit, tries again.
+        if saveText(text) {
+            pendingText = nil
+        }
     }
 }

@@ -142,17 +142,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSHostingView(rootView: SettingsView(settings: settings))
     }
 
-    /// Shows the Python scratch window, creating it on first use.
-    func openScratch() {
-        let controller = scratchWindowController ?? ScratchWindowController(store: scratchStore)
-        scratchWindowController = controller
-        controller.show()
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        scratchWindowController?.saveNow()
-    }
-
     func openWindow() {
         if let existingWindow = window, existingWindow.isVisible {
             NSApplication.shared.activate()
@@ -378,5 +367,20 @@ extension AppDelegate {
     private static func openFile(_ file: LocalFile) {
         guard !NSWorkspace.shared.open(file.url) else { return }
         NSLog("Failed to open %@", file.url.path)
+    }
+}
+
+extension AppDelegate {
+    /// Shows the Python scratch window, creating it on first use.
+    func openScratch() {
+        let controller =
+            scratchWindowController?.reuseIfShowingFile()
+            ?? ScratchWindowController(store: scratchStore)
+        scratchWindowController = controller
+        controller.show()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        scratchWindowController?.saveNow()
     }
 }
