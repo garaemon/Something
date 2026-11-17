@@ -177,4 +177,25 @@ final class AppDelegateSettingsTests: XCTestCase {
 
         wait(for: [previousRootScan], timeout: 0.5)
     }
+
+    func test_should_show_dock_icon_by_default() {
+        let appDelegate = makeAppDelegate()
+        var appliedPolicies: [NSApplication.ActivationPolicy] = []
+        appDelegate.applyActivationPolicy = { appliedPolicies.append($0) }
+
+        appDelegate.startObservingSettings()
+
+        XCTAssertEqual(appliedPolicies, [.regular])
+    }
+
+    func test_should_hide_dock_icon_when_setting_turns_it_off() {
+        let appDelegate = makeAppDelegate()
+        var appliedPolicies: [NSApplication.ActivationPolicy] = []
+        appDelegate.applyActivationPolicy = { appliedPolicies.append($0) }
+        appDelegate.startObservingSettings()
+
+        appDelegate.settings.showsDockIcon = false
+
+        XCTAssertEqual(appliedPolicies.last, .accessory)
+    }
 }

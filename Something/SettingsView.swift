@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// The settings window: the launcher hot key, the git repositories folder, the
-/// folders whose files the launcher lists, and the mascot's skin colors.
+/// Dock icon, the folders whose files the launcher lists, and the mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
@@ -23,6 +23,7 @@ struct SettingsView: View {
                         Button("Choose…", action: chooseRepositoryRoot)
                     }
                 }
+                Toggle("Show icon in Dock", isOn: $settings.showsDockIcon)
             }
             fileFoldersSection
             Section {

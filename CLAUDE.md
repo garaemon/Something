@@ -108,7 +108,7 @@ mise run build
 ### Core Components
 
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
-- **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
+- **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Switches the activation policy between `.regular` and `.accessory` to show or hide the Dock icon as `AppSettings` says.
 - **AppDelegate+Reopen.swift**: Opens the launcher when the user clicks the Dock icon of the running app.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus, and reports resizes so that AppDelegate can reposition the mascot panel.
 - **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, then the git repositories under the configured folder (`~/ghq` by default), and narrows the list on each keystroke. A query that reads as arithmetic, such as `10 + 30`, lists its result first. A non-empty query also lists up to 50 matching files under the configured file folders (`~/Downloads` and `~/Documents` by default). It then lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a repository opens its directory in Finder; picking a file opens it in its default application (a second action, Reveal in Finder, waits for a way to pick non-default actions, issue #20); picking a web search opens it in the default browser; picking a calculator result copies it to the clipboard; picking "Python Scratch" opens the scratch window. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
@@ -141,8 +141,8 @@ mise run build
 - **MascotPanel.swift**: Borderless, transparent, click-through `NSPanel` that never becomes key or main, with an `NSHostingView` of `MascotOverlayView`.
 - **MascotOverlayView.swift**: Observes `LauncherViewModel`, derives the mascot state, and owns the entrance timer.
 - **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, which builds the shapes once and repaints only the colors when `model` changes, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
-- **AppSettings.swift**: User preferences (hot key, repositories folder, file folders, mascot head and body colors), saved to an injectable `UserDefaults` on every change.
-- **SettingsView.swift**: The settings window content: hot key recorder, repositories folder picker, file folder list with add and remove buttons, a live mascot preview, mascot color pickers, and Restore Defaults.
+- **AppSettings.swift**: User preferences (hot key, repositories folder, file folders, Dock icon, mascot head and body colors), saved to an injectable `UserDefaults` on every change.
+- **SettingsView.swift**: The settings window content: hot key recorder, repositories folder picker, Dock icon toggle, file folder list with add and remove buttons, a live mascot preview, mascot color pickers, and Restore Defaults.
 - **HotKeyRecorderView.swift**: Button that records the next key press as the hot key through a local key monitor. Esc cancels.
 - **HotKeyRecording.swift**: Turns a key press into a `KeyCombo`, and rejects a press without Command, Option, or Control.
 - **Calculator.swift**: Recursive descent evaluator of `+ - * / % ^`, unary minus, and parentheses (`×` and `÷` too). Rejects an expression without a binary operator, such as "2024" or "-5", and numbers chained by two or more hyphens or slashes, so that "2026-11-15" stays a search. Formats integers without a decimal point and rounds fractions to 12 significant digits.
@@ -164,11 +164,11 @@ mise run build
 
 ### Key Behavioral Patterns
 
-- **Background Service Pattern**: App runs as accessory (.accessory activation policy) without Dock presence
+- **Dock Icon Setting**: The app shows its Dock icon by default (`.regular` activation policy). Turning off "Show icon in Dock" in the settings switches it to `.accessory`, which keeps the app out of the Dock, the Command-Tab switcher, and the menu bar.
 - **Global Hotkey Activation**: Uses HotKey library for the hot key from `AppSettings` (Cmd+Shift+X by default). AppDelegate registers the hot key again when the setting changes, and pauses it while the settings window records a new one.
 - **Dock Icon Click**: Clicking the app's icon in the Dock, or opening the app again from Finder, while the app runs opens the launcher, like the hot key.
 - **Scratch Window**: AppDelegate owns one scratch window and reuses it, like the settings window. The app saves pending edits when it quits.
-- **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open; the preview in the settings window repaints at once.
+- **Settings Window**: The app has no menu bar while the Dock icon is off, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open; the preview in the settings window repaints at once.
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
 - **Single Window Management**: Only one popup window exists at a time, reuses existing if already open. The mascot panel is a child window of the launcher, created and closed with it. AppDelegate picks its placement at random on each open, among those that fit the screen.
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.

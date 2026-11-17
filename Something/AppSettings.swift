@@ -20,6 +20,7 @@ final class AppSettings: ObservableObject {
         static let mascotBodyColor = "mascotBodyColor"
         static let repositoryRootPath = "repositoryRootPath"
         static let fileFolderPaths = "fileFolderPaths"
+        static let showsDockIcon = "showsDockIcon"
     }
 
     @Published var hotKeyCombo: KeyCombo {
@@ -41,6 +42,11 @@ final class AppSettings: ObservableObject {
     /// Absolute paths of the folders whose files the launcher lists.
     @Published var fileFolderPaths: [String] {
         didSet { userDefaults.set(fileFolderPaths, forKey: StorageKey.fileFolderPaths) }
+    }
+    /// False keeps the app out of the Dock and the Command-Tab switcher, so
+    /// that only the hot key reaches the launcher.
+    @Published var showsDockIcon: Bool {
+        didSet { userDefaults.set(showsDockIcon, forKey: StorageKey.showsDockIcon) }
     }
     /// True while the settings window waits for a new hot key. The current hot
     /// key must be paused meanwhile, or Carbon takes the press before the window sees it.
@@ -64,6 +70,7 @@ final class AppSettings: ObservableObject {
         fileFolderPaths =
             userDefaults.stringArray(forKey: StorageKey.fileFolderPaths)
             ?? Self.defaultFileFolderPaths
+        showsDockIcon = userDefaults.object(forKey: StorageKey.showsDockIcon) as? Bool ?? true
     }
 
     /// The robot painted with the chosen skin colors.
@@ -87,5 +94,6 @@ final class AppSettings: ObservableObject {
         mascotBodyColor = MascotModel.defaultBodyColor
         repositoryRootPath = Self.defaultRepositoryRootPath
         fileFolderPaths = Self.defaultFileFolderPaths
+        showsDockIcon = true
     }
 }

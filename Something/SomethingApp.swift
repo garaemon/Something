@@ -19,8 +19,8 @@ struct SomethingApp: App {
         }
         .commands {
             // Point Settings… (Command-comma) at the window that AppDelegate owns.
-            // The menu bar is hidden for an accessory app, but its shortcuts still
-            // work, and the stock item would open this empty Settings scene.
+            // The stock item would open this empty Settings scene. The shortcut
+            // works even when the Dock icon is off and the menu bar is hidden.
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") { appDelegate.openSettings() }
                     .keyboardShortcut(",", modifiers: .command)
