@@ -20,7 +20,7 @@ final class AppSettings: ObservableObject {
         static let mascotBodyColor = "mascotBodyColor"
         static let repositoryRootPath = "repositoryRootPath"
         static let fileFolderPaths = "fileFolderPaths"
-        static let showsDockIcon = "showsDockIcon"
+        static let shouldShowDockIcon = "shouldShowDockIcon"
     }
 
     @Published var hotKeyCombo: KeyCombo {
@@ -45,8 +45,8 @@ final class AppSettings: ObservableObject {
     }
     /// False keeps the app out of the Dock and the Command-Tab switcher, so
     /// that only the hot key reaches the launcher.
-    @Published var showsDockIcon: Bool {
-        didSet { userDefaults.set(showsDockIcon, forKey: StorageKey.showsDockIcon) }
+    @Published var shouldShowDockIcon: Bool {
+        didSet { userDefaults.set(shouldShowDockIcon, forKey: StorageKey.shouldShowDockIcon) }
     }
     /// True while the settings window waits for a new hot key. The current hot
     /// key must be paused meanwhile, or Carbon takes the press before the window sees it.
@@ -70,7 +70,8 @@ final class AppSettings: ObservableObject {
         fileFolderPaths =
             userDefaults.stringArray(forKey: StorageKey.fileFolderPaths)
             ?? Self.defaultFileFolderPaths
-        showsDockIcon = userDefaults.object(forKey: StorageKey.showsDockIcon) as? Bool ?? true
+        shouldShowDockIcon =
+            userDefaults.object(forKey: StorageKey.shouldShowDockIcon) as? Bool ?? true
     }
 
     /// The robot painted with the chosen skin colors.
@@ -94,6 +95,6 @@ final class AppSettings: ObservableObject {
         mascotBodyColor = MascotModel.defaultBodyColor
         repositoryRootPath = Self.defaultRepositoryRootPath
         fileFolderPaths = Self.defaultFileFolderPaths
-        showsDockIcon = true
+        shouldShowDockIcon = true
     }
 }

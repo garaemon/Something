@@ -194,7 +194,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.applyActivationPolicy = { appliedPolicies.append($0) }
         appDelegate.startObservingSettings()
 
-        appDelegate.settings.showsDockIcon = false
+        appDelegate.settings.shouldShowDockIcon = false
 
         XCTAssertEqual(appliedPolicies.last, .accessory)
     }

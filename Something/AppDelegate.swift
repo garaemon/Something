@@ -79,10 +79,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .removeDuplicates()
             .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
             .store(in: &settingsSubscriptions)
-        settings.$showsDockIcon
+        settings.$shouldShowDockIcon
             .removeDuplicates()
-            .sink { [weak self] showsDockIcon in
-                self?.applyActivationPolicy(showsDockIcon ? .regular : .accessory)
+            .sink { [weak self] shouldShowDockIcon in
+                self?.applyActivationPolicy(shouldShowDockIcon ? .regular : .accessory)
             }
             .store(in: &settingsSubscriptions)
         settings.$repositoryRootPath

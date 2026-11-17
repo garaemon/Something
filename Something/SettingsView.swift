@@ -23,7 +23,7 @@ struct SettingsView: View {
                         Button("Choose…", action: chooseRepositoryRoot)
                     }
                 }
-                Toggle("Show icon in Dock", isOn: $settings.showsDockIcon)
+                Toggle("Show icon in Dock", isOn: $settings.shouldShowDockIcon)
             }
             fileFoldersSection
             Section {
