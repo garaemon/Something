@@ -92,8 +92,8 @@ Build products go to `build/` (ignored by git).
 ### Code Signing
 
 Without extra setup, builds are signed ad hoc.
-macOS ties the Accessibility permission of an ad hoc build to its exact binary, so every rebuild loses the permission.
-To keep the permission across rebuilds, create `Configs/Local.xcconfig` with your team ID and build.
+macOS ties the Accessibility permission and the access to `~/Documents` and `~/Downloads` of an ad hoc build to its exact binary, so every rebuild asks for them again.
+To keep the permissions across rebuilds, create `Configs/Local.xcconfig` with your team ID and build.
 The following command overwrites the file if it already exists:
 
 ```bash
@@ -102,6 +102,14 @@ mise run build
 ```
 
 `Configs/Signing.xcconfig` includes `Configs/Local.xcconfig` when the file exists. Git ignores `Configs/Local.xcconfig`.
+
+Git does not copy an ignored file into a new worktree.
+With the hooks installed (`mise run install-hooks`), `.githooks/post-checkout` links the main checkout's `Configs/Local.xcconfig` into each new worktree.
+For a worktree created before the hooks, link the file by hand:
+
+```bash
+mise run link-local-config
+```
 
 ## Architecture
 

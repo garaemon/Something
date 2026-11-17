@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+# Git passes an all-zero previous HEAD only on the first checkout of a new
+# worktree or clone. Later checkouts keep whatever the worktree already has.
+readonly previous_head="$1"
+if [[ ! "$previous_head" =~ ^0+$ ]]; then
+  exit 0
+fi
+
+# A worktree of an older commit has no script yet.
+link_script="$(git rev-parse --show-toplevel)/scripts/link-local-config.sh"
+readonly link_script
+if [[ -x "$link_script" ]]; then
+  "$link_script"
+fi

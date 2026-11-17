@@ -64,3 +64,7 @@ run = "swift test --package-path Tools/ClosureLabelLint"
 [tasks.install-hooks]
 description = "Run the linter on every commit through the Git hooks in .githooks"
 run = "git config core.hooksPath .githooks"
+
+[tasks.link-local-config]
+description = "Link Configs/Local.xcconfig of the main checkout into this worktree"
+run = "scripts/link-local-config.sh"
