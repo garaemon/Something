@@ -75,6 +75,8 @@ struct LauncherView: View {
             viewModel.moveSelection(by: offset)
         case .dismiss:
             dismiss()
+        case .swallow:
+            break
         case nil:
             return .ignored
         }

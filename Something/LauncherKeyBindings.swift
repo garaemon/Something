@@ -5,6 +5,9 @@ enum LauncherKeyCommand: Equatable {
     /// Moves the selection by the given number of rows; negative moves up.
     case moveSelection(Int)
     case dismiss
+    /// Consumes the press without an action, so that the query field never
+    /// sees it.
+    case swallow
 }
 
 /// Resolves the launcher keys: Up/Down or C-n/C-p move, and Esc or C-g closes.
@@ -13,7 +16,9 @@ enum LauncherKeyBindings {
     /// handles the press.
     ///
     /// `isRepeat` is true for the presses that macOS sends while a key is
-    /// held. Held movement keys keep moving, but a held Esc closes only once.
+    /// held. Held movement keys keep moving, but a held Esc closes only once
+    /// and swallows its repeats. NSTextView would otherwise take a repeated
+    /// Esc as `cancelOperation:` and open the completion list.
     static func resolve(
         key: KeyEquivalent,
         isControlPressed: Bool,
@@ -25,7 +30,7 @@ enum LauncherKeyBindings {
         case (.upArrow, _), (KeyEquivalent("p"), true):
             return .moveSelection(-1)
         case (.escape, _), (KeyEquivalent("g"), true):
-            return isRepeat ? nil : .dismiss
+            return isRepeat ? .swallow : .dismiss
         default:
             return nil
         }

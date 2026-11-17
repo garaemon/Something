@@ -60,11 +60,18 @@ final class LauncherKeyBindingsTests: XCTestCase {
         XCTAssertEqual(command, .dismiss)
     }
 
-    func test_should_not_dismiss_again_while_escape_repeats() {
+    func test_should_swallow_escape_repeat_instead_of_dismissing_again() {
         let command = LauncherKeyBindings.resolve(
             key: .escape, isControlPressed: false, isRepeat: true)
 
-        XCTAssertNil(command)
+        XCTAssertEqual(command, .swallow)
+    }
+
+    func test_should_swallow_control_g_repeat_instead_of_dismissing_again() {
+        let command = LauncherKeyBindings.resolve(
+            key: KeyEquivalent("g"), isControlPressed: true, isRepeat: true)
+
+        XCTAssertEqual(command, .swallow)
     }
 
     func test_should_ignore_n_without_control() {
