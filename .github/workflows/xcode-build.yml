@@ -41,6 +41,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        # The coverage of the changed lines diffs against the base branch.
+        fetch-depth: 0
 
     - name: Select Xcode Version
       uses: maxim-lobanov/setup-xcode@v1
@@ -57,6 +60,8 @@ jobs:
       run: mise run test
 
     - name: Report code coverage
+      env:
+        COVERAGE_BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
       run: |
         mise run coverage > coverage.md
         cat coverage.md >> "$GITHUB_STEP_SUMMARY"

@@ -38,7 +38,9 @@ run = [
 
 [tasks.coverage]
 description = "Print the code coverage of the last test run as Markdown"
-run = "scripts/coverage-report.sh $DERIVED_DATA_PATH/Test.xcresult"
+# Set COVERAGE_BASE_REF, such as origin/main, to add the coverage of the lines
+# changed since that ref.
+run = "scripts/coverage-report.sh $DERIVED_DATA_PATH/Test.xcresult ${COVERAGE_BASE_REF:-}"
 
 [tasks.format]
 description = "Format the app sources with swift-format"
