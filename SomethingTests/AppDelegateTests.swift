@@ -178,4 +178,13 @@ final class AppDelegateTests: XCTestCase {
 
         XCTAssertEqual(try XCTUnwrap(appDelegate.mascotPanel).placement, .left)
     }
+
+    func test_should_open_launcher_when_dock_icon_is_clicked() {
+        let appDelegate = makeAppDelegate()
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+
+        _ = appDelegate.applicationShouldHandleReopen(NSApplication.shared, hasVisibleWindows: false)
+
+        XCTAssertEqual(appDelegate.window?.isVisible, true)
+    }
 }

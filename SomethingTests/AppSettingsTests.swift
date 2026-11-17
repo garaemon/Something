@@ -152,4 +152,28 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.fileFolderPaths, ["/b"])
     }
+
+    func test_should_show_dock_icon_when_nothing_is_saved() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        XCTAssertTrue(settings.shouldShowDockIcon)
+    }
+
+    func test_should_restore_saved_dock_icon_visibility() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).shouldShowDockIcon = false
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertFalse(restoredSettings.shouldShowDockIcon)
+    }
+
+    func test_should_show_dock_icon_after_reset() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.shouldShowDockIcon = false
+
+        settings.resetToDefaults()
+
+        XCTAssertTrue(settings.shouldShowDockIcon)
+    }
 }

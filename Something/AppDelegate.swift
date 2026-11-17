@@ -29,6 +29,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = {
         $0.randomElement() ?? .top
     }
+    // Tests replace the call to keep the test host's own activation policy.
+    var applyActivationPolicy: (NSApplication.ActivationPolicy) -> Void =
+        AppDelegate.switchActivationPolicy
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
@@ -53,10 +56,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     )
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Change the activation policy to .accessory
-        // This allows the app to become active and its windows to gain/lose focus,
-        // while still keeping it out of the Dock.
-        NSApplication.shared.setActivationPolicy(.accessory)
         refreshApplicationsInBackground()
         repositoryLoader.refresh()
         fileLoader.refresh()
@@ -65,7 +64,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Registers the hot key from the settings, and registers it again whenever
     /// the settings change it or start recording a new one. Also rescans the
-    /// repositories or the files whenever the settings change their folders.
+    /// repositories or the files whenever the settings change their folders,
+    /// and shows or hides the Dock icon as the settings say.
     func startObservingSettings() {
         settingsSubscriptions.removeAll()
         // @Published emits before the property changes, so the sinks use the
@@ -77,6 +77,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.$isRecordingHotKey
             .removeDuplicates()
             .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
+            .store(in: &settingsSubscriptions)
+        settings.$shouldShowDockIcon
+            .removeDuplicates()
+            .sink { [weak self] shouldShowDockIcon in
+                self?.applyActivationPolicy(shouldShowDockIcon ? .regular : .accessory)
+            }
             .store(in: &settingsSubscriptions)
         settings.$repositoryRootPath
             .removeDuplicates()

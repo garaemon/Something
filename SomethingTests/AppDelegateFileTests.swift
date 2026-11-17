@@ -16,6 +16,8 @@ final class AppDelegateFileTests: XCTestCase {
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
         appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
+        // The real call would switch the test host's own Dock icon.
+        appDelegate.applyActivationPolicy = { _ in }
         addTeardownBlock { @MainActor in appDelegate.window?.close() }
         return appDelegate
     }

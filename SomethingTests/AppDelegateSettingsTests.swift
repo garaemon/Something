@@ -14,6 +14,8 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
         appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
+        // The real call would switch the test host's own Dock icon.
+        appDelegate.applyActivationPolicy = { _ in }
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()
             appDelegate.settingsWindow?.close()
@@ -176,5 +178,26 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.settings.repositoryRootPath = "/Users/someone/src"
 
         wait(for: [previousRootScan], timeout: 0.5)
+    }
+
+    func test_should_show_dock_icon_by_default() {
+        let appDelegate = makeAppDelegate()
+        var appliedPolicies: [NSApplication.ActivationPolicy] = []
+        appDelegate.applyActivationPolicy = { appliedPolicies.append($0) }
+
+        appDelegate.startObservingSettings()
+
+        XCTAssertEqual(appliedPolicies, [.regular])
+    }
+
+    func test_should_hide_dock_icon_when_setting_turns_it_off() {
+        let appDelegate = makeAppDelegate()
+        var appliedPolicies: [NSApplication.ActivationPolicy] = []
+        appDelegate.applyActivationPolicy = { appliedPolicies.append($0) }
+        appDelegate.startObservingSettings()
+
+        appDelegate.settings.shouldShowDockIcon = false
+
+        XCTAssertEqual(appliedPolicies.last, .accessory)
     }
 }
