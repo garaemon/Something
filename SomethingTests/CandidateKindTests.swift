@@ -54,6 +54,15 @@ final class CandidateKindTests: XCTestCase {
         XCTAssertNotEqual(candidate.icon, .systemSymbol(LauncherCandidateKind.settings.symbolName))
     }
 
+    func test_should_tag_script_candidates_as_script() {
+        let item = ScriptItem(generation: 1, source: "demo", title: "row", action: nil)
+        let source = ScriptSource(items: [item], runAction: { _, _ in })
+
+        let kinds = source.makeCandidates(matching: "").map(\.kind)
+
+        XCTAssertEqual(kinds, [.script])
+    }
+
     func test_should_give_every_kind_a_distinct_label() {
         let kinds = LauncherCandidateKind.allCases
 

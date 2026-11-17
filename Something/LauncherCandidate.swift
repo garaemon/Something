@@ -55,6 +55,7 @@ enum LauncherCandidateKind: CaseIterable {
     case settings
     case calculator
     case scratch
+    case script
 
     /// The short text of the badge, such as "Window".
     var label: String {
@@ -67,6 +68,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .settings: "Settings"
         case .calculator: "Calc"
         case .scratch: "Scratch"
+        case .script: "Script"
         }
     }
 
@@ -82,6 +84,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .settings: "slider.horizontal.3"
         case .calculator: "function"
         case .scratch: "text.cursor"
+        case .script: "curlybraces"
         }
     }
 }

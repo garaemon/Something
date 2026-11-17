@@ -13,6 +13,7 @@ final class AppDelegateScratchTests: XCTestCase {
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
+        appDelegate.scriptCatalog = .empty
         appDelegate.scratchStore = ScratchStore(fileURL: folderURL.appendingPathComponent("scratch.py"))
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()

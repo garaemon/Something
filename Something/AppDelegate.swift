@@ -25,6 +25,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var windowCatalog = WindowCatalog.makeDefault()
     var repositoryCatalog = RepositoryCatalog.makeDefault()
     var fileCatalog = FileCatalog.makeDefault()
+    // Tests replace the catalog to keep the real interpreter and the user's init.py out.
+    var scriptCatalog = ScriptCatalog.makeDefault()
     // Tests replace the random pick to get a fixed placement.
     var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = {
         $0.randomElement() ?? .top
@@ -41,11 +43,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // delay the other lists.
     private lazy var repositoryLoader = makeRepositoryLoader()
     private lazy var fileLoader = makeFileLoader()
+    // Listing the Python sources calls Python, which can run until its timeout.
+    private lazy var scriptLoader = makeScriptLoader()
     private(set) var launcherViewModel: LauncherViewModel?
     // A serial queue delivers scans in the order they started, so a slow
     // older scan never overwrites a newer result.
     private let applicationScanQueue = DispatchQueue(
         label: "com.garaemon.Something.applicationScan",
+        qos: .userInitiated
+    )
+    // Runs the init file and the Python actions, one at a time in the order of the picks.
+    private let scriptQueue = DispatchQueue(
+        label: "com.garaemon.Something.scriptAction",
         qos: .userInitiated
     )
     // Windows get their own queue so that a slow folder scan does not delay
@@ -59,6 +68,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshApplicationsInBackground()
         repositoryLoader.refresh()
         fileLoader.refresh()
+        runScriptInitFileInBackground()
         startObservingSettings()
     }
 
@@ -192,6 +202,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshWindowsInBackground()
         repositoryLoader.refresh()
         fileLoader.refresh()
+        scriptLoader.refresh()
 
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
@@ -251,6 +262,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
+            makeScriptSource(scriptLoader.cachedItems),
             WebSearchSource(
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
@@ -306,6 +318,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
         }
         return loader
+    }
+
+    private func makeScriptLoader() -> BackgroundListLoader<String, ScriptItem> {
+        let loader = BackgroundListLoader<String, ScriptItem>(
+            queueLabel: "com.garaemon.Something.scriptList",
+            // Nothing in the settings changes the Python sources, so the key never changes.
+            readKey: { "" },
+            makeLoadFunction: { [weak self] in
+                let catalog = self?.scriptCatalog
+                return { _ in catalog?.loadItems() ?? [] }
+            }
+        )
+        loader.onItemsLoaded = { [weak self] items in
+            guard let self else { return }
+            launcherViewModel?.replaceSource(makeScriptSource(items))
+        }
+        return loader
+    }
+
+    // The init file defines the Python sources, so the first list waits for it. Both run on
+    // the queue of the actions, which is serial, and which a slow init file may hold up.
+    private func runScriptInitFileInBackground() {
+        let catalog = scriptCatalog
+        scriptQueue.async { [weak self] in
+            catalog.runInitFile()
+            DispatchQueue.main.async { self?.scriptLoader.refresh() }
+        }
+    }
+
+    // The action runs off the main thread, because Python can run until its timeout.
+    private func makeScriptSource(_ items: [ScriptItem]) -> ScriptSource {
+        let catalog = scriptCatalog
+        return ScriptSource(
+            items: items,
+            runAction: { [scriptQueue] generation, index in
+                scriptQueue.async { catalog.runAction(generation, index) }
+            }
+        )
     }
 
     // Windows are not cached, because they open, close, and change titles

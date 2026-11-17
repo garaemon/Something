@@ -32,13 +32,19 @@ final class PythonInterpreter {
 
     private static let sourceFilename = "<scratch>"
 
-    private let queue = DispatchQueue(label: "com.garaemon.Something.python")
+    // Internal, so that the extension API in PythonInterpreter+Extensions.swift runs on it too.
+    let queue = DispatchQueue(label: "com.garaemon.Something.python")
+
+    /// The init file to run again after every `reset()`, so that permanent extensions survive
+    /// a reset. Nil runs none. Only the interpreter queue touches it.
+    var initFileURLToRunOnReset: URL?
 
     private init() {
         queue.sync {
             py_initialize()
             Self.installCallbacks()
             Self.replaceExit()
+            Self.installExtensions()
         }
     }
 
@@ -69,12 +75,17 @@ final class PythonInterpreter {
         }
     }
 
-    /// Discards every variable, function, and import of earlier runs.
+    /// Discards every variable, function, and import of earlier runs, then installs the
+    /// launcher extension API again and runs the init file registered for resets.
     func reset() {
         queue.sync {
             py_resetvm()
             Self.installCallbacks()
             Self.replaceExit()
+            Self.installExtensions()
+            if let url = initFileURLToRunOnReset {
+                _ = runInitFileOnQueue(at: url, timeoutMilliseconds: Self.initFileTimeoutMilliseconds)
+            }
         }
     }
 
@@ -87,7 +98,7 @@ final class PythonInterpreter {
         return py_exec(source, sourceFilename, mode, nil)
     }
 
-    private static func takeErrorMessage() -> String {
+    static func takeErrorMessage() -> String {
         defer { py_clearexc(nil) }
         guard let traceback = py_formatexc() else {
             return "Error"
