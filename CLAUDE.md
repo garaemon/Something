@@ -109,6 +109,7 @@ mise run build
 
 - **SomethingApp.swift**: Main app entry point using SwiftUI's App protocol. Uses Settings scene to prevent default window appearance on launch.
 - **AppDelegate.swift**: Handles app lifecycle, global hotkey registration (HotKey library), and window management. Sets activation policy to `.accessory` to keep app out of Dock.
+- **AppDelegate+Reopen.swift**: Opens the launcher when the user clicks the Dock icon of the running app.
 - **SomethingWindowController.swift**: Custom NSWindowDelegate that implements auto-hide behavior when window loses focus, and reports resizes so that AppDelegate can reposition the mascot panel.
 - **LauncherView.swift**: Launcher UI in the style of Emacs anything.el. Lists the windows of running applications, then every application, then the git repositories under the configured folder (`~/ghq` by default), and narrows the list on each keystroke. A query that reads as arithmetic, such as `10 + 30`, lists its result first. A non-empty query also lists up to 50 matching files under the configured file folders (`~/Downloads` and `~/Documents` by default). It then lists Google Search and Google AI Mode at the end, without narrowing. Picking a window brings it to the front; picking an application launches it; picking a repository opens its directory in Finder; picking a file opens it in its default application (a second action, Reveal in Finder, waits for a way to pick non-default actions, issue #20); picking a web search opens it in the default browser; picking a calculator result copies it to the clipboard; picking "Python Scratch" opens the scratch window. Keys: Up/Down or C-n/C-p move, Return picks the row, Esc or C-g closes. Clicking a row picks it.
 - **LauncherViewModel.swift**: Query, narrowed candidates, and selection state for the launcher. Lists the candidates of its sources in order, swaps in a rescanned source by its identifier, and runs the default action of the picked candidate.
@@ -165,6 +166,7 @@ mise run build
 
 - **Background Service Pattern**: App runs as accessory (.accessory activation policy) without Dock presence
 - **Global Hotkey Activation**: Uses HotKey library for the hot key from `AppSettings` (Cmd+Shift+X by default). AppDelegate registers the hot key again when the setting changes, and pauses it while the settings window records a new one.
+- **Dock Icon Click**: Clicking the app's icon in the Dock, or opening the app again from Finder, while the app runs opens the launcher, like the hot key.
 - **Scratch Window**: AppDelegate owns one scratch window and reuses it, like the settings window. The app saves pending edits when it quits.
 - **Settings Window**: The accessory app has no menu bar, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open; the preview in the settings window repaints at once.
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
