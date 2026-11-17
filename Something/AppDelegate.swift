@@ -30,9 +30,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         $0.randomElement() ?? .top
     }
     // Tests replace the call to keep the test host's own activation policy.
-    var applyActivationPolicy: (NSApplication.ActivationPolicy) -> Void = {
-        NSApplication.shared.setActivationPolicy($0)
-    }
+    var applyActivationPolicy: (NSApplication.ActivationPolicy) -> Void =
+        AppDelegate.switchActivationPolicy
     // The launcher shows the previous scan immediately, because scanning the
     // folders on the main thread delays the window after the hotkey.
     private var cachedApplications: [LaunchableApplication] = []
