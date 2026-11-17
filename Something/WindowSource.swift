@@ -17,7 +17,7 @@ struct WindowSource: CandidateSource {
             name: window.name,
             icon: .runningApplication(window.processIdentifier),
             kind: .window,
-            actions: [LauncherAction(title: "Switch to Window") { raiseWindow(window) }]
+            actions: [LauncherAction(title: "Switch to Window", perform: { raiseWindow(window) })]
         )
     }
 }

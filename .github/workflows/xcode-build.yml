@@ -26,7 +26,24 @@ jobs:
     - name: Install tools with mise
       uses: jdx/mise-action@v2
 
-    - name: Lint with swift-format, SwiftLint, and ShellCheck
+    # The cache key holds the compiler version, because a new Xcode on the runner cannot
+    # reuse a build from an older compiler.
+    - name: Hash the Swift version
+      id: swift-version
+      run: echo "hash=$(swift --version 2>&1 | shasum | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
+    # swift-syntax takes minutes to build from scratch.
+    - name: Cache the closure-label-lint build
+      uses: actions/cache@v4
+      with:
+        path: Tools/ClosureLabelLint/.build
+        key: closure-label-lint-${{ runner.os }}-${{ steps.swift-version.outputs.hash }}-${{ hashFiles('Tools/ClosureLabelLint/Package.resolved', 'Tools/ClosureLabelLint/Package.swift') }}
+        restore-keys: closure-label-lint-${{ runner.os }}-${{ steps.swift-version.outputs.hash }}-
+
+    - name: Test closure-label-lint
+      run: mise run test-lint-tools
+
+    - name: Lint with swift-format, SwiftLint, ShellCheck, and closure-label-lint
       run: mise run lint
 
   build:

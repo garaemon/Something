@@ -57,9 +57,19 @@ Format the app sources with swift-format (`.swift-format`):
 mise run format
 ```
 
-Lint the app sources with swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`; tests are excluded, and warnings fail), and the shell scripts (`*.sh`, `*.bash`, and the hooks in `.githooks/`) with [ShellCheck](https://www.shellcheck.net):
+Lint the sources with these tools:
+
+- swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`) check the app sources. Tests are excluded, and warnings fail.
+- `closure-label-lint` (`Tools/ClosureLabelLint`) reports trailing closures that hide a closure label in the app sources. It is a swift-syntax package, and its first run builds swift-syntax for a few minutes.
+- [ShellCheck](https://www.shellcheck.net) checks the shell scripts (`*.sh`, `*.bash`, and the hooks in `.githooks/`).
+
 ```bash
 mise run lint
+```
+
+Run the unit tests of `closure-label-lint`:
+```bash
+mise run test-lint-tools
 ```
 
 Run the linter on every commit that stages a Swift file under `Something/` (once per clone; worktrees share the setting):
@@ -68,6 +78,7 @@ mise run install-hooks
 ```
 
 The hook lives in `.githooks/pre-commit`. `git commit --no-verify` skips it.
+Each worktree keeps its own `Tools/ClosureLabelLint/.build`, so the first hook run in a new worktree builds swift-syntax for a few minutes. Run `mise run lint` once after creating a worktree to build it up front.
 
 The code follows the Google Swift Style Guide with 4-space indentation. Read [STYLE_GUIDE.md](STYLE_GUIDE.md) before writing Swift code, and run `mise run format` after editing it.
 

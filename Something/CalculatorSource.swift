@@ -15,7 +15,7 @@ struct CalculatorSource: CandidateSource {
             name: "= \(resultText)",
             icon: .systemSymbol("equal.circle"),
             kind: .calculator,
-            actions: [LauncherAction(title: "Copy Result") { copyText(resultText) }]
+            actions: [LauncherAction(title: "Copy Result", perform: { copyText(resultText) })]
         )
         return [resultCandidate]
     }

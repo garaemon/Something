@@ -73,9 +73,12 @@ final class ScratchWindowController: NSObject, NSWindowDelegate, NSTextViewDeleg
         window.delegate = self
         window.center()
         if runner != nil {
-            runButtons = ScratchRunButtons(textView: textView) { [weak self] lineIndex in
-                self?.runBlockUnlessComposing(atLine: lineIndex)
-            }
+            runButtons = ScratchRunButtons(
+                textView: textView,
+                onRun: { [weak self] lineIndex in
+                    self?.runBlockUnlessComposing(atLine: lineIndex)
+                }
+            )
         }
         highlighter.update()
         runButtons?.update()
