@@ -38,6 +38,7 @@ mise run test
 ```
 
 The test run keeps its result bundle with code coverage in `build/Test.xcresult`.
+The vendored `ThirdParty/pocketpy/pocketpy.c` is built without coverage instrumentation, so the coverage counts only the app sources.
 Print the coverage of the last test run as Markdown:
 ```bash
 mise run coverage

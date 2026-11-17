@@ -28,10 +28,13 @@ targets:
       Release: Configs/Signing.xcconfig
     sources:
       - Something
-      # Vendored C code keeps its upstream warnings; see its README.
+      # Vendored C code keeps its upstream warnings; see its README. It is
+      # also left uninstrumented so that it stays out of the code coverage.
       - path: ThirdParty/pocketpy
         compilerFlags:
           - -w
+          - -fno-profile-instr-generate
+          - -fno-coverage-mapping
         excludes:
           - README.md
           - LICENSE
