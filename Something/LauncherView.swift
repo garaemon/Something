@@ -25,7 +25,8 @@ struct LauncherView: View {
             .padding(12)
             .focused($isQueryFieldFocused)
             .onSubmit(activateAndDismiss)
-            .onKeyPress(phases: .down, action: handleKeyPress)
+            // A held key sends repeat presses, so a held Down keeps moving.
+            .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
             Divider()
             candidateList
         }
@@ -64,15 +65,19 @@ struct LauncherView: View {
     }
 
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
-        let isControlPressed = keyPress.modifiers.contains(.control)
-        switch (keyPress.key, isControlPressed) {
-        case (.downArrow, _), (KeyEquivalent("n"), true):
-            viewModel.moveSelection(by: 1)
-        case (.upArrow, _), (KeyEquivalent("p"), true):
-            viewModel.moveSelection(by: -1)
-        case (.escape, _), (KeyEquivalent("g"), true):
+        let command = LauncherKeyBindings.resolve(
+            key: keyPress.key,
+            isControlPressed: keyPress.modifiers.contains(.control),
+            isRepeat: keyPress.phase == .repeat
+        )
+        switch command {
+        case .moveSelection(let offset):
+            viewModel.moveSelection(by: offset)
+        case .dismiss:
             dismiss()
-        default:
+        case .swallow:
+            break
+        case nil:
             return .ignored
         }
         return .handled
