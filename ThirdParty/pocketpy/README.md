@@ -12,3 +12,4 @@ To upgrade, download both files from a newer release, replace them here, and run
 
 - `PK_ENABLE_WATCHDOG=1`, so that a run that takes too long raises `TimeoutError`.
 - `-w`, because the project does not fix warnings in vendored code.
+- `-fno-profile-instr-generate` and `-fno-coverage-mapping`, so that the code coverage of the unit tests counts only the app sources.
