@@ -9,6 +9,9 @@ set -euo pipefail
 
 readonly local_config_path="Configs/Local.xcconfig"
 
+# The main checkout is the parent of the common Git directory, as in a plain
+# `git clone`. A bare repository or `--separate-git-dir` finds no source file
+# there, so the script links nothing.
 worktree_root=$(git rev-parse --show-toplevel)
 common_dir=$(git rev-parse --path-format=absolute --git-common-dir)
 main_root=$(dirname "$common_dir")
@@ -25,8 +28,14 @@ if [[ ! -f "$source_path" ]]; then
   exit 0
 fi
 
-# -L catches a dangling symbolic link, which -e reports as missing.
-if [[ -e "$target_path" || -L "$target_path" ]]; then
+if [[ -e "$target_path" ]]; then
+  exit 0
+fi
+
+# The script still exits 0, because a failing post-checkout hook makes
+# `git worktree add` exit non-zero although the worktree was created.
+if [[ -L "$target_path" ]]; then
+  echo "warning: ${target_path} is a dangling symbolic link; remove it and run again" >&2
   exit 0
 fi
 
