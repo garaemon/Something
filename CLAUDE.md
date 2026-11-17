@@ -166,7 +166,7 @@ mise run build
 
 - **Dock Icon Setting**: The app shows its Dock icon by default (`.regular` activation policy). Turning off "Show icon in Dock" in the settings switches it to `.accessory`, which keeps the app out of the Dock, the Command-Tab switcher, and the menu bar.
 - **Global Hotkey Activation**: Uses HotKey library for the hot key from `AppSettings` (Cmd+Shift+X by default). AppDelegate registers the hot key again when the setting changes, and pauses it while the settings window records a new one.
-- **Dock Icon Click**: Clicking the app's icon in the Dock, or opening the app again from Finder, while the app runs opens the launcher, like the hot key.
+- **Dock Icon Click**: Clicking the app's icon in the Dock, or opening the app again from Finder, while the app runs opens the launcher, like the hot key. Switching to the app with Command-Tab opens nothing, because macOS sends no reopen event for it.
 - **Scratch Window**: AppDelegate owns one scratch window and reuses it, like the settings window. The app saves pending edits when it quits.
 - **Settings Window**: The app has no menu bar while the Dock icon is off, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open; the preview in the settings window repaints at once.
 - **Auto-Hide on Focus Loss**: Window automatically hides when user clicks away or switches apps
