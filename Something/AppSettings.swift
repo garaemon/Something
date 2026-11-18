@@ -14,6 +14,10 @@ final class AppSettings: ObservableObject {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent($0).path
     }
 
+    /// Ollama's OpenAI-compatible endpoint.
+    static let defaultLLMBaseURL = "http://localhost:11434/v1"
+    static let defaultLLMModelName = ""
+
     private enum StorageKey {
         static let hotKey = "hotKey"
         static let mascotHeadColor = "mascotHeadColor"
@@ -21,6 +25,8 @@ final class AppSettings: ObservableObject {
         static let repositoryRootPath = "repositoryRootPath"
         static let fileFolderPaths = "fileFolderPaths"
         static let shouldShowDockIcon = "shouldShowDockIcon"
+        static let llmBaseURL = "llmBaseURL"
+        static let llmModelName = "llmModelName"
     }
 
     @Published var hotKeyCombo: KeyCombo {
@@ -48,6 +54,14 @@ final class AppSettings: ObservableObject {
     @Published var shouldShowDockIcon: Bool {
         didSet { userDefaults.set(shouldShowDockIcon, forKey: StorageKey.shouldShowDockIcon) }
     }
+    /// Base URL of the local OpenAI-compatible server that AI commands call.
+    @Published var llmBaseURL: String {
+        didSet { userDefaults.set(llmBaseURL, forKey: StorageKey.llmBaseURL) }
+    }
+    /// Model that the local server runs, such as "gemma3".
+    @Published var llmModelName: String {
+        didSet { userDefaults.set(llmModelName, forKey: StorageKey.llmModelName) }
+    }
     /// True while the settings window waits for a new hot key. The current hot
     /// key must be paused meanwhile, or Carbon takes the press before the window sees it.
     @Published var isRecordingHotKey = false
@@ -72,6 +86,9 @@ final class AppSettings: ObservableObject {
             ?? Self.defaultFileFolderPaths
         shouldShowDockIcon =
             userDefaults.object(forKey: StorageKey.shouldShowDockIcon) as? Bool ?? true
+        llmBaseURL = userDefaults.string(forKey: StorageKey.llmBaseURL) ?? Self.defaultLLMBaseURL
+        llmModelName =
+            userDefaults.string(forKey: StorageKey.llmModelName) ?? Self.defaultLLMModelName
     }
 
     /// The robot painted with the chosen skin colors.
@@ -96,5 +113,7 @@ final class AppSettings: ObservableObject {
         repositoryRootPath = Self.defaultRepositoryRootPath
         fileFolderPaths = Self.defaultFileFolderPaths
         shouldShowDockIcon = true
+        llmBaseURL = Self.defaultLLMBaseURL
+        llmModelName = Self.defaultLLMModelName
     }
 }
