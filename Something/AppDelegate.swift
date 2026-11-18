@@ -74,7 +74,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .removeDuplicates()
             .sink { [weak self] bindings in self?.registerHotKeys(bindings) }
             .store(in: &settingsSubscriptions)
-        settings.$isRecordingHotKey
+        settings.$recordingBindingID
+            .map { $0 != nil }
             .removeDuplicates()
             .sink { [weak self] isRecording in
                 for hotKey in self?.registeredHotKeys ?? [] { hotKey.isPaused = isRecording }

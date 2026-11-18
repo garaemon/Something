@@ -1,8 +1,10 @@
 import HotKey
 
 extension AppDelegate {
+    /// Replaces every registered hot key with one per binding.
     func registerHotKeys(_ bindings: [HotKeyBinding]) {
-        // Releasing the old HotKeys unregisters them from Carbon.
+        // Releasing the old HotKeys first unregisters them from Carbon, so that a
+        // binding that keeps its combination does not register it twice.
         registeredHotKeys = []
         registeredHotKeys = bindings.map { binding in
             let hotKey = HotKey(keyCombo: binding.keyCombo)

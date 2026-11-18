@@ -84,6 +84,8 @@ struct SettingsView: View {
                         Image(systemName: "minus.circle")
                     }
                     .buttonStyle(.borderless)
+                    // Without the last binding, an app with no Dock icon has no way in.
+                    .disabled(settings.hotKeyBindings.count <= 1)
                     .help("Remove")
                 }
             }

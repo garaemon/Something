@@ -53,7 +53,9 @@ final class AppSettings: ObservableObject {
     }
     /// True while the settings window waits for a new hot key. Every binding
     /// must be paused meanwhile, or Carbon takes the press before the window sees it.
-    @Published var isRecordingHotKey = false
+    @Published var recordingBindingID: UUID?
+
+    var isRecordingHotKey: Bool { recordingBindingID != nil }
 
     private let userDefaults: UserDefaults
 
@@ -76,9 +78,9 @@ final class AppSettings: ObservableObject {
 
     private static func loadHotKeyBindings(from userDefaults: UserDefaults) -> [HotKeyBinding] {
         let savedBindings = userDefaults.data(forKey: StorageKey.hotKeyBindings).flatMap {
-            try? JSONDecoder().decode([HotKeyBinding].self, from: $0)
+            try? JSONDecoder().decode([LossyBinding].self, from: $0)
         }
-        if let savedBindings { return savedBindings }
+        if let savedBindings { return savedBindings.compactMap(\.binding) }
         let legacyCombo = userDefaults.dictionary(forKey: StorageKey.legacyHotKey).flatMap(
             KeyCombo.init(dictionary:)
         )

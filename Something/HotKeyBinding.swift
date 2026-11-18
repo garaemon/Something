@@ -55,6 +55,16 @@ struct HotKeyBinding: Identifiable, Equatable, Codable {
     }
 }
 
+/// Decodes to nil instead of throwing, so that one unreadable entry does not
+/// discard the other saved bindings.
+struct LossyBinding: Decodable {
+    let binding: HotKeyBinding?
+
+    init(from decoder: Decoder) throws {
+        binding = try? HotKeyBinding(from: decoder)
+    }
+}
+
 /// Rules that keep the bindings from clashing.
 enum HotKeyBindingValidator {
     /// Combinations offered to a new binding, in order. Control, Option, and

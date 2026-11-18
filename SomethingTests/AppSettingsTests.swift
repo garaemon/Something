@@ -60,6 +60,21 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(settings.hotKeyBindings.map(\.keyCombo), [savedCombo])
     }
 
+    func test_should_keep_readable_bindings_when_one_saved_entry_is_corrupt() throws {
+        let userDefaults = makeUserDefaults()
+        let goodBinding = HotKeyBinding(
+            keyCombo: KeyCombo(key: .j, modifiers: [.command, .option]), command: .openScratch)
+        let goodJSON = try JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(goodBinding))
+        let savedJSON = try JSONSerialization.data(
+            withJSONObject: [goodJSON, ["id": "not-a-uuid"]])
+        userDefaults.set(savedJSON, forKey: "hotKeyBindings")
+
+        let settings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(settings.hotKeyBindings, [goodBinding])
+    }
+
     func test_should_reject_assigning_a_combo_that_another_binding_holds() {
         let settings = AppSettings(userDefaults: makeUserDefaults())
         settings.addHotKeyBinding()

@@ -58,7 +58,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         let bindingID = appDelegate.settings.hotKeyBindings[1].id
         appDelegate.settings.updateCommand(.openSettings, forBindingID: bindingID)
 
-        appDelegate.run(.openSettings)
+        appDelegate.registeredHotKeys[1].keyDownHandler?()
 
         XCTAssertEqual(appDelegate.settingsWindow?.isVisible, true)
     }
@@ -67,7 +67,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         let appDelegate = makeAppDelegate()
         appDelegate.startObservingSettings()
 
-        appDelegate.settings.isRecordingHotKey = true
+        appDelegate.settings.recordingBindingID = appDelegate.settings.hotKeyBindings[0].id
 
         XCTAssertEqual(appDelegate.registeredHotKeys.map(\.isPaused), [true])
     }

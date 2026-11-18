@@ -17,8 +17,11 @@ struct HotKeyRecorderView: View {
 
     var body: some View {
         Button(action: toggleRecording) {
-            Text(settings.isRecordingHotKey ? "Type a shortcut…" : keyCombo?.description ?? "")
-                .frame(minWidth: 120)
+            Text(
+                settings.recordingBindingID == bindingID
+                    ? "Type a shortcut…" : keyCombo?.description ?? ""
+            )
+            .frame(minWidth: 120)
         }
         .onDisappear(perform: stopRecording)
     }
@@ -32,7 +35,7 @@ struct HotKeyRecorderView: View {
     }
 
     private func startRecording() {
-        settings.isRecordingHotKey = true
+        settings.recordingBindingID = bindingID
         keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             MainActor.assumeIsolated { handleRecordedKeyDown(event) }
             // Swallow the press so that it does not also type into the window.
@@ -68,6 +71,9 @@ struct HotKeyRecorderView: View {
             NSEvent.removeMonitor(keyDownMonitor)
         }
         keyDownMonitor = nil
-        settings.isRecordingHotKey = false
+        // Another row may have started recording since; leave its state alone.
+        if settings.recordingBindingID == bindingID {
+            settings.recordingBindingID = nil
+        }
     }
 }
