@@ -43,10 +43,12 @@ struct CaptureSource: CandidateSource {
 
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
-        let matchingNames = Set(
-            ApplicationMatcher.filterItems(Self.entries.map(\.name), matching: query, name: { $0 })
+        let matchingEntries = ApplicationMatcher.filterItems(
+            Self.entries,
+            matching: query,
+            name: \.name
         )
-        return Self.entries.filter { matchingNames.contains($0.name) }.map { entry in
+        return matchingEntries.map { entry in
             LauncherCandidate(
                 id: LauncherCandidateID(sourceID: sourceID, item: entry.name),
                 name: entry.name,
