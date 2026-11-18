@@ -12,7 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var settingsWindow: NSWindow?
     private var settingsWindowCloseObserver: NSObjectProtocol?
     private var settingsSubscriptions: Set<AnyCancellable> = []
-    // Tests replace the store to keep off the user's real scratch file.
+    // Tests replace the stores to keep off the user's real scratch and quicklinks files.
     var scratchStore = ScratchStore.makeDefault()
     var quicklinkStore = QuicklinkStore.makeDefault()
     private(set) var scratchWindowController: ScratchWindowController?
@@ -249,7 +249,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
-            Self.makeQuicklinkSource(quicklinkStore),
+            QuicklinkSource.makeDefault(store: quicklinkStore),
             Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
@@ -347,11 +347,6 @@ extension AppDelegate {
 
     private static func makeRepositorySource(_ repositories: [GhqRepository]) -> RepositorySource {
         RepositorySource(repositories: repositories, openRepository: openRepository)
-    }
-
-    // Reads the file on every open, so that an edit applies without a restart.
-    private static func makeQuicklinkSource(_ store: QuicklinkStore) -> QuicklinkSource {
-        QuicklinkSource(loadResult: store.load(), openQuicklink: QuicklinkOpener.open)
     }
 
     private static func makeFileSource(_ files: [LocalFile]) -> FileSource {

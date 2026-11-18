@@ -1,8 +1,8 @@
 import Foundation
 
 /// Lists the quicklink whose name starts the query, and opens its URL with
-/// the rest of the query filled in. Lists the load error, if any, while the
-/// query is empty.
+/// the rest of the query filled in. Lists the load error, if any, for every
+/// query, so that a broken file is noticed whatever the user types.
 struct QuicklinkSource: CandidateSource {
     let sourceID = CandidateSourceID("quicklinks")
     let loadResult: QuicklinkLoadResult
@@ -13,34 +13,41 @@ struct QuicklinkSource: CandidateSource {
     func makeCandidates(matching query: String) -> [LauncherCandidate] {
         switch loadResult {
         case .failed(let reason):
-            return query.trimmingCharacters(in: .whitespaces).isEmpty
-                ? [makeErrorCandidate(reason)] : []
+            return [makeErrorCandidate(reason)]
         case .loaded(let quicklinks):
-            return quicklinks.compactMap { makeCandidate($0, query: query) }
+            let words = query.split(
+                maxSplits: 1,
+                omittingEmptySubsequences: true,
+                whereSeparator: \.isWhitespace
+            )
+            guard let firstWord = words.first.map(String.init) else { return [] }
+            let queryRemainder =
+                words.count > 1 ? words[1].trimmingCharacters(in: .whitespaces) : ""
+            return quicklinks.compactMap {
+                makeCandidate($0, firstWord: firstWord, queryRemainder: queryRemainder)
+            }
         }
     }
 
-    private func makeCandidate(_ quicklink: Quicklink, query: String) -> LauncherCandidate? {
-        let words = query.split(
-            maxSplits: 1,
-            omittingEmptySubsequences: true,
-            whereSeparator: \.isWhitespace
-        )
-        guard let firstWord = words.first else { return nil }
-        let rest = words.count > 1 ? words[1].trimmingCharacters(in: .whitespaces) : ""
+    private func makeCandidate(
+        _ quicklink: Quicklink,
+        firstWord: String,
+        queryRemainder: String
+    ) -> LauncherCandidate? {
         let lowercasedName = quicklink.name.lowercased()
         let nameMatches =
             firstWord.lowercased() == lowercasedName
-            || (rest.isEmpty && lowercasedName.hasPrefix(firstWord.lowercased()))
+            || (queryRemainder.isEmpty && lowercasedName.hasPrefix(firstWord.lowercased()))
         guard nameMatches else { return nil }
-        let title = rest.isEmpty ? quicklink.name : "\(quicklink.name): \(rest)"
+        let title =
+            queryRemainder.isEmpty ? quicklink.name : "\(quicklink.name): \(queryRemainder)"
         // A malformed template still lists the row, but without an action.
-        let actions = quicklink.makeURL(query: rest).map { url in
-            let open = LauncherAction(
+        let actions = quicklink.makeURL(query: queryRemainder).map { url in
+            let openAction = LauncherAction(
                 title: "Open Quicklink",
                 perform: { openQuicklink(url, quicklink.application) }
             )
-            return [open]
+            return [openAction]
         }
         return LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: quicklink),
@@ -48,6 +55,15 @@ struct QuicklinkSource: CandidateSource {
             icon: .systemSymbol("link"),
             kind: .quicklink,
             actions: actions ?? []
+        )
+    }
+
+    /// Reads `store` now, so that an edit of the file applies on the next
+    /// launcher open, and opens quicklinks through `QuicklinkOpener`.
+    static func makeDefault(store: QuicklinkStore) -> QuicklinkSource {
+        QuicklinkSource(
+            loadResult: store.load(),
+            openQuicklink: { QuicklinkOpener.open($0, withApplication: $1) }
         )
     }
 

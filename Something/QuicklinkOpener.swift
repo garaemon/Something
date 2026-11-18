@@ -4,7 +4,7 @@ import AppKit
 enum QuicklinkOpener {
     /// Opens `url` with `application`, a bundle identifier or a path, or with
     /// the default application when `application` is nil or cannot be found.
-    static func open(_ url: URL, _ application: String?) {
+    static func open(_ url: URL, withApplication application: String?) {
         guard let application else {
             openWithDefaultApplication(url)
             return
@@ -31,7 +31,10 @@ enum QuicklinkOpener {
 
     private static func findApplication(_ bundleIdentifierOrPath: String) -> URL? {
         let expandedPath = (bundleIdentifierOrPath as NSString).expandingTildeInPath
-        if expandedPath.hasPrefix("/") { return URL(fileURLWithPath: expandedPath) }
+        if expandedPath.hasPrefix("/") {
+            return FileManager.default.fileExists(atPath: expandedPath)
+                ? URL(fileURLWithPath: expandedPath) : nil
+        }
         return NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifierOrPath)
     }
 }

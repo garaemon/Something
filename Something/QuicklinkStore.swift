@@ -31,7 +31,23 @@ struct QuicklinkStore {
         } catch CocoaError.fileReadNoSuchFile {
             return .loaded([])
         } catch {
-            return .failed(error.localizedDescription)
+            return .failed(Self.describe(error))
+        }
+    }
+
+    // DecodingError.localizedDescription only says the data is in the wrong format.
+    private static func describe(_ error: Error) -> String {
+        guard let decodingError = error as? DecodingError else {
+            return error.localizedDescription
+        }
+        switch decodingError {
+        case .dataCorrupted(let context), .keyNotFound(_, let context),
+            .typeMismatch(_, let context), .valueNotFound(_, let context):
+            let path = context.codingPath.map(\.stringValue).joined(separator: ".")
+            let location = path.isEmpty ? "" : " at \(path)"
+            return "\(context.debugDescription)\(location)"
+        @unknown default:
+            return error.localizedDescription
         }
     }
 }

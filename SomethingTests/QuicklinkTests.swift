@@ -47,6 +47,7 @@ final class QuicklinkStoreTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
         let fileURL = directory.appendingPathComponent("quicklinks.json")
         if let contents { try contents.write(to: fileURL, atomically: true, encoding: .utf8) }
         return QuicklinkStore(fileURL: fileURL)
@@ -68,6 +69,14 @@ final class QuicklinkStoreTests: XCTestCase {
         let store = try makeStore(contents: "[{")
 
         guard case .failed = store.load() else { return XCTFail("expected failure") }
+    }
+
+    func test_should_name_the_missing_key_in_failure() throws {
+        let store = try makeStore(contents: #"[{"name": "gh"}]"#)
+
+        guard case .failed(let reason) = store.load() else { return XCTFail("expected failure") }
+
+        XCTAssertTrue(reason.contains("url"), reason)
     }
 }
 
@@ -115,6 +124,21 @@ final class QuicklinkSourceTests: XCTestCase {
 
         XCTAssertEqual(candidates.count, 1)
         XCTAssertTrue(candidates[0].name.contains("bad json"))
+        XCTAssertNil(candidates[0].defaultAction)
+    }
+
+    func test_should_list_error_row_for_non_empty_query() {
+        let candidates = makeSource(.failed("bad json")).makeCandidates(matching: "safari")
+
+        XCTAssertEqual(candidates.count, 1)
+    }
+
+    func test_should_list_row_without_action_for_malformed_template() {
+        let broken = Quicklink(name: "bad", url: "http://exa mple.com/{query}")
+
+        let candidates = makeSource(.loaded([broken])).makeCandidates(matching: "bad x")
+
+        XCTAssertEqual(candidates.count, 1)
         XCTAssertNil(candidates[0].defaultAction)
     }
 

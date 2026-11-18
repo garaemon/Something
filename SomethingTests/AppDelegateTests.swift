@@ -13,6 +13,7 @@ final class AppDelegateTests: XCTestCase {
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
+        appDelegate.quicklinkStore = QuicklinkStore(fileURL: URL(fileURLWithPath: "/nonexistent/quicklinks.json"))
         return appDelegate
     }
 
