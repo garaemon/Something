@@ -53,6 +53,13 @@ COVERAGE_BASE_REF=origin/main mise run coverage
 
 CI posts the same report, with the changed lines measured against the base branch, as a sticky comment on each pull request from this repository, and updates the comment on every push.
 
+Regenerate the Python API reference `docs/python-api.md` from the docstrings in `Something/PythonExtensionPrelude.swift`:
+```bash
+mise run docs
+```
+
+To change the Python API, change the code, update its docstring, and run `mise run docs`. Commit the regenerated file with the change. `mise run lint` runs the generator with `--check`, so CI fails on a stale reference. Never edit `docs/python-api.md` by hand.
+
 Format the app sources with swift-format (`.swift-format`):
 ```bash
 mise run format
@@ -63,6 +70,7 @@ Lint the sources with these tools:
 - swift-format and [SwiftLint](https://github.com/realm/SwiftLint) (`.swiftlint.yml`) check the app sources. Tests are excluded, and warnings fail.
 - `closure-label-lint` (`Tools/ClosureLabelLint`) reports trailing closures that hide a closure label in the app sources. It is a swift-syntax package, and its first run builds swift-syntax for a few minutes.
 - [ShellCheck](https://www.shellcheck.net) checks the shell scripts (`*.sh`, `*.bash`, and the hooks in `.githooks/`).
+- `Tools/PythonAPIDocs/generate_python_api_docs.py --check` fails when `docs/python-api.md` is out of date.
 
 ```bash
 mise run lint
@@ -153,7 +161,8 @@ mise run build
 - **SettingsSource.swift**: Launcher source that lists "Something Settings" for queries such as "settings" or "pref", and opens the settings window.
 - **PythonInterpreter.swift**: Runs a `PythonBlock` (leading source plus a last statement whose expression value is echoed) on the embedded pocketpy VM, and returns the printed output and the exception type and message without stack frames. Variables persist between runs until `reset()`. pocketpy keeps process-wide C state, so the app has one shared interpreter that serializes runs on its own queue, and a watchdog stops a run with `TimeoutError` after 2 s of process CPU time by default. The watchdog checks between bytecodes only, so a long C call such as `time.sleep` is not stopped. Printed output is capped at 100,000 bytes per run, `input()` reads an empty line, and `exit()` raises `SystemExit` instead of quitting the app. Swift reaches pocketpy through `Something-Bridging-Header.h`.
 - **PythonInterpreter+Extensions.swift**: The launcher extension API of the interpreter. Installs the hidden native module `_something_native` (`list_windows() -> str` of JSON and `focus_window(handle) -> bool`, bound with `py_bindfunc`) and the `something` module from `PythonExtensionPrelude`, at init and after every `reset()`, because `py_resetvm()` wipes modules. Offers `runInitFile(at:)`, `collectExtensionItems()`, `runExtensionAction(generation:index:)`, and `useWindowProvider` (tests replace the window lister and raiser). Swift keeps the window handle table, the two latest listings, on the interpreter queue. `focus_window` hops to the main thread without waiting, so that a run started from the main thread cannot deadlock. The JSON that pocketpy parses cannot hold `\/` or `\u` escapes, so slashes stay unescaped and control characters become spaces. The exception wrappers that Swift cannot import (`py_exception` is variadic) live in `Something-Bridging-Header.h`.
-- **PythonExtensionPrelude.swift**: The Python source of the `something` module: `Window` (`title`, `app_name`, `pid`, `focus()`), `windows()`, `Candidate(title, action=None)`, `add_source(name, candidates)` (the same name replaces), `remove_source(name)`, and the private `_collect()` and `_run_action(generation, index)`. `_collect()` calls each source inside its own try/except and returns one JSON string; only the latest two generations of actions stay callable.
+- **PythonExtensionPrelude.swift**: The Python source of the `something` module: `Window` (`title`, `app_name`, `pid`, `focus()`), `windows()`, `Candidate(title, action=None)`, `add_source(name, candidates)` (the same name replaces), `remove_source(name)`, and the private `_collect()` and `_run_action(generation, index)`. `_collect()` calls each source inside its own try/except and returns one JSON string; only the latest two generations of actions stay callable. The docstrings of the module and of every public name are the single source of truth of the API reference `docs/python-api.md`, so every public name needs one, and a name that is not API starts with `_` (`json` is imported as `_json`). Swift reads the prelude text as Swift lines, so inside the string keep every line at 100 columns or fewer including the Swift indentation, indent only by exactly 4 spaces more than the previous line, and leave no trailing whitespace or two blank lines in a row. pocketpy keeps `__doc__` on functions and on methods reached through their class, but not on modules, classes, or bound methods.
+- **Tools/PythonAPIDocs/generate_python_api_docs.py**: Python 3 standard library only. Extracts the prelude from `PythonExtensionPrelude.swift`, parses it with `ast`, and writes `docs/python-api.md`: the module docstring, then a section per public function and class in source order, with methods as subsections. The output is deterministic, and the script fails when a public name has no docstring. `--check` writes nothing and exits 1 when the committed file is stale.
 - **ScriptCollection.swift**: `ScriptItem` (generation, source, title, optional action index), `ScriptSourceError`, and `ScriptCollection`, which decodes the JSON of `_collect()`.
 - **ScriptSource.swift**: One aggregate launcher source (`scripts`) for the rows of all Python sources, narrowed by title. A row without an action has no actions, so it cannot be picked. The action closure is injected, so that the source stays free of the interpreter.
 - **ScriptCatalog.swift**: Closures for the init file, the item list, and the action runner. The default runs on the shared interpreter, logs failures with `NSLog`, and skips the init file under XCTest. Tests use `ScriptCatalog.empty`.

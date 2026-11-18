@@ -45,6 +45,42 @@ final class PythonInterpreterExtensionTests: XCTestCase {
         return url
     }
 
+    func test_should_expose_exactly_the_documented_public_names() {
+        _ = python(
+            """
+            import something
+            names = sorted([n for n in dir(something) if not n.startswith("_")])
+            """)
+
+        XCTAssertEqual(
+            pythonValue("names"),
+            "['Candidate', 'Window', 'add_source', 'remove_source', 'windows']\n"
+        )
+    }
+
+    // pocketpy keeps no __doc__ on modules, classes, or bound methods, so this checks the
+    // functions and the methods that it reaches through their class. The generator of
+    // docs/python-api.md checks the rest from the source.
+    func test_should_give_every_public_function_and_method_a_docstring() {
+        _ = python(
+            """
+            import something
+            missing = []
+            for name in dir(something):
+                if name.startswith("_"):
+                    continue
+                member = getattr(something, name)
+                if isinstance(member, type):
+                    for method in dir(member):
+                        if not method.startswith("_") and not getattr(member, method).__doc__:
+                            missing.append(name + "." + method)
+                elif not member.__doc__:
+                    missing.append(name)
+            """)
+
+        XCTAssertEqual(pythonValue("missing"), "[]\n")
+    }
+
     func test_should_collect_rows_of_a_source_registered_from_python() {
         let result = python(
             """

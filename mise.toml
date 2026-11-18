@@ -47,7 +47,7 @@ description = "Format the app sources with swift-format"
 run = "xcrun swift-format format --in-place --recursive Something"
 
 [tasks.lint]
-description = "Lint the app sources with swift-format, SwiftLint, and closure-label-lint, and the shell scripts with ShellCheck"
+description = "Lint the app sources with swift-format, SwiftLint, and closure-label-lint, the shell scripts with ShellCheck, and check that docs/python-api.md is up to date"
 # The Git hooks have no file extension, so .githooks is listed by path. Untracked
 # scripts are included so that a new script fails before its first commit.
 run = [
@@ -55,7 +55,12 @@ run = [
   "swiftlint lint --strict",
   "git ls-files -z --cached --others --exclude-standard -- '*.sh' '*.bash' '.githooks/*' | xargs -0 shellcheck",
   "swift run --quiet --package-path Tools/ClosureLabelLint closure-label-lint Something",
+  "python3 Tools/PythonAPIDocs/generate_python_api_docs.py --check",
 ]
+
+[tasks.docs]
+description = "Regenerate docs/python-api.md from the docstrings in PythonExtensionPrelude.swift"
+run = "python3 Tools/PythonAPIDocs/generate_python_api_docs.py"
 
 [tasks.test-lint-tools]
 description = "Run the unit tests of closure-label-lint"
