@@ -62,5 +62,9 @@ description = "Run the unit tests of closure-label-lint"
 run = "swift test --package-path Tools/ClosureLabelLint"
 
 [tasks.install-hooks]
-description = "Run the linter on every commit through the Git hooks in .githooks"
+description = "Use the Git hooks in .githooks: lint on every commit, and link Local.xcconfig into each new worktree"
 run = "git config core.hooksPath .githooks"
+
+[tasks.link-local-config]
+description = "Link Configs/Local.xcconfig of the main checkout into this worktree"
+run = "scripts/link-local-config.sh"

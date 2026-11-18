@@ -73,13 +73,17 @@ Run the unit tests of `closure-label-lint`:
 mise run test-lint-tools
 ```
 
-Run the linter on every commit that stages a Swift file under `Something/` (once per clone; worktrees share the setting):
+Install the Git hooks in `.githooks` (once per clone; worktrees share the setting):
 ```bash
 mise run install-hooks
 ```
 
-The hook lives in `.githooks/pre-commit`. `git commit --no-verify` skips it.
-Each worktree keeps its own `Tools/ClosureLabelLint/.build`, so the first hook run in a new worktree builds swift-syntax for a few minutes. Run `mise run lint` once after creating a worktree to build it up front.
+The hooks do the following:
+
+- `.githooks/pre-commit` runs the linter on every commit that stages a Swift file under `Something/`. `git commit --no-verify` skips it.
+- `.githooks/post-checkout` links `Configs/Local.xcconfig` into each new worktree. See [Code Signing](#code-signing).
+
+Each worktree keeps its own `Tools/ClosureLabelLint/.build`, so the first pre-commit run in a new worktree builds swift-syntax for a few minutes. Run `mise run lint` once after creating a worktree to build it up front.
 
 The code follows the Google Swift Style Guide with 4-space indentation. Read [STYLE_GUIDE.md](STYLE_GUIDE.md) before writing Swift code, and run `mise run format` after editing it.
 
@@ -93,8 +97,9 @@ Build products go to `build/` (ignored by git).
 ### Code Signing
 
 Without extra setup, builds are signed ad hoc.
-macOS ties the Accessibility permission of an ad hoc build to its exact binary, so every rebuild loses the permission.
-To keep the permission across rebuilds, create `Configs/Local.xcconfig` with your team ID and build.
+macOS ties the permissions of an ad hoc build to its exact binary, so every rebuild asks for them again.
+The permissions are Accessibility and the access to `~/Documents` and `~/Downloads`.
+To keep the permissions across rebuilds, create `Configs/Local.xcconfig` with your team ID and build.
 The following command overwrites the file if it already exists:
 
 ```bash
@@ -103,6 +108,14 @@ mise run build
 ```
 
 `Configs/Signing.xcconfig` includes `Configs/Local.xcconfig` when the file exists. Git ignores `Configs/Local.xcconfig`.
+
+Git does not copy an ignored file into a new worktree.
+With the hooks installed (`mise run install-hooks`), `.githooks/post-checkout` links the main checkout's `Configs/Local.xcconfig` into each new worktree.
+For a worktree created before the hooks, link the file by hand:
+
+```bash
+mise run link-local-config
+```
 
 ## Architecture
 
