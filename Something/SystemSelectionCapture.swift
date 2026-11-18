@@ -10,6 +10,7 @@ extension SelectionCapturer {
             readFrontmostApplication: SystemSelectionServices.readFrontmostApplication,
             readAccessibilitySelection: SystemSelectionServices.readAccessibilitySelection,
             pasteboard: GeneralSelectionPasteboard(),
+            canPostCopyKey: { AXIsProcessTrusted() },
             postCopyKey: SystemSelectionServices.postCopyKey,
             pauseBetweenPolls: { Thread.sleep(forTimeInterval: 0.01) },
             maximumPollCount: 30,
@@ -96,7 +97,9 @@ private enum SystemSelectionServices {
     /// event is dropped silently, so the caller must not wait for a copy.
     static func postCopyKey() -> Bool {
         guard AXIsProcessTrusted() else { return false }
-        let source = CGEventSource(stateID: .combinedSessionState)
+        // The hot key fires on key down, so the user still holds its modifiers.
+        // A private state keeps them out of the event: Cmd+Shift+C would not copy.
+        let source = CGEventSource(stateID: .privateState)
         guard
             let keyDown = CGEvent(
                 keyboardEventSource: source,

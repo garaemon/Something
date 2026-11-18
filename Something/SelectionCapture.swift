@@ -44,6 +44,10 @@ struct SelectionCapturer {
     /// nil when the application does not expose a selection.
     let readAccessibilitySelection: (SourceApplication) -> String?
     let pasteboard: SelectionPasteboard
+    /// Whether `postCopyKey` can work, such as with the Accessibility
+    /// permission. Checked first so that a hopeless fallback never reads the
+    /// pasteboard.
+    let canPostCopyKey: () -> Bool
     /// Posts Cmd+C and returns whether the event was sent.
     let postCopyKey: () -> Bool
     let pauseBetweenPolls: () -> Void
@@ -68,6 +72,7 @@ struct SelectionCapturer {
     }
 
     private func copySelectionThroughPasteboard() -> String? {
+        guard canPostCopyKey() else { return nil }
         let originalSnapshot = pasteboard.readSnapshot()
         let originalChangeCount = pasteboard.changeCount
         guard postCopyKey() else { return nil }

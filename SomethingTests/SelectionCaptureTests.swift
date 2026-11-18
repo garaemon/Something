@@ -8,7 +8,12 @@ private final class FakePasteboard: SelectionPasteboard {
     var currentString: String? = "old"
     private(set) var restoredSnapshots: [PasteboardSnapshot] = []
 
-    func readSnapshot() -> PasteboardSnapshot { snapshot }
+    var onReadSnapshot: () -> Void = {}
+
+    func readSnapshot() -> PasteboardSnapshot {
+        onReadSnapshot()
+        return snapshot
+    }
 
     func readString() -> String? { currentString }
 
@@ -33,6 +38,7 @@ final class SelectionCaptureTests: XCTestCase {
         frontmost: SourceApplication?,
         accessibilityText: String?,
         pasteboard: FakePasteboard,
+        canPostCopyKey: Bool = true,
         postCopyKey: @escaping () -> Bool,
         pauseBetweenPolls: @escaping () -> Void = {}
     ) -> SelectionCapturer {
@@ -40,6 +46,7 @@ final class SelectionCaptureTests: XCTestCase {
             readFrontmostApplication: { frontmost },
             readAccessibilitySelection: { _ in accessibilityText },
             pasteboard: pasteboard,
+            canPostCopyKey: { canPostCopyKey },
             postCopyKey: postCopyKey,
             pauseBetweenPolls: pauseBetweenPolls,
             maximumPollCount: 5,
@@ -169,7 +176,28 @@ final class SelectionCaptureTests: XCTestCase {
         XCTAssertEqual(capturer.captureSelection().sourceApplication, safari)
     }
 
-    func test_should_start_view_model_with_empty_selection() {
-        XCTAssertEqual(LauncherViewModel(sources: []).capturedSelection, .empty)
+    func test_should_stop_polling_after_maximum_poll_count() {
+        var pauseCount = 0
+        let capturer = makeCapturer(
+            frontmost: safari, accessibilityText: nil, pasteboard: FakePasteboard(),
+            postCopyKey: { true },
+            pauseBetweenPolls: { pauseCount += 1 })
+
+        _ = capturer.captureSelection()
+
+        XCTAssertEqual(pauseCount, 5)
+    }
+
+    func test_should_not_read_pasteboard_when_copy_key_cannot_be_posted() {
+        let pasteboard = FakePasteboard()
+        var didReadSnapshot = false
+        pasteboard.onReadSnapshot = { didReadSnapshot = true }
+        let capturer = makeCapturer(
+            frontmost: safari, accessibilityText: nil, pasteboard: pasteboard,
+            canPostCopyKey: false, postCopyKey: { true })
+
+        _ = capturer.captureSelection()
+
+        XCTAssertFalse(didReadSnapshot)
     }
 }

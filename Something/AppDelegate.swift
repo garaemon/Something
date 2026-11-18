@@ -307,11 +307,11 @@ extension AppDelegate {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
-    static func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
+    private static func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
         WindowSource(windows: windows, raiseWindow: WindowRaiser.raiseWindow)
     }
 
-    static func makeApplicationSource(
+    private static func makeApplicationSource(
         _ applications: [LaunchableApplication]
     ) -> ApplicationSource {
         ApplicationSource(applications: applications, launchApplication: launchApplication)
