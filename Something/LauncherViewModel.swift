@@ -14,6 +14,10 @@ final class LauncherViewModel: ObservableObject {
     @Published private(set) var candidates: [LauncherCandidate] = []
     @Published private(set) var selectedIndex = 0
 
+    /// The selection of the frontmost application from before the launcher
+    /// opened. Later commands, such as paste back, read it.
+    var capturedSelection = CapturedSelection.empty
+
     private var sources: [any CandidateSource]
 
     /// Creates a view model that lists the candidates of `sources`, one source
