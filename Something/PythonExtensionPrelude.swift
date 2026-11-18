@@ -8,7 +8,6 @@ enum PythonExtensionPrelude {
         import json
         import _something_native as _native
 
-
         class Window:
             """A window of another application. Valid until the next windows() call but one."""
 
@@ -25,7 +24,6 @@ enum PythonExtensionPrelude {
             def __repr__(self):
                 return "Window(" + repr(self.app_name) + ", " + repr(self.title) + ")"
 
-
         class Candidate:
             """One launcher row. action is a function without arguments, or None."""
 
@@ -33,11 +31,9 @@ enum PythonExtensionPrelude {
                 self.title = title
                 self.action = action
 
-
         def windows():
-            return [Window(w["handle"], w["title"], w["app_name"], w["pid"])
-                    for w in json.loads(_native.list_windows())]
-
+            records = json.loads(_native.list_windows())
+            return [Window(w["handle"], w["title"], w["app_name"], w["pid"]) for w in records]
 
         # Insertion order is the display order, and a source added again keeps its place.
         _sources = {}
@@ -45,17 +41,14 @@ enum PythonExtensionPrelude {
         # bounded and a row listed just before a refresh still works.
         _state = {"generation": 0, "actions": {}}
 
-
         def add_source(name, candidates):
             if not callable(candidates):
                 raise TypeError("candidates must be a function that returns a list")
             _sources[name] = candidates
 
-
         def remove_source(name):
             if name in _sources:
                 _sources.pop(name)
-
 
         def _collect():
             generation = _state["generation"] + 1
@@ -71,8 +64,8 @@ enum PythonExtensionPrelude {
                             row = Candidate(str(row))
                         new_rows.append((str(row.title), row.action))
                 except Exception as e:
-                    errors.append({"source": str(name),
-                                   "message": type(e).__name__ + ": " + str(e)})
+                    message = type(e).__name__ + ": " + str(e)
+                    errors.append({"source": str(name), "message": message})
                     continue
                 for title, action in new_rows:
                     index = None
@@ -84,7 +77,6 @@ enum PythonExtensionPrelude {
             _state["actions"][generation] = actions
             _state["actions"].pop(generation - 2, None)
             return json.dumps({"generation": generation, "items": items, "errors": errors})
-
 
         def _run_action(generation, index):
             actions = _state["actions"].get(generation)

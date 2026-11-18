@@ -191,26 +191,15 @@ private enum PythonWindowBridge {
     // Handles count up and are never reused, so a stale handle cannot name another window.
     private static var nextHandle = 1
 
-    private struct Record: Encodable {
-        let handle: Int
-        let title: String
-        let appName: String
-        let pid: Int
-
-        private enum CodingKeys: String, CodingKey {
-            case handle, title, appName = "app_name", pid
-        }
-    }
-
     static func listWindowsJSON() -> String {
         var table: [Int: SwitchableWindow] = [:]
-        var records: [Record] = []
+        var records: [WindowRecord] = []
         for window in loadWindows() {
             let handle = nextHandle
             nextHandle += 1
             table[handle] = window
             records.append(
-                Record(
+                WindowRecord(
                     handle: handle,
                     title: sanitize(window.title),
                     appName: sanitize(window.applicationName),
@@ -246,5 +235,20 @@ private enum PythonWindowBridge {
                 text.unicodeScalars.map { $0.value < 0x20 || $0.value == 0x7F ? " " : $0 }
             )
         )
+    }
+}
+
+// One window as `list_windows()` reports it to Python.
+private struct WindowRecord: Encodable {
+    let handle: Int
+    let title: String
+    let appName: String
+    let pid: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case handle
+        case title
+        case appName = "app_name"
+        case pid
     }
 }

@@ -84,7 +84,10 @@ final class PythonInterpreter {
             Self.replaceExit()
             Self.installExtensions()
             if let url = initFileURLToRunOnReset {
-                _ = runInitFileOnQueue(at: url, timeoutMilliseconds: Self.initFileTimeoutMilliseconds)
+                _ = runInitFileOnQueue(
+                    at: url,
+                    timeoutMilliseconds: Self.initFileTimeoutMilliseconds
+                )
             }
         }
     }

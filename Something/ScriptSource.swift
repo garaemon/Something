@@ -47,9 +47,10 @@ struct ScriptSource: CandidateSource {
 
     private func makeCandidate(for identified: IdentifiedItem) -> LauncherCandidate {
         let item = identified.item
-        let actions: [LauncherAction] = item.action.map { index in
-            [LauncherAction(title: "Run", perform: { runAction(item.generation, index) })]
-        } ?? []
+        var actions: [LauncherAction] = []
+        if let index = item.action {
+            actions = [LauncherAction(title: "Run", perform: { runAction(item.generation, index) })]
+        }
         return LauncherCandidate(
             id: LauncherCandidateID(sourceID: sourceID, item: identified.identity),
             name: item.title,

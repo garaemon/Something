@@ -51,7 +51,12 @@ struct ScriptCollection: Equatable, Decodable {
         self.generation = generation
         errors = try container.decode([ScriptSourceError].self, forKey: .errors)
         items = rows.map {
-            ScriptItem(generation: generation, source: $0.source, title: $0.title, action: $0.action)
+            ScriptItem(
+                generation: generation,
+                source: $0.source,
+                title: $0.title,
+                action: $0.action
+            )
         }
     }
 
