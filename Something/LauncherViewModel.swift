@@ -66,6 +66,20 @@ final class LauncherViewModel: ObservableObject {
         return true
     }
 
+    /// Runs the "Add task" row for the current query, whichever row is
+    /// highlighted. Does nothing for an empty query.
+    ///
+    /// - Returns: Whether a task was captured.
+    @discardableResult
+    func activateTaskCapture() -> Bool {
+        let addTaskCandidate = candidates.first {
+            $0.id.sourceID == AddTaskSource.addTaskSourceID
+        }
+        guard let action = addTaskCandidate?.defaultAction else { return false }
+        action.perform()
+        return true
+    }
+
     private func updateCandidates() {
         candidates = sources.flatMap { $0.makeCandidates(matching: query) }
         selectedIndex = 0

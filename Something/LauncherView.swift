@@ -68,6 +68,7 @@ struct LauncherView: View {
         let command = LauncherKeyBindings.resolve(
             key: keyPress.key,
             isControlPressed: keyPress.modifiers.contains(.control),
+            isCommandPressed: keyPress.modifiers.contains(.command),
             isRepeat: keyPress.phase == .repeat
         )
         switch command {
@@ -75,6 +76,8 @@ struct LauncherView: View {
             viewModel.moveSelection(by: offset)
         case .dismiss:
             dismiss()
+        case .captureTask:
+            if viewModel.activateTaskCapture() { dismiss() }
         case .swallow:
             break
         case nil:

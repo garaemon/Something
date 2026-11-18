@@ -5,12 +5,15 @@ enum LauncherKeyCommand: Equatable {
     /// Moves the selection by the given number of rows; negative moves up.
     case moveSelection(Int)
     case dismiss
+    /// Captures the query as a task from any row.
+    case captureTask
     /// Consumes the press without an action, so that the query field never
     /// sees it.
     case swallow
 }
 
-/// Resolves the launcher keys: Up/Down or C-n/C-p move, and Esc or C-g closes.
+/// Resolves the launcher keys: Up/Down or C-n/C-p move, Esc or C-g closes, and
+/// Command-Return captures the query as a task.
 enum LauncherKeyBindings {
     /// Returns the command for a press of `key`, or nil when the query field
     /// handles the press.
@@ -22,8 +25,12 @@ enum LauncherKeyBindings {
     static func resolve(
         key: KeyEquivalent,
         isControlPressed: Bool,
+        isCommandPressed: Bool = false,
         isRepeat: Bool
     ) -> LauncherKeyCommand? {
+        if key == .return && isCommandPressed {
+            return isRepeat ? .swallow : .captureTask
+        }
         switch (key, isControlPressed) {
         case (.downArrow, _), (KeyEquivalent("n"), true):
             return .moveSelection(1)
