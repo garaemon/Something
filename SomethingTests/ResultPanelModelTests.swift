@@ -139,4 +139,16 @@ final class ResultPanelModelTests: XCTestCase {
 
         XCTAssertFalse(didRun)
     }
+
+    func test_should_deallocate_a_panel_whose_stream_never_ends() async {
+        let (stream, _) = AsyncThrowingStream<String, Error>.makeStream()
+        var model: ResultPanelModel? = ResultPanelModel(title: "T", actions: [])
+        weak var weakModel = model
+        model?.start(stream: stream)
+        await Task.yield()
+
+        model = nil
+
+        XCTAssertNil(weakModel)
+    }
 }

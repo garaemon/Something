@@ -26,6 +26,7 @@ struct LauncherView: View {
             .padding(12)
             .focused($isQueryFieldFocused)
             .onSubmit(activateAndDismiss)
+            .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
             Divider()
             if let resultPanel = viewModel.resultPanel {
                 ResultPanelView(

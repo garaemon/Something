@@ -55,7 +55,7 @@ final class ResultPanelModel: ObservableObject {
         streamTask?.cancel()
         state = .loading
         streamTask = Task { [weak self] in
-            await Self.consume(stream, into: self)
+            await Self.consume(stream, show: { [weak self] in self?.show($0) })
         }
     }
 
@@ -77,24 +77,25 @@ final class ResultPanelModel: ObservableObject {
         await streamTask?.value
     }
 
-    // The task holds the panel weakly between chunks, so that a panel with a
-    // stream that never ends still deallocates, and its deinit cancels the task.
+    // The task reaches the panel only through the weak `show` closure, so that
+    // a panel with a stream that never ends still deallocates, and its deinit
+    // cancels the task.
     private static func consume(
         _ stream: AsyncThrowingStream<String, Error>,
-        into panel: ResultPanelModel?
+        show: @MainActor (ResultPanelState) -> Void
     ) async {
         var accumulatedText = ""
         do {
             for try await chunk in stream {
-                guard let panel, !Task.isCancelled else { return }
+                guard !Task.isCancelled else { return }
                 accumulatedText += chunk
-                panel.show(.streaming(accumulatedText))
+                show(.streaming(accumulatedText))
             }
-            guard let panel, !Task.isCancelled else { return }
-            panel.show(.finished(accumulatedText))
+            guard !Task.isCancelled else { return }
+            show(.finished(accumulatedText))
         } catch {
-            guard let panel, !Task.isCancelled else { return }
-            panel.show(.failed(error.localizedDescription))
+            guard !Task.isCancelled else { return }
+            show(.failed(error.localizedDescription))
         }
     }
 
