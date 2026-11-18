@@ -51,6 +51,7 @@ enum LauncherCandidateKind: CaseIterable {
     case application
     case repository
     case file
+    case quicklink
     case webSearch
     case settings
     case calculator
@@ -63,6 +64,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .application: "App"
         case .repository: "Repo"
         case .file: "File"
+        case .quicklink: "Link"
         case .webSearch: "Web"
         case .settings: "Settings"
         case .calculator: "Calc"
@@ -78,6 +80,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .application: "app.badge"
         case .repository: "arrow.triangle.branch"
         case .file: "doc"
+        case .quicklink: "link"
         case .webSearch: "globe"
         case .settings: "slider.horizontal.3"
         case .calculator: "function"
