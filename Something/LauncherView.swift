@@ -17,8 +17,10 @@ struct LauncherView: View {
     var body: some View {
         VStack(spacing: 0) {
             TextField(
-                "Window, Application, Repository, File, or Web Search",
-                text: $viewModel.query
+                viewModel.isShowingActions
+                    ? "Actions for \(viewModel.actionTarget?.name ?? "")"
+                    : "Window, Application, Repository, File, or Web Search",
+                text: viewModel.isShowingActions ? $viewModel.actionQuery : $viewModel.query
             )
             .textFieldStyle(.plain)
             .font(.title2)
@@ -28,7 +30,11 @@ struct LauncherView: View {
             // A held key sends repeat presses, so a held Down keeps moving.
             .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
             Divider()
-            candidateList
+            if viewModel.isShowingActions {
+                actionList
+            } else {
+                candidateList
+            }
         }
         // NSHostingView shrinks the window to the view's minimum size, which
         // is tiny for a lazy list, so pin a usable minimum.
@@ -64,6 +70,24 @@ struct LauncherView: View {
         }
     }
 
+    private var actionList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(viewModel.actions.enumerated()), id: \.offset) { index, action in
+                    ActionRow(
+                        title: action.title,
+                        isSelected: index == viewModel.selectedActionIndex
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        viewModel.selectAction(at: index)
+                        activateAndDismiss()
+                    }
+                }
+            }
+        }
+    }
+
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
         let command = LauncherKeyBindings.resolve(
             key: keyPress.key,
@@ -74,7 +98,9 @@ struct LauncherView: View {
         case .moveSelection(let offset):
             viewModel.moveSelection(by: offset)
         case .dismiss:
-            dismiss()
+            if !viewModel.hideActions() { dismiss() }
+        case .showActions:
+            viewModel.showActions()
         case .swallow:
             break
         case nil:
@@ -88,6 +114,21 @@ struct LauncherView: View {
     private func activateAndDismiss() {
         guard viewModel.activateSelectedCandidate() else { return }
         dismiss()
+    }
+}
+
+private struct ActionRow: View {
+    let title: String
+    let isSelected: Bool
+
+    var body: some View {
+        Text(title)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .background(isSelected ? Color.accentColor : Color.clear)
     }
 }
 
