@@ -155,6 +155,17 @@ final class LauncherActionMenuTests: XCTestCase {
         XCTAssertFalse(viewModel.showActions())
     }
 
+    func test_should_keep_action_list_open_when_source_is_replaced() {
+        let viewModel = makeViewModel()
+        viewModel.showActions()
+        viewModel.moveSelection(by: 1)
+
+        viewModel.replaceSource(ActionSource(actionTitles: ["Open"], performed: { _ in }))
+
+        XCTAssertTrue(viewModel.isShowingActions)
+        XCTAssertEqual(viewModel.selectedAction?.title, "Reveal in Finder")
+    }
+
     func test_should_report_nothing_to_hide_outside_action_mode() {
         let viewModel = makeViewModel()
 

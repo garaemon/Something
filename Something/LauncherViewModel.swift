@@ -89,11 +89,18 @@ final class LauncherViewModel: ObservableObject {
     func moveSelection(by offset: Int) {
         if isShowingActions {
             guard !actions.isEmpty else { return }
-            selectedActionIndex = min(max(selectedActionIndex + offset, 0), actions.count - 1)
+            selectedActionIndex = Self.clampIndex(
+                selectedActionIndex + offset,
+                count: actions.count
+            )
             return
         }
         guard !candidates.isEmpty else { return }
-        selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
+        selectedIndex = Self.clampIndex(selectedIndex + offset, count: candidates.count)
+    }
+
+    private static func clampIndex(_ index: Int, count: Int) -> Int {
+        min(max(index, 0), count - 1)
     }
 
     /// Highlights `candidate`. Keeps the current highlight when `candidate`
