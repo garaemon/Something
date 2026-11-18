@@ -212,10 +212,12 @@ private enum PythonWindowBridge {
         let encoder = JSONEncoder()
         // The JSON parser of pocketpy rejects the escapes `\/` and `\u`.
         encoder.outputFormatting = .withoutEscapingSlashes
-        guard let data = try? encoder.encode(records) else {
+        guard let data = try? encoder.encode(records),
+            let json = String(bytes: data, encoding: .utf8)
+        else {
             return "[]"
         }
-        return String(decoding: data, as: UTF8.self)
+        return json
     }
 
     // Returns false when the handle is not in the kept tables.

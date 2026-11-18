@@ -3,7 +3,6 @@ import Combine
 import HotKey
 import SwiftUI
 
-// Remove NSWindowDelegate conformance from AppDelegate
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var myHotKey: HotKey?
@@ -277,43 +276,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func makeRepositoryLoader() -> BackgroundListLoader<String, GhqRepository> {
-        let loader = BackgroundListLoader<String, GhqRepository>(
-            queueLabel: "com.garaemon.Something.repositoryList",
-            readKey: { [weak self] in self?.settings.repositoryRootPath ?? "" },
-            makeLoadFunction: { [weak self] in
-                let catalog = self?.repositoryCatalog
-                return { rootPath in
-                    catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true))
-                        ?? []
-                }
-            }
-        )
-        loader.onItemsLoaded = { [weak self] repositories in
-            self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
-        }
-        return loader
-    }
-
-    private func makeFileLoader() -> BackgroundListLoader<[String], LocalFile> {
-        let loader = BackgroundListLoader<[String], LocalFile>(
-            queueLabel: "com.garaemon.Something.fileList",
-            readKey: { [weak self] in self?.settings.fileFolderPaths ?? [] },
-            makeLoadFunction: { [weak self] in
-                let catalog = self?.fileCatalog
-                return { folderPaths in
-                    catalog?.loadFiles(
-                        folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }
-                    ) ?? []
-                }
-            }
-        )
-        loader.onItemsLoaded = { [weak self] files in
-            self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
-        }
-        return loader
-    }
-
     // Windows are not cached, because they open, close, and change titles
     // far more often than applications are installed. A load that outlives
     // its launcher is dropped, because its windows may have closed since.
@@ -395,5 +357,43 @@ extension AppDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         scratchWindowController?.saveNow()
+    }
+
+    // The list loaders sit outside the class body to keep it within the type body length limit.
+    private func makeRepositoryLoader() -> BackgroundListLoader<String, GhqRepository> {
+        let loader = BackgroundListLoader<String, GhqRepository>(
+            queueLabel: "com.garaemon.Something.repositoryList",
+            readKey: { [weak self] in self?.settings.repositoryRootPath ?? "" },
+            makeLoadFunction: { [weak self] in
+                let catalog = self?.repositoryCatalog
+                return { rootPath in
+                    catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true))
+                        ?? []
+                }
+            }
+        )
+        loader.onItemsLoaded = { [weak self] repositories in
+            self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
+        }
+        return loader
+    }
+
+    private func makeFileLoader() -> BackgroundListLoader<[String], LocalFile> {
+        let loader = BackgroundListLoader<[String], LocalFile>(
+            queueLabel: "com.garaemon.Something.fileList",
+            readKey: { [weak self] in self?.settings.fileFolderPaths ?? [] },
+            makeLoadFunction: { [weak self] in
+                let catalog = self?.fileCatalog
+                return { folderPaths in
+                    catalog?.loadFiles(
+                        folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }
+                    ) ?? []
+                }
+            }
+        )
+        loader.onItemsLoaded = { [weak self] files in
+            self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
+        }
+        return loader
     }
 }
