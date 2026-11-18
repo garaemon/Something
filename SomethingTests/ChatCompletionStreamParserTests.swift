@@ -35,7 +35,7 @@ final class ChatCompletionStreamParserTests: XCTestCase {
         }
     }
 
-    func test_should_skip_a_delta_without_content()throws {
+    func test_should_skip_a_delta_without_content() throws {
         let line = #"data: {"choices":[{"delta":{"role":"assistant"}}]}"#
 
         XCTAssertEqual(try ChatCompletionStreamParser.parse(line: line), .skip)
