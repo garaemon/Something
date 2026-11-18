@@ -25,11 +25,17 @@ struct LauncherView: View {
             .padding(12)
             .focused($isQueryFieldFocused)
             .onSubmit(activateAndDismiss)
-            // A held key sends repeat presses, so a held Down keeps moving.
-            .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
             Divider()
-            candidateList
+            if let resultPanel = viewModel.resultPanel {
+                ResultPanelView(panel: resultPanel, closePanel: viewModel.closeResult)
+            } else {
+                candidateList
+            }
         }
+        // A held key sends repeat presses, so a held Down keeps moving. The
+        // handler sits on the container so that Esc still works after a click
+        // in the selectable result text moves the focus off the query field.
+        .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
         // NSHostingView shrinks the window to the view's minimum size, which
         // is tiny for a lazy list, so pin a usable minimum.
         .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
@@ -71,6 +77,8 @@ struct LauncherView: View {
             isRepeat: keyPress.phase == .repeat
         )
         switch command {
+        case .dismiss where viewModel.resultPanel != nil:
+            viewModel.closeResult()
         case .moveSelection(let offset):
             viewModel.moveSelection(by: offset)
         case .dismiss:
@@ -147,5 +155,60 @@ private struct KindBadge: View {
             .labelStyle(.titleAndIcon)
             .font(.caption)
             .frame(width: Self.width, alignment: .leading)
+    }
+}
+
+/// The result panel: a scrolling, selectable text with a footer of actions.
+private struct ResultPanelView: View {
+    @ObservedObject var panel: ResultPanelModel
+    let closePanel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+            }
+            Divider()
+            footer
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch panel.state {
+        case .idle:
+            EmptyView()
+        case .loading:
+            ProgressView().controlSize(.small)
+        case .streaming(let text), .finished(let text):
+            Text(text).textSelection(.enabled)
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(Color.red)
+                .textSelection(.enabled)
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            Text(panel.title)
+                .font(.caption)
+                .foregroundStyle(Color.secondary)
+            Spacer()
+            ForEach(panel.actions) { action in
+                Button(action.title) { panel.perform(action) }
+                    .disabled(panel.state.text == nil)
+            }
+            Button("Copy") { copyToClipboard(panel.state.text ?? "") }
+                .disabled(panel.state.text == nil)
+            Button("Back (Esc)", action: closePanel)
+        }
+        .padding(8)
+    }
+
+    private func copyToClipboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }
