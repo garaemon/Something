@@ -140,7 +140,7 @@ final class SelectionCaptureTests: XCTestCase {
         XCTAssertEqual(capturer.captureSelection().text, "late")
     }
 
-    func test_should_skip_fallback_when_key_cannot_be_posted() {
+    func test_should_not_wait_when_posting_the_copy_key_fails() {
         let pasteboard = FakePasteboard()
         var pauseCount = 0
         let capturer = makeCapturer(
@@ -188,7 +188,7 @@ final class SelectionCaptureTests: XCTestCase {
         XCTAssertEqual(pauseCount, 5)
     }
 
-    func test_should_not_read_pasteboard_when_copy_key_cannot_be_posted() {
+    func test_should_not_read_pasteboard_when_copy_key_is_not_postable() {
         let pasteboard = FakePasteboard()
         var didReadSnapshot = false
         pasteboard.onReadSnapshot = { didReadSnapshot = true }
@@ -199,5 +199,22 @@ final class SelectionCaptureTests: XCTestCase {
         _ = capturer.captureSelection()
 
         XCTAssertFalse(didReadSnapshot)
+    }
+
+    func test_should_restore_pasteboard_when_it_changed_but_never_held_text() {
+        let pasteboard = FakePasteboard()
+        let originalSnapshot = pasteboard.snapshot
+        let capturer = makeCapturer(
+            frontmost: safari, accessibilityText: nil, pasteboard: pasteboard,
+            postCopyKey: {
+                pasteboard.currentString = nil
+                pasteboard.changeCount += 1
+                return true
+            })
+
+        let selection = capturer.captureSelection()
+
+        XCTAssertNil(selection.text)
+        XCTAssertEqual(pasteboard.restoredSnapshots, [originalSnapshot])
     }
 }

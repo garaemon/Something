@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Carbon.HIToolbox
 
 extension SelectionCapturer {
     /// Returns a capturer wired to the system: the frontmost application of
@@ -49,7 +50,7 @@ private struct GeneralSelectionPasteboard: SelectionPasteboard {
 }
 
 private enum SystemSelectionServices {
-    private static let copyKeyCode: CGKeyCode = 8  // kVK_ANSI_C
+    private static let copyKeyCode = CGKeyCode(kVK_ANSI_C)
 
     static func readFrontmostApplication() -> SourceApplication? {
         guard let application = NSWorkspace.shared.frontmostApplication else { return nil }

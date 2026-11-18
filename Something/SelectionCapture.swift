@@ -78,10 +78,16 @@ struct SelectionCapturer {
         guard postCopyKey() else { return nil }
         for _ in 0..<maximumPollCount {
             pauseBetweenPolls()
-            guard pasteboard.changeCount != originalChangeCount else { continue }
-            let copiedText = pasteboard.readString()
+            // The change count rises when the source clears the pasteboard,
+            // before it writes the text, so keep polling until text appears.
+            guard pasteboard.changeCount != originalChangeCount,
+                let copiedText = pasteboard.readString()
+            else { continue }
             pasteboard.restore(originalSnapshot)
             return copiedText
+        }
+        if pasteboard.changeCount != originalChangeCount {
+            pasteboard.restore(originalSnapshot)
         }
         return nil
     }
