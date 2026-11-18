@@ -43,23 +43,37 @@ extension OrgTaskCapturer {
         )
     }
 
-    private static func runEmacsclientProcess(arguments: [String]) -> Bool {
+    // emacsclient prints "can't find socket" or "connect: ..." when no server
+    // listens. Any other failure means a server took the request, so treat it
+    // as an evaluation failure to avoid writing the heading twice.
+    private static let serverUnavailableMarkers = ["can't find socket", "connect", "No such file"]
+
+    // The timeout keeps a prompt in Emacs, such as a file-changed question,
+    // from blocking the serial capture queue forever.
+    private static let emacsclientTimeoutSeconds = 10
+
+    private static func runEmacsclientProcess(arguments: [String]) -> EmacsclientOutcome {
         guard
             let executablePath = emacsclientCandidatePaths.first(where: {
                 FileManager.default.isExecutableFile(atPath: $0)
             })
-        else { return false }
+        else { return .serverUnavailable }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executablePath)
-        process.arguments = arguments
+        process.arguments = ["--timeout=\(emacsclientTimeoutSeconds)"] + arguments
+        let errorPipe = Pipe()
         process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        process.standardError = errorPipe
         do {
             try process.run()
         } catch {
-            return false
+            return .serverUnavailable
         }
+        let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        return process.terminationStatus == 0
+        guard process.terminationStatus != 0 else { return .succeeded }
+        let errorText = String(bytes: errorData, encoding: .utf8) ?? ""
+        let isServerUnavailable = serverUnavailableMarkers.contains { errorText.contains($0) }
+        return isServerUnavailable ? .serverUnavailable : .evaluationFailed
     }
 }

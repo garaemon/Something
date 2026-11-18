@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 
 extension AppDelegate {
     // Serial, so that two quick captures reach the daily note in order.
@@ -18,6 +18,8 @@ extension AppDelegate {
             let result = capturer.capture(title: title)
             if result == .failed {
                 NSLog("Something: could not capture the task \"%@\"", title)
+                // The launcher is already closed, so a beep is the only signal.
+                DispatchQueue.main.async { NSSound.beep() }
             }
         }
     }

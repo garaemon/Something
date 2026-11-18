@@ -17,10 +17,14 @@ final class OrgTaskCaptureTests: XCTestCase {
     private final class FakeFileSystem {
         var files: [String: String] = [:]
         var writeError: Error?
+        var readError: Error?
 
         func makeFileSystem() -> OrgFileSystem {
             OrgFileSystem(
-                readText: { [self] url in files[url.path] },
+                readText: { [self] url in
+                    if let readError { throw readError }
+                    return files[url.path]
+                },
                 writeText: { [self] text, url in
                     if let writeError { throw writeError }
                     files[url.path] = text
@@ -31,7 +35,7 @@ final class OrgTaskCaptureTests: XCTestCase {
 
     private func makeCapturer(
         fileSystem: FakeFileSystem,
-        runEmacsclient: @escaping ([String]) -> Bool
+        runEmacsclient: @escaping ([String]) -> EmacsclientOutcome
     ) -> OrgTaskCapturer {
         OrgTaskCapturer(
             orgDirectory: orgDirectory,
@@ -131,7 +135,7 @@ final class OrgTaskCaptureTests: XCTestCase {
         var receivedArguments: [String] = []
         let capturer = makeCapturer(fileSystem: FakeFileSystem()) {
             receivedArguments = $0
-            return true
+            return .succeeded
         }
 
         _ = capturer.capture(title: "buy milk")
@@ -141,7 +145,7 @@ final class OrgTaskCaptureTests: XCTestCase {
     }
 
     func test_should_report_emacs_when_server_answers() {
-        let capturer = makeCapturer(fileSystem: FakeFileSystem()) { _ in true }
+        let capturer = makeCapturer(fileSystem: FakeFileSystem()) { _ in .succeeded }
 
         let result = capturer.capture(title: "buy milk")
 
@@ -150,7 +154,7 @@ final class OrgTaskCaptureTests: XCTestCase {
 
     func test_should_not_touch_file_when_server_answers() {
         let fileSystem = FakeFileSystem()
-        let capturer = makeCapturer(fileSystem: fileSystem) { _ in true }
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .succeeded }
 
         _ = capturer.capture(title: "buy milk")
 
@@ -159,7 +163,7 @@ final class OrgTaskCaptureTests: XCTestCase {
 
     func test_should_create_note_with_header_when_no_server_answers() {
         let fileSystem = FakeFileSystem()
-        let capturer = makeCapturer(fileSystem: fileSystem) { _ in false }
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .serverUnavailable }
 
         let result = capturer.capture(title: "buy milk")
 
@@ -173,7 +177,7 @@ final class OrgTaskCaptureTests: XCTestCase {
     func test_should_append_to_existing_note_without_new_header() {
         let fileSystem = FakeFileSystem()
         fileSystem.files[dailyNotePath] = "#+title: 2026-11-17\n* first\n"
-        let capturer = makeCapturer(fileSystem: fileSystem) { _ in false }
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .serverUnavailable }
 
         _ = capturer.capture(title: "buy milk")
 
@@ -186,7 +190,7 @@ final class OrgTaskCaptureTests: XCTestCase {
     func test_should_add_missing_newline_before_appended_heading() {
         let fileSystem = FakeFileSystem()
         fileSystem.files[dailyNotePath] = "* first"
-        let capturer = makeCapturer(fileSystem: fileSystem) { _ in false }
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .serverUnavailable }
 
         _ = capturer.capture(title: "buy milk")
 
@@ -196,16 +200,71 @@ final class OrgTaskCaptureTests: XCTestCase {
     func test_should_report_failure_when_file_write_fails() {
         let fileSystem = FakeFileSystem()
         fileSystem.writeError = CocoaError(.fileWriteNoPermission)
-        let capturer = makeCapturer(fileSystem: fileSystem) { _ in false }
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .serverUnavailable }
 
         let result = capturer.capture(title: "buy milk")
 
         XCTAssertEqual(result, .failed)
     }
 
+    func test_should_not_write_file_when_emacs_failed_after_accepting_request() {
+        let fileSystem = FakeFileSystem()
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .evaluationFailed }
+
+        let result = capturer.capture(title: "buy milk")
+
+        XCTAssertEqual(result, .failed)
+        XCTAssertTrue(fileSystem.files.isEmpty)
+    }
+
+    func test_should_not_overwrite_note_that_cannot_be_read() {
+        let fileSystem = FakeFileSystem()
+        fileSystem.readError = CocoaError(.fileReadNoPermission)
+        fileSystem.files[dailyNotePath] = "precious"
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .serverUnavailable }
+
+        let result = capturer.capture(title: "buy milk")
+
+        XCTAssertEqual(result, .failed)
+        XCTAssertEqual(fileSystem.files[dailyNotePath], "precious")
+    }
+
+    func test_should_insert_header_only_for_empty_buffer_in_elisp() {
+        let expression = OrgElisp.makeAppendExpression(
+            filePath: "/org/a.org", entry: "E\n", newNoteHeader: "H\n")
+
+        XCTAssertTrue(
+            expression.contains("(when (= (buffer-size) 0) (insert \"H\n\"))"))
+    }
+
+    func test_should_save_inside_with_current_buffer() {
+        let expression = OrgElisp.makeAppendExpression(
+            filePath: "/org/a.org", entry: "E\n", newNoteHeader: "H\n")
+
+        XCTAssertTrue(expression.hasSuffix("(insert \"E\n\")))\n(save-buffer)))"))
+    }
+
+    func test_should_read_nil_for_missing_file_in_live_file_system() throws {
+        let missingURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OrgLive-\(UUID().uuidString)/missing.org")
+
+        XCTAssertNil(try OrgFileSystem.live.readText(missingURL))
+    }
+
+    func test_should_create_folders_when_writing_with_live_file_system() throws {
+        let folderURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OrgLive-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let noteURL = folderURL.appendingPathComponent("a/b.org")
+
+        try OrgFileSystem.live.writeText("x", noteURL)
+
+        XCTAssertEqual(try OrgFileSystem.live.readText(noteURL), "x")
+    }
+
     func test_should_not_capture_blank_title() {
         let fileSystem = FakeFileSystem()
-        let capturer = makeCapturer(fileSystem: fileSystem) { _ in false }
+        let capturer = makeCapturer(fileSystem: fileSystem) { _ in .serverUnavailable }
 
         let result = capturer.capture(title: "  \n ")
 

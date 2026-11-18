@@ -1,11 +1,24 @@
 import Foundation
 
+/// What `emacsclient` reported.
+enum EmacsclientOutcome: Equatable {
+    case succeeded
+    /// No server answered, so nothing reached Emacs.
+    case serverUnavailable
+    /// A server received the request but did not finish it, for example when
+    /// the elisp signaled an error or the request timed out. The heading may
+    /// sit in an unsaved buffer, so the capturer must not write the file too.
+    case evaluationFailed
+}
+
 /// How a capture ended.
 enum OrgCaptureResult: Equatable {
     /// A running Emacs appended the heading to its buffer and saved it.
     case sentToEmacs
     /// No Emacs server answered, so the heading went into the file directly.
     case wroteFile
+    /// Nothing was captured, or the capture may have reached Emacs only in
+    /// part. The caller tells the user.
     case failed
 }
 
@@ -105,11 +118,14 @@ struct OrgTaskCapturer {
     let calendar: Calendar
     let now: () -> Date
     let makeNoteID: () -> String
-    /// Runs `emacsclient` with the arguments. Returns whether it exited
-    /// successfully, and false when no server answers or the program is missing.
-    let runEmacsclient: ([String]) -> Bool
+    /// Runs `emacsclient` with the arguments. A missing program counts as an
+    /// unavailable server.
+    let runEmacsclient: ([String]) -> EmacsclientOutcome
     let fileSystem: OrgFileSystem
 
+    /// Appends `title` as a TODO heading to the daily note of the capture day.
+    /// Returns `.failed` for a blank title, an unreadable or unwritable note,
+    /// or an Emacs that accepted the request but did not finish it.
     func capture(title: String) -> OrgCaptureResult {
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failed
@@ -124,10 +140,14 @@ struct OrgTaskCapturer {
             entry: entry,
             newNoteHeader: newNoteHeader
         )
-        if runEmacsclient(["--eval", expression]) {
+        switch runEmacsclient(["--eval", expression]) {
+        case .succeeded:
             return .sentToEmacs
+        case .evaluationFailed:
+            return .failed
+        case .serverUnavailable:
+            return appendDirectly(entry: entry, newNoteHeader: newNoteHeader, to: noteURL)
         }
-        return appendDirectly(entry: entry, newNoteHeader: newNoteHeader, to: noteURL)
     }
 
     private func appendDirectly(
