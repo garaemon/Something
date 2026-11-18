@@ -25,6 +25,16 @@ final class PhysicalUnitCatalogTests: XCTestCase {
         XCTAssertNil(PhysicalUnitCatalog.findUnit(named: "blorbs"))
     }
 
+    func test_should_find_every_unit_by_its_displayed_symbol() {
+        let ambiguousSymbols: Set<String> = ["B"]
+        let unresolvedSymbols = PhysicalUnitCatalog.definitions
+            .map(\.symbol)
+            .filter { !ambiguousSymbols.contains($0) }
+            .filter { PhysicalUnitCatalog.findUnit(named: $0)?.symbol != $0 }
+
+        XCTAssertEqual(unresolvedSymbols, [])
+    }
+
     func test_should_give_every_alias_to_one_unit_only() {
         let allAliases = PhysicalUnitCatalog.definitions.flatMap(\.aliases)
 

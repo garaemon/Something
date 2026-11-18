@@ -26,9 +26,10 @@ struct PhysicalUnitDefinition {
     let aliases: [String]
 }
 
+// The body is mostly unit data, which swift-format spreads over one line per argument.
 /// The units for `UnitConversion`, as data in the style of `WebSearchEngine`.
 /// Foundation's `Dimension` subclasses hold the conversion coefficients.
-enum PhysicalUnitCatalog {
+enum PhysicalUnitCatalog {  // swiftlint:disable:this type_body_length
     /// Returns the unit that `name` stands for, ignoring case and surrounding
     /// whitespace, or nil when no unit has that name.
     static func findUnit(named name: String) -> PhysicalUnitDefinition? {
@@ -247,6 +248,8 @@ enum PhysicalUnitCatalog {
         define(.area, "ha", UnitArea.hectares, "ha", "hectare", "hectares"),
     ]
 
+    // Names match case-insensitively, so `Mb` (megabit) reads as `mb`
+    // (megabyte). The catalog has no megabit unit.
     private static let dataUnits = [
         define(.dataSize, "bit", UnitInformationStorage.bits, "bit", "bits"),
         define(.dataSize, "B", UnitInformationStorage.bytes, "byte", "bytes"),
@@ -298,6 +301,16 @@ enum PhysicalUnitCatalog {
         _ unit: Dimension,
         _ aliases: String...
     ) -> PhysicalUnitDefinition {
-        PhysicalUnitDefinition(category: category, symbol: symbol, unit: unit, aliases: aliases)
+        // The user may type the symbol that the result row shows, such as `m²`.
+        // "B" stays out because a lowercase `b` could also mean bit.
+        let symbolAlias = symbol.lowercased()
+        let hasSymbolAlias = symbol == "B" || aliases.contains(symbolAlias)
+        let allAliases = hasSymbolAlias ? aliases : aliases + [symbolAlias]
+        return PhysicalUnitDefinition(
+            category: category,
+            symbol: symbol,
+            unit: unit,
+            aliases: allAliases
+        )
     }
 }
