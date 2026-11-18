@@ -1,7 +1,9 @@
 import Foundation
 
 /// The physical quantity that a unit measures. Only units of one category
-/// convert into each other.
+/// convert into each other. The category is data because comparing the
+/// `Dimension` classes fails: Foundation's built-in units are instances of
+/// private `_NSStatic_` subclasses, unlike units built with `init(symbol:converter:)`.
 enum PhysicalUnitCategory {
     case length
     case mass
@@ -113,8 +115,24 @@ enum PhysicalUnitCatalog {
     ]
 
     private static let temperatureUnits = [
-        define(.temperature, "\u{00B0}C", UnitTemperature.celsius, "c", "celsius", "degc"),
-        define(.temperature, "\u{00B0}F", UnitTemperature.fahrenheit, "f", "fahrenheit", "degf"),
+        define(
+            .temperature,
+            "\u{00B0}C",
+            UnitTemperature.celsius,
+            "c",
+            "\u{00B0}c",
+            "celsius",
+            "degc"
+        ),
+        define(
+            .temperature,
+            "\u{00B0}F",
+            UnitTemperature.fahrenheit,
+            "f",
+            "\u{00B0}f",
+            "fahrenheit",
+            "degf"
+        ),
         define(.temperature, "K", UnitTemperature.kelvin, "k", "kelvin"),
     ]
 

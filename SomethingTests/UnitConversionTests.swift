@@ -53,16 +53,52 @@ final class UnitConversionTests: XCTestCase {
         XCTAssertEqual(UnitConversion.convert("2 days in hours")?.valueText, "48")
     }
 
-    func test_should_convert_mass_volume_and_area() {
+    func test_should_convert_kilograms_to_grams() {
         XCTAssertEqual(UnitConversion.convert("1 kg to g")?.valueText, "1000")
+    }
+
+    func test_should_convert_liters_to_milliliters() {
         XCTAssertEqual(UnitConversion.convert("1 l to ml")?.valueText, "1000")
+    }
+
+    func test_should_convert_hectares_to_square_meters() {
         XCTAssertEqual(UnitConversion.convert("1 ha to m2")?.valueText, "10000")
     }
 
-    func test_should_use_exact_coefficients_for_customary_units() {
+    func test_should_convert_pounds_with_the_exact_coefficient() {
         XCTAssertEqual(UnitConversion.convert("1 lb to g")?.valueText, "453.59237")
+    }
+
+    func test_should_convert_ounces_with_the_exact_coefficient() {
+        XCTAssertEqual(UnitConversion.convert("16 oz to lb")?.valueText, "1")
+    }
+
+    func test_should_convert_gallons_with_the_exact_coefficient() {
         XCTAssertEqual(UnitConversion.convert("1 gal to l")?.valueText, "3.785411784")
+    }
+
+    func test_should_convert_cups_with_the_exact_coefficient() {
         XCTAssertEqual(UnitConversion.convert("1 cup to ml")?.valueText, "236.5882365")
+    }
+
+    func test_should_convert_tablespoons_to_teaspoons() {
+        XCTAssertEqual(UnitConversion.convert("1 tbsp to tsp")?.valueText, "3")
+    }
+
+    func test_should_convert_meters_per_second_to_kilometers_per_hour() {
+        XCTAssertEqual(UnitConversion.convert("10 m/s to km/h")?.valueText, "36")
+    }
+
+    func test_should_convert_knots_with_the_exact_coefficient() {
+        XCTAssertEqual(UnitConversion.convert("1 kn to km/h")?.valueText, "1.852")
+    }
+
+    func test_should_convert_weeks_to_days() {
+        XCTAssertEqual(UnitConversion.convert("2 weeks to days")?.valueText, "14")
+    }
+
+    func test_should_accept_a_degree_sign_in_temperature_units() {
+        XCTAssertEqual(UnitConversion.convert("100\u{00B0}C to \u{00B0}F")?.valueText, "212")
     }
 
     func test_should_reject_mismatched_dimensions() {
