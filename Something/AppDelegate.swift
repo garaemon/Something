@@ -251,6 +251,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
+            CaptureSource(startCapture: { [weak self] in self?.startCapture($0) }),
             WebSearchSource(
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
