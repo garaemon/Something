@@ -246,10 +246,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // The result comes first, as in Raycast: an expression rarely
             // matches a window or an application, and Return copies it.
             CalculatorSource(copyText: Self.copyTextToPasteboard),
+            // A quicklink the user named comes before partial matches, so that `gh` opens it.
+            QuicklinkSource.makeDefault(store: quicklinkStore),
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
-            QuicklinkSource.makeDefault(store: quicklinkStore),
             Self.makeFileSource(fileLoader.cachedItems),
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),

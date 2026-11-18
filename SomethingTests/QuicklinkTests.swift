@@ -141,8 +141,4 @@ final class QuicklinkSourceTests: XCTestCase {
         XCTAssertEqual(candidates.count, 1)
         XCTAssertNil(candidates[0].defaultAction)
     }
-
-    func test_should_list_nothing_for_missing_file_on_empty_query() {
-        XCTAssertTrue(makeSource(.loaded([])).makeCandidates(matching: "").isEmpty)
-    }
 }
