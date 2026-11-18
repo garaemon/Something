@@ -1,17 +1,23 @@
 import AppKit
 import Carbon.HIToolbox
+import HotKey
 import SwiftUI
 
-/// A button that shows the current hot key and, once clicked, records the next
+/// A button that shows the hot key of one binding and, once clicked, records the next
 /// key press with Command, Option, or Control as the new hot key. Escape cancels.
 struct HotKeyRecorderView: View {
     @ObservedObject var settings: AppSettings
+    let bindingID: UUID
     // The token that NSEvent returns for the local key monitor; nil while idle.
     @State private var keyDownMonitor: Any?
 
+    private var keyCombo: KeyCombo? {
+        settings.hotKeyBindings.first { $0.id == bindingID }?.keyCombo
+    }
+
     var body: some View {
         Button(action: toggleRecording) {
-            Text(settings.isRecordingHotKey ? "Type a shortcut…" : settings.hotKeyCombo.description)
+            Text(settings.isRecordingHotKey ? "Type a shortcut…" : keyCombo?.description ?? "")
                 .frame(minWidth: 120)
         }
         .onDisappear(perform: stopRecording)
@@ -49,7 +55,11 @@ struct HotKeyRecorderView: View {
             NSSound.beep()
             return
         }
-        settings.hotKeyCombo = keyCombo
+        guard settings.assignKeyCombo(keyCombo, toBindingID: bindingID) else {
+            // Another binding holds the combination.
+            NSSound.beep()
+            return
+        }
         stopRecording()
     }
 

@@ -16,17 +16,75 @@ final class AppSettingsTests: XCTestCase {
     func test_should_use_command_shift_x_when_nothing_is_saved() {
         let settings = AppSettings(userDefaults: makeUserDefaults())
 
-        XCTAssertEqual(settings.hotKeyCombo, KeyCombo(key: .x, modifiers: [.command, .shift]))
+        XCTAssertEqual(
+            settings.hotKeyBindings.map(\.keyCombo),
+            [KeyCombo(key: .x, modifiers: [.command, .shift])]
+        )
+        XCTAssertEqual(settings.hotKeyBindings.map(\.command), [.openLauncher])
     }
 
     func test_should_restore_saved_hot_key() {
         let userDefaults = makeUserDefaults()
         let savedCombo = KeyCombo(key: .space, modifiers: [.option])
-        AppSettings(userDefaults: userDefaults).hotKeyCombo = savedCombo
+        AppSettings(userDefaults: userDefaults).hotKeyBindings = [
+            HotKeyBinding(keyCombo: savedCombo, command: .openScratch)
+        ]
 
         let restoredSettings = AppSettings(userDefaults: userDefaults)
 
-        XCTAssertEqual(restoredSettings.hotKeyCombo, savedCombo)
+        XCTAssertEqual(restoredSettings.hotKeyBindings.map(\.keyCombo), [savedCombo])
+        XCTAssertEqual(restoredSettings.hotKeyBindings.map(\.command), [.openScratch])
+    }
+
+    func test_should_migrate_legacy_single_hot_key_to_open_launcher_binding() {
+        let userDefaults = makeUserDefaults()
+        let legacyCombo = KeyCombo(key: .space, modifiers: [.option])
+        userDefaults.set(legacyCombo.dictionary, forKey: "hotKey")
+
+        let settings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(settings.hotKeyBindings.map(\.keyCombo), [legacyCombo])
+        XCTAssertEqual(settings.hotKeyBindings.map(\.command), [.openLauncher])
+    }
+
+    func test_should_prefer_saved_bindings_over_legacy_hot_key() {
+        let userDefaults = makeUserDefaults()
+        userDefaults.set(KeyCombo(key: .space, modifiers: [.option]).dictionary, forKey: "hotKey")
+        let savedCombo = KeyCombo(key: .j, modifiers: [.command, .option])
+        AppSettings(userDefaults: userDefaults).hotKeyBindings = [
+            HotKeyBinding(keyCombo: savedCombo, command: .openSettings)
+        ]
+
+        let settings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(settings.hotKeyBindings.map(\.keyCombo), [savedCombo])
+    }
+
+    func test_should_reject_assigning_a_combo_that_another_binding_holds() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.addHotKeyBinding()
+        let secondID = settings.hotKeyBindings[1].id
+
+        let didAssign = settings.assignKeyCombo(AppSettings.defaultHotKeyCombo, toBindingID: secondID)
+
+        XCTAssertFalse(didAssign)
+    }
+
+    func test_should_add_binding_with_distinct_combo() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        settings.addHotKeyBinding()
+
+        XCTAssertNotEqual(settings.hotKeyBindings[0].keyCombo, settings.hotKeyBindings[1].keyCombo)
+    }
+
+    func test_should_remove_binding() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.addHotKeyBinding()
+
+        settings.removeHotKeyBinding(id: settings.hotKeyBindings[1].id)
+
+        XCTAssertEqual(settings.hotKeyBindings.count, 1)
     }
 
     func test_should_restore_saved_head_color() {
@@ -59,11 +117,11 @@ final class AppSettingsTests: XCTestCase {
 
     func test_should_return_default_hot_key_after_reset() {
         let settings = AppSettings(userDefaults: makeUserDefaults())
-        settings.hotKeyCombo = KeyCombo(key: .space, modifiers: [.option])
+        settings.addHotKeyBinding()
 
         settings.resetToDefaults()
 
-        XCTAssertEqual(settings.hotKeyCombo, AppSettings.defaultHotKeyCombo)
+        XCTAssertEqual(settings.hotKeyBindings.map(\.keyCombo), [AppSettings.defaultHotKeyCombo])
     }
 
     func test_should_use_ghq_under_home_as_repository_root_when_nothing_is_saved() {

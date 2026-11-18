@@ -156,9 +156,10 @@ mise run link-local-config
 - **MascotPanel.swift**: Borderless, transparent, click-through `NSPanel` that never becomes key or main, with an `NSHostingView` of `MascotOverlayView`.
 - **MascotOverlayView.swift**: Observes `LauncherViewModel`, derives the mascot state, and owns the entrance timer.
 - **MascotView.swift**: `NSViewRepresentable` around a transparent `SCNView`, which builds the shapes once and repaints only the colors when `model` changes, and the render delegate that applies each animator frame and redraws the screen texture when the text changes.
-- **AppSettings.swift**: User preferences (hot key, repositories folder, file folders, Dock icon, mascot head and body colors), saved to an injectable `UserDefaults` on every change.
-- **SettingsView.swift**: The settings window content: hot key recorder, repositories folder picker, Dock icon toggle, file folder list with add and remove buttons, a live mascot preview, mascot color pickers, and Restore Defaults.
-- **HotKeyRecorderView.swift**: Button that records the next key press as the hot key through a local key monitor. Esc cancels.
+- **HotKeyBinding.swift**: `HotKeyCommand` (`openLauncher`, `openScratch`, `openSettings`; `Codable` enum, so later commands can carry data), `HotKeyBinding` (id, `KeyCombo`, command; JSON through the Carbon key code and modifiers), and `HotKeyBindingValidator`, which rejects a combination that another binding holds and suggests a free one for a new binding.
+- **AppSettings.swift**: User preferences (hot key bindings, saved as JSON; a saved single `hotKey` from before bindings migrates to an `openLauncher` binding; repositories folder, file folders, Dock icon, mascot head and body colors), saved to an injectable `UserDefaults` on every change.
+- **SettingsView.swift**: The settings window content: a list of hot key bindings (command picker, recorder, remove button) with an add button, repositories folder picker, Dock icon toggle, file folder list with add and remove buttons, a live mascot preview, mascot color pickers, and Restore Defaults.
+- **HotKeyRecorderView.swift**: Button that records, for one binding, the next key press as the hot key through a local key monitor. Esc cancels.
 - **HotKeyRecording.swift**: Turns a key press into a `KeyCombo`, and rejects a press without Command, Option, or Control.
 - **Calculator.swift**: Recursive descent evaluator of `+ - * / % ^`, unary minus, and parentheses (`×` and `÷` too). Rejects an expression without a binary operator, such as "2024" or "-5", and numbers chained by two or more hyphens or slashes, so that "2026-11-15" stays a search. Formats integers without a decimal point and rounds fractions to 12 significant digits.
 - **CalculatorSource.swift**: Launcher source that lists `= <result>` for an arithmetic query, and copies the result on pick.
@@ -180,7 +181,7 @@ mise run link-local-config
 ### Key Behavioral Patterns
 
 - **Dock Icon Setting**: The app shows its Dock icon by default (`.regular` activation policy). Turning off "Show icon in Dock" in the settings switches it to `.accessory`, which keeps the app out of the Dock, the Command-Tab switcher, and the menu bar.
-- **Global Hotkey Activation**: Uses HotKey library for the hot key from `AppSettings` (Cmd+Shift+X by default). AppDelegate registers the hot key again when the setting changes, and pauses it while the settings window records a new one.
+- **Global Hotkey Activation**: Uses HotKey library for every binding in `AppSettings` (Cmd+Shift+X opens the launcher by default). AppDelegate registers all bindings again when the list changes, and pauses them all while the settings window records a new one. A recorded combination that another binding holds beeps and is ignored.
 - **Dock Icon Click**: Clicking the app's icon in the Dock, or opening the app again from Finder, while the app runs opens the launcher, like the hot key. Switching to the app with Command-Tab opens nothing, because macOS sends no reopen event for it.
 - **Scratch Window**: AppDelegate owns one scratch window and reuses it, like the settings window. The app saves pending edits when it quits.
 - **Settings Window**: The app has no menu bar while the Dock icon is off, so the launcher lists a settings row. AppDelegate owns one settings window and reuses it. Command-comma opens the same window, because SomethingApp replaces the stock Settings… command. Mascot colors apply on the next launcher open; the preview in the settings window repaints at once.
