@@ -106,7 +106,7 @@ final class LauncherActionMenuTests: XCTestCase {
         viewModel.showActions()
         viewModel.moveSelection(by: 1)
 
-        let didActivate = viewModel.activateSelectedCandidate()
+        let didActivate = viewModel.activateSelection()
 
         XCTAssertTrue(didActivate)
         XCTAssertEqual(performedTitles, ["Reveal in Finder"])
@@ -119,7 +119,7 @@ final class LauncherActionMenuTests: XCTestCase {
 
         viewModel.actionQuery = "zzz"
 
-        XCTAssertFalse(viewModel.activateSelectedCandidate())
+        XCTAssertFalse(viewModel.activateSelection())
         XCTAssertTrue(performedTitles.isEmpty)
     }
 
@@ -133,6 +133,26 @@ final class LauncherActionMenuTests: XCTestCase {
         XCTAssertTrue(didHide)
         XCTAssertFalse(viewModel.isShowingActions)
         XCTAssertEqual(viewModel.query, "ro")
+    }
+
+    func test_should_keep_candidate_highlight_when_hiding_actions() {
+        let viewModel = LauncherViewModel(sources: [
+            ApplicationSource(
+                applications: [makeApplication("Mail"), makeApplication("Safari")],
+                launchApplication: { _ in })
+        ])
+        viewModel.moveSelection(by: 1)
+        viewModel.showActions()
+
+        viewModel.hideActions()
+
+        XCTAssertEqual(viewModel.selectedCandidate?.name, "Safari")
+    }
+
+    func test_should_not_show_actions_when_no_candidate_matches() {
+        let viewModel = LauncherViewModel(sources: [])
+
+        XCTAssertFalse(viewModel.showActions())
     }
 
     func test_should_report_nothing_to_hide_outside_action_mode() {

@@ -5,7 +5,8 @@ import UniformTypeIdentifiers
 /// Shows the windows of running applications, every application, and then the
 /// git repositories under a query field, and narrows the list on each
 /// keystroke, in the style of Emacs anything.el. A non-empty query also lists
-/// the files of the file folders and web searches for it at the end.
+/// the files of the file folders and web searches for it at the end. Tab or
+/// C-z swaps the candidates for the actions of the highlighted row.
 struct LauncherView: View {
     static let minimumSize = CGSize(width: 600, height: 400)
 
@@ -112,7 +113,7 @@ struct LauncherView: View {
     // Keep the window open when no action runs, such as on an empty list or
     // a row without actions, so the user can keep typing.
     private func activateAndDismiss() {
-        guard viewModel.activateSelectedCandidate() else { return }
+        guard viewModel.activateSelection() else { return }
         dismiss()
     }
 }

@@ -1,6 +1,8 @@
 import Foundation
 
 /// Holds the launcher's query, the narrowed candidates, and the selection.
+/// The launcher can also list the actions of one candidate in place of the
+/// candidates, with its own query and selection.
 @MainActor
 final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
@@ -121,7 +123,7 @@ final class LauncherViewModel: ObservableObject {
     ///
     /// - Returns: Whether an action ran.
     @discardableResult
-    func activateSelectedCandidate() -> Bool {
+    func activateSelection() -> Bool {
         let action = isShowingActions ? selectedAction : selectedCandidate?.defaultAction
         guard let action else { return false }
         action.perform()
