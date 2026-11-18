@@ -17,6 +17,8 @@ enum LLMProviderError: Error, Equatable {
     /// that was never pulled. `message` is the server's explanation, if any.
     case httpError(statusCode: Int, message: String?)
     case timedOut
+    /// The server reported an error inside a stream that it had started.
+    case streamError(message: String)
     /// The answer is not a well-formed chat completion stream.
     case malformedResponse
     case other(description: String)

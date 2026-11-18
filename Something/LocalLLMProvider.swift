@@ -70,7 +70,10 @@ struct LocalLLMProvider: LLMProvider {
         return LLMHTTPResponse(statusCode: httpResponse.statusCode, lines: lines)
     }
 
-    static func mapToProviderError(_ error: Error) -> Error {
+    /// Converts a transport error to an `LLMProviderError`. A
+    /// `CancellationError` passes through, so that a caller that cancelled the
+    /// stream does not see it as a failure.
+    private static func mapToProviderError(_ error: Error) -> Error {
         if error is LLMProviderError || error is CancellationError { return error }
         guard let urlError = error as? URLError else {
             return LLMProviderError.other(description: error.localizedDescription)
@@ -121,25 +124,19 @@ struct LocalLLMProvider: LLMProvider {
     }
 
     private func makeHTTPError(_ response: LLMHTTPResponse) async throws -> LLMProviderError {
-        var bodyText = ""
-        for try await line in response.lines { bodyText += line }
+        var bodyLines: [String] = []
+        for try await line in response.lines { bodyLines.append(line) }
+        let bodyText = bodyLines.joined(separator: "\n")
         return .httpError(
             statusCode: response.statusCode,
             message: Self.extractErrorMessage(from: bodyText)
         )
     }
 
-    /// Reads `{"error":{"message":...}}` (OpenAI style) or `{"error":"..."}`
-    /// (Ollama style), and falls back to the raw body.
+    /// Falls back to the raw body when it is not an error JSON. Returns nil
+    /// for an empty body.
     private static func extractErrorMessage(from bodyText: String) -> String? {
         guard !bodyText.isEmpty else { return nil }
-        let object = bodyText.data(using: .utf8).flatMap {
-            try? JSONSerialization.jsonObject(with: $0) as? [String: Any]
-        }
-        if let nested = (object?["error"] as? [String: Any])?["message"] as? String {
-            return nested
-        }
-        if let flat = object?["error"] as? String { return flat }
-        return bodyText
+        return ChatCompletionErrorMessage.extract(from: Data(bodyText.utf8)) ?? bodyText
     }
 }

@@ -16,6 +16,9 @@ final class AppSettings: ObservableObject {
 
     /// Ollama's OpenAI-compatible endpoint.
     static let defaultLLMBaseURL = "http://localhost:11434/v1"
+    // Empty until the user picks a model, because each runtime lists its own.
+    // TODO(garaemon): Report a missing model before the request, instead of
+    // the server's HTTP error, once an AI command calls LocalLLMProvider.
     static let defaultLLMModelName = ""
 
     private enum StorageKey {

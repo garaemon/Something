@@ -75,6 +75,46 @@ final class LocalLLMProviderTests: XCTestCase {
         )
     }
 
+    func test_should_report_the_ollama_style_error_message() async {
+        let errorLines = makeLines([#"{"error":"model 'gemma' not found"}"#])
+        let provider = makeProvider { _ in LLMHTTPResponse(statusCode: 404, lines: errorLines) }
+
+        await assertThrows(
+            .httpError(statusCode: 404, message: "model 'gemma' not found"),
+            from: provider.streamCompletion(prompt: "hi")
+        )
+    }
+
+    func test_should_report_the_raw_body_when_it_is_not_json() async {
+        let errorLines = makeLines(["Bad", "Gateway"])
+        let provider = makeProvider { _ in LLMHTTPResponse(statusCode: 502, lines: errorLines) }
+
+        await assertThrows(
+            .httpError(statusCode: 502, message: "Bad\nGateway"),
+            from: provider.streamCompletion(prompt: "hi")
+        )
+    }
+
+    func test_should_report_no_message_for_an_empty_error_body() async {
+        let emptyLines = makeLines([])
+        let provider = makeProvider { _ in LLMHTTPResponse(statusCode: 500, lines: emptyLines) }
+
+        await assertThrows(
+            .httpError(statusCode: 500, message: nil),
+            from: provider.streamCompletion(prompt: "hi")
+        )
+    }
+
+    func test_should_report_an_error_sent_inside_the_stream() async {
+        let lines = makeLines([#"data: {"error":{"message":"out of memory"}}"#])
+        let provider = makeProvider { _ in LLMHTTPResponse(statusCode: 200, lines: lines) }
+
+        await assertThrows(
+            .streamError(message: "out of memory"),
+            from: provider.streamCompletion(prompt: "hi")
+        )
+    }
+
     func test_should_report_server_not_running_when_connection_is_refused() async {
         let provider = makeProvider { _ in throw URLError(.cannotConnectToHost) }
 
