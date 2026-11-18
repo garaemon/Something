@@ -62,7 +62,6 @@ final class ResultPanelModel: ObservableObject {
     /// Stops the stream and returns to `idle`. Late chunks are dropped.
     func cancel() {
         streamTask?.cancel()
-        streamTask = nil
         state = .idle
     }
 
@@ -73,16 +72,9 @@ final class ResultPanelModel: ObservableObject {
         action.perform(text)
     }
 
-    /// Returns after the stream ends or is cancelled. For tests.
+    /// Returns after the stream task ends, including after a cancel. For tests.
     func waitUntilDone() async {
         await streamTask?.value
-    }
-
-    /// Returns once the streamed text equals `expected`. For tests.
-    func waitUntilText(_ expected: String) async {
-        while state.text != expected {
-            await Task.yield()
-        }
     }
 
     private func consume(_ stream: AsyncThrowingStream<String, Error>) async {

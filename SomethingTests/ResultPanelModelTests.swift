@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 
 @testable import Something
@@ -6,14 +7,6 @@ import XCTest
 final class ResultPanelModelTests: XCTestCase {
     private struct StreamFailure: LocalizedError {
         var errorDescription: String? { "network down" }
-    }
-
-    private func makeControlledStream() -> (
-        stream: AsyncThrowingStream<String, Error>,
-        continuation: AsyncThrowingStream<String, Error>.Continuation
-    ) {
-        let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
-        return (stream, continuation)
     }
 
     private func makeModel() -> ResultPanelModel {
@@ -26,7 +19,7 @@ final class ResultPanelModelTests: XCTestCase {
 
     func test_should_be_loading_as_soon_as_a_stream_starts() {
         let model = makeModel()
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
 
         model.start(stream: controlled.stream)
 
@@ -35,7 +28,7 @@ final class ResultPanelModelTests: XCTestCase {
 
     func test_should_accumulate_chunks_into_the_finished_text() async {
         let model = makeModel()
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: controlled.stream)
 
         controlled.continuation.yield("Hello, ")
@@ -48,19 +41,24 @@ final class ResultPanelModelTests: XCTestCase {
 
     func test_should_show_streaming_text_before_the_stream_ends() async {
         let model = makeModel()
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: controlled.stream)
 
+        let didStream = expectation(description: "streaming state")
+        let subscription = model.$state.sink { state in
+            if state == .streaming("partial") { didStream.fulfill() }
+        }
         controlled.continuation.yield("partial")
-        await model.waitUntilText("partial")
+        await fulfillment(of: [didStream], timeout: 5)
 
         XCTAssertEqual(model.state, .streaming("partial"))
+        subscription.cancel()
         controlled.continuation.finish()
     }
 
     func test_should_finish_with_empty_text_for_an_empty_stream() async {
         let model = makeModel()
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: controlled.stream)
 
         controlled.continuation.finish()
@@ -71,7 +69,7 @@ final class ResultPanelModelTests: XCTestCase {
 
     func test_should_fail_with_the_error_message_when_the_stream_throws() async {
         let model = makeModel()
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: controlled.stream)
 
         controlled.continuation.yield("partial")
@@ -83,7 +81,7 @@ final class ResultPanelModelTests: XCTestCase {
 
     func test_should_return_to_idle_when_cancelled() async {
         let model = makeModel()
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: controlled.stream)
 
         model.cancel()
@@ -96,8 +94,8 @@ final class ResultPanelModelTests: XCTestCase {
 
     func test_should_replace_the_previous_stream_when_started_again() async {
         let model = makeModel()
-        let first = makeControlledStream()
-        let second = makeControlledStream()
+        let first = AsyncThrowingStream<String, Error>.makeStream()
+        let second = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: first.stream)
 
         model.start(stream: second.stream)
@@ -118,10 +116,10 @@ final class ResultPanelModelTests: XCTestCase {
     }
 
     func test_should_pass_the_current_text_to_an_action() async {
-        var received: String?
-        let action = ResultAction(title: "Copy", perform: { received = $0 })
+        var receivedText: String?
+        let action = ResultAction(title: "Copy", perform: { receivedText = $0 })
         let model = ResultPanelModel(title: "T", actions: [action])
-        let controlled = makeControlledStream()
+        let controlled = AsyncThrowingStream<String, Error>.makeStream()
         model.start(stream: controlled.stream)
         controlled.continuation.yield("body")
         controlled.continuation.finish()
@@ -129,7 +127,7 @@ final class ResultPanelModelTests: XCTestCase {
 
         model.perform(action)
 
-        XCTAssertEqual(received, "body")
+        XCTAssertEqual(receivedText, "body")
     }
 
     func test_should_not_run_an_action_without_text() {

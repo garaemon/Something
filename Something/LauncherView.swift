@@ -12,6 +12,7 @@ struct LauncherView: View {
     // AppDelegate owns the view model and pushes rescans into it.
     @ObservedObject var viewModel: LauncherViewModel
     let dismiss: () -> Void
+    let copyText: (String) -> Void
     @FocusState private var isQueryFieldFocused: Bool
 
     var body: some View {
@@ -27,7 +28,11 @@ struct LauncherView: View {
             .onSubmit(activateAndDismiss)
             Divider()
             if let resultPanel = viewModel.resultPanel {
-                ResultPanelView(panel: resultPanel, closePanel: viewModel.closeResult)
+                ResultPanelView(
+                    panel: resultPanel,
+                    copyText: copyText,
+                    closePanel: viewModel.closeResult
+                )
             } else {
                 candidateList
             }
@@ -161,6 +166,7 @@ private struct KindBadge: View {
 /// The result panel: a scrolling, selectable text with a footer of actions.
 private struct ResultPanelView: View {
     @ObservedObject var panel: ResultPanelModel
+    let copyText: (String) -> Void
     let closePanel: () -> Void
 
     var body: some View {
@@ -200,15 +206,10 @@ private struct ResultPanelView: View {
                 Button(action.title) { panel.perform(action) }
                     .disabled(panel.state.text == nil)
             }
-            Button("Copy") { copyToClipboard(panel.state.text ?? "") }
+            Button("Copy") { copyText(panel.state.text ?? "") }
                 .disabled(panel.state.text == nil)
             Button("Back (Esc)", action: closePanel)
         }
         .padding(8)
-    }
-
-    private func copyToClipboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
     }
 }
