@@ -23,6 +23,15 @@ struct SettingsView: View {
                         Button("Choose…", action: chooseRepositoryRoot)
                     }
                 }
+                LabeledContent("Org directory") {
+                    HStack {
+                        Text((settings.orgDirectoryPath as NSString).abbreviatingWithTildeInPath)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(settings.orgDirectoryPath)
+                        Button("Choose…", action: chooseOrgDirectory)
+                    }
+                }
                 Toggle("Show icon in Dock", isOn: $settings.shouldShowDockIcon)
             }
             fileFoldersSection
@@ -119,6 +128,16 @@ struct SettingsView: View {
         )
         guard openPanel.runModal() == .OK, let chosenDirectory = openPanel.url else { return }
         settings.repositoryRootPath = chosenDirectory.path
+    }
+
+    private func chooseOrgDirectory() {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseDirectories = true
+        openPanel.canChooseFiles = false
+        openPanel.allowsMultipleSelection = false
+        openPanel.directoryURL = URL(fileURLWithPath: settings.orgDirectoryPath, isDirectory: true)
+        guard openPanel.runModal() == .OK, let chosenDirectory = openPanel.url else { return }
+        settings.orgDirectoryPath = chosenDirectory.path
     }
 
     /// Bridges a "#RRGGBB" setting to the `Color` that `ColorPicker` edits.
