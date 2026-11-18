@@ -38,6 +38,15 @@ final class LauncherViewModelResultTests: XCTestCase {
         XCTAssertNil(viewModel.resultPanel)
     }
 
+    func test_should_close_the_result_when_the_query_changes() {
+        let viewModel = makeViewModel()
+        viewModel.showResult(title: "T", stream: makeIdleStream(), actions: [])
+
+        viewModel.query = "a"
+
+        XCTAssertNil(viewModel.resultPanel)
+    }
+
     func test_should_cancel_the_stream_after_closeResult() async {
         let viewModel = makeViewModel()
         let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()

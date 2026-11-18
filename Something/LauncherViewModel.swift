@@ -8,6 +8,8 @@ final class LauncherViewModel: ObservableObject {
             // SwiftUI's TextField writes the unchanged text back, for example
             // on Return, and rebuilding the candidates resets the highlight.
             guard query != oldValue else { return }
+            // Typing while a result shows starts a new search, so the list returns.
+            closeResult()
             updateCandidates()
         }
     }
