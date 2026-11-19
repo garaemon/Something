@@ -10,19 +10,27 @@ struct HotKeyRecorderView: View {
     let bindingID: UUID
     // The token that NSEvent returns for the local key monitor; nil while idle.
     @State private var keyDownMonitor: Any?
+    // Keeps the left or right side of each held modifier in the next recording.
+    @State private var keepsSides = false
 
-    private var keyCombo: KeyCombo? {
-        settings.hotKeyBindings.first { $0.id == bindingID }?.keyCombo
+    private var binding: HotKeyBinding? {
+        settings.hotKeyBindings.first { $0.id == bindingID }
     }
 
     var body: some View {
-        Button(action: toggleRecording) {
-            Text(
-                settings.recordingBindingID == bindingID
-                    ? "Type a shortcut…" : keyCombo?.description ?? ""
-            )
-            .frame(minWidth: 120)
+        HStack {
+            Button(action: toggleRecording) {
+                Text(
+                    settings.recordingBindingID == bindingID
+                        ? "Type a shortcut…" : binding?.shortcutDescription ?? ""
+                )
+                .frame(minWidth: 120)
+            }
+            Toggle("Left/Right", isOn: $keepsSides)
+                .toggleStyle(.checkbox)
+                .help("Tell the left and right modifier keys apart the next time you record")
         }
+        .onAppear { keepsSides = binding?.modifierSides.isSided ?? false }
         .onDisappear(perform: stopRecording)
     }
 
@@ -49,16 +57,25 @@ struct HotKeyRecorderView: View {
             stopRecording()
             return
         }
+        // The device-dependent bits that tell left from right sit outside the
+        // device-independent mask, so the raw flags go to the recorder.
         guard
-            let keyCombo = HotKeyRecording.makeKeyCombo(
+            let shortcut = HotKeyRecording.makeShortcut(
                 carbonKeyCode: UInt32(event.keyCode),
-                modifierFlags: modifierFlags
+                modifierFlags: event.modifierFlags,
+                keepsSides: keepsSides
             )
         else {
             NSSound.beep()
             return
         }
-        guard settings.assignKeyCombo(keyCombo, toBindingID: bindingID) else {
+        guard
+            settings.assignKeyCombo(
+                shortcut.keyCombo,
+                modifierSides: shortcut.modifierSides,
+                toBindingID: bindingID
+            )
+        else {
             // Another binding holds the combination.
             NSSound.beep()
             return
