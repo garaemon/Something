@@ -176,4 +176,34 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertTrue(settings.shouldShowDockIcon)
     }
+
+    func test_should_use_local_ollama_defaults_for_llm_settings() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        XCTAssertEqual(settings.llmBaseURL, "http://localhost:11434/v1")
+        XCTAssertEqual(settings.llmModelName, "")
+    }
+
+    func test_should_restore_saved_llm_settings() {
+        let userDefaults = makeUserDefaults()
+        let settings = AppSettings(userDefaults: userDefaults)
+        settings.llmBaseURL = "http://localhost:1234/v1"
+        settings.llmModelName = "gemma3"
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.llmBaseURL, "http://localhost:1234/v1")
+        XCTAssertEqual(restoredSettings.llmModelName, "gemma3")
+    }
+
+    func test_should_return_default_llm_settings_after_reset() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.llmBaseURL = "http://example.test/v1"
+        settings.llmModelName = "gemma3"
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.llmBaseURL, AppSettings.defaultLLMBaseURL)
+        XCTAssertEqual(settings.llmModelName, "")
+    }
 }
