@@ -8,11 +8,16 @@ final class LauncherViewModel: ObservableObject {
             // SwiftUI's TextField writes the unchanged text back, for example
             // on Return, and rebuilding the candidates resets the highlight.
             guard query != oldValue else { return }
+            // Typing while a result shows starts a new search, so the list returns.
+            closeResult()
             updateCandidates()
         }
     }
     @Published private(set) var candidates: [LauncherCandidate] = []
     @Published private(set) var selectedIndex = 0
+    /// The result panel that replaces the candidate list, or nil while the
+    /// list shows.
+    @Published private(set) var resultPanel: ResultPanelModel?
 
     private var sources: [any CandidateSource]
 
@@ -30,7 +35,7 @@ final class LauncherViewModel: ObservableObject {
 
     /// Moves the highlight by `offset` rows, stopping at the first and last rows.
     func moveSelection(by offset: Int) {
-        guard !candidates.isEmpty else { return }
+        guard !candidates.isEmpty, resultPanel == nil else { return }
         selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
     }
 
@@ -61,9 +66,32 @@ final class LauncherViewModel: ObservableObject {
     /// - Returns: Whether an action ran.
     @discardableResult
     func activateSelectedCandidate() -> Bool {
-        guard let action = selectedCandidate?.defaultAction else { return false }
+        guard resultPanel == nil, let action = selectedCandidate?.defaultAction else {
+            return false
+        }
         action.perform()
         return true
+    }
+
+    /// Replaces the candidate list with a panel that shows the text of
+    /// `stream` as it arrives, with `actions` in its footer. Shows progress
+    /// at once and a failure in the panel. Replaces a panel that is open.
+    func showResult(
+        title: String,
+        stream: AsyncThrowingStream<String, Error>,
+        actions: [ResultAction]
+    ) {
+        resultPanel?.cancel()
+        let panel = ResultPanelModel(title: title, actions: actions)
+        panel.start(stream: stream)
+        resultPanel = panel
+    }
+
+    /// Stops the stream of the result panel and brings the candidate list
+    /// back. Does nothing when no panel is open.
+    func closeResult() {
+        resultPanel?.cancel()
+        resultPanel = nil
     }
 
     private func updateCandidates() {
