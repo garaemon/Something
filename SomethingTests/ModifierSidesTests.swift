@@ -13,41 +13,16 @@ final class ModifierSidesTests: XCTestCase {
     }
 
     func test_should_read_held_sides_from_device_bits() {
-        let sides = ModifierSides.fromHeldFlags(
+        let sides = ModifierSides.readHeldSides(fromFlags: 
             ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftCommandHeld)
 
         XCTAssertEqual(sides, ModifierSides(command: .left, shift: .right))
     }
 
     func test_should_read_either_when_both_sides_are_held() {
-        let sides = ModifierSides.fromHeldFlags(
+        let sides = ModifierSides.readHeldSides(fromFlags: 
             ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftShiftHeld)
 
         XCTAssertEqual(sides, ModifierSides())
-    }
-
-    func test_should_describe_right_shift_binding() {
-        let binding = HotKeyBinding(
-            keyCombo: KeyCombo(key: .e, modifiers: [.shift]),
-            modifierSides: ModifierSides(shift: .right),
-            command: .openLauncher)
-
-        XCTAssertEqual(binding.shortcutDescription, "Right ⇧E")
-    }
-
-    func test_should_describe_unsided_binding_like_key_combo() {
-        let keyCombo = KeyCombo(key: .x, modifiers: [.command, .shift])
-        let binding = HotKeyBinding(keyCombo: keyCombo, command: .openLauncher)
-
-        XCTAssertEqual(binding.shortcutDescription, keyCombo.description)
-    }
-
-    func test_should_describe_mixed_sides() {
-        let binding = HotKeyBinding(
-            keyCombo: KeyCombo(key: .e, modifiers: [.control, .shift]),
-            modifierSides: ModifierSides(control: .left),
-            command: .openLauncher)
-
-        XCTAssertEqual(binding.shortcutDescription, "Left ⌃ ⇧E")
     }
 }

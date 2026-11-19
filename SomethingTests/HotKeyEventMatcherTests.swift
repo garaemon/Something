@@ -13,9 +13,20 @@ final class HotKeyEventMatcherTests: XCTestCase {
         _ keyCombo: KeyCombo,
         _ sides: ModifierSides,
         keyCode: UInt32 = Key.e.carbonKeyCode,
-        flags: UInt64
+        flags: UInt64,
+        addsGenericBits: Bool = true
     ) -> Bool {
-        HotKeyEventMatcher.matches(keyCode: keyCode, flags: flags, keyCombo: keyCombo, sides: sides)
+        let eventFlags = addsGenericBits ? Self.addGenericBits(to: flags) : flags
+        return HotKeyEventMatcher.matches(
+            keyCode: keyCode, flags: eventFlags, keyCombo: keyCombo, sides: sides)
+    }
+
+    // A real event sets the generic bit of every modifier that is down, next to the device bits.
+    private static func addGenericBits(to flags: UInt64) -> UInt64 {
+        ModifierFlagBits.allModifiers.reduce(flags) { result, modifier in
+            let isDown = flags & (modifier.bits.leftBit | modifier.bits.rightBit) != 0
+            return isDown ? result | modifier.bits.genericBit : result
+        }
     }
 
     func test_should_match_right_shift_when_right_shift_is_held() {
@@ -69,9 +80,21 @@ final class HotKeyEventMatcherTests: XCTestCase {
     }
 
     func test_should_ignore_stale_device_bit_of_modifier_outside_the_combination() {
-        let staleCommand = ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftCommandHeld
+        let staleCommand =
+            ModifierFlagBits.rightShiftHeld | ModifierFlagBits.genericShift
+            | ModifierFlagBits.leftCommandHeld
 
-        XCTAssertTrue(matches(shiftE, rightShift, flags: staleCommand))
+        XCTAssertTrue(matches(shiftE, rightShift, flags: staleCommand, addsGenericBits: false))
+    }
+
+    func test_should_not_match_when_device_bit_remains_after_the_key_is_released() {
+        let staleLeftCommand = KeyCombo(key: .e, modifiers: [.command])
+        let sides = ModifierSides(command: .left)
+
+        XCTAssertFalse(
+            matches(
+                staleLeftCommand, sides, flags: ModifierFlagBits.leftCommandHeld,
+                addsGenericBits: false))
     }
 
     func test_should_match_mixed_sides_for_two_modifiers() {

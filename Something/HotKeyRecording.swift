@@ -31,7 +31,7 @@ enum HotKeyRecording {
         // the shortcut sided, so only the held modifiers keep their side.
         let heldSides =
             keepsSides
-            ? ModifierSides.fromHeldFlags(UInt64(modifierFlags.rawValue))
+            ? ModifierSides.readHeldSides(fromFlags: UInt64(modifierFlags.rawValue))
                 .restricted(to: modifierFlags.intersection(registrableModifiers))
             : ModifierSides()
         guard

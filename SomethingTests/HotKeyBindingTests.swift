@@ -110,4 +110,29 @@ final class HotKeyBindingTests: XCTestCase {
 
         XCTAssertFalse(isAvailable)
     }
+
+    func test_should_describe_right_shift_binding() {
+        let binding = HotKeyBinding(
+            keyCombo: KeyCombo(key: .e, modifiers: [.shift]),
+            modifierSides: ModifierSides(shift: .right),
+            command: .openLauncher)
+
+        XCTAssertEqual(binding.shortcutDescription, "Right ⇧E")
+    }
+
+    func test_should_describe_unsided_binding_like_key_combo() {
+        let keyCombo = KeyCombo(key: .x, modifiers: [.command, .shift])
+        let binding = HotKeyBinding(keyCombo: keyCombo, command: .openLauncher)
+
+        XCTAssertEqual(binding.shortcutDescription, keyCombo.description)
+    }
+
+    func test_should_describe_mixed_sides() {
+        let binding = HotKeyBinding(
+            keyCombo: KeyCombo(key: .e, modifiers: [.control, .shift]),
+            modifierSides: ModifierSides(control: .left),
+            command: .openLauncher)
+
+        XCTAssertEqual(binding.shortcutDescription, "Left ⌃ ⇧E")
+    }
 }

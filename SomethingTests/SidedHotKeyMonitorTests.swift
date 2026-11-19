@@ -53,7 +53,7 @@ final class SidedHotKeyMonitorTests: XCTestCase {
 
     private func makeRightShiftEvent(isAutorepeat: Bool = false) -> TappedKeyEvent {
         TappedKeyEvent(
-            keyCode: Key.e.carbonKeyCode, flags: ModifierFlagBits.rightShiftHeld,
+            keyCode: Key.e.carbonKeyCode, flags: ModifierFlagBits.rightShiftHeld | ModifierFlagBits.genericShift,
             isAutorepeat: isAutorepeat)
     }
 
@@ -151,7 +151,7 @@ final class SidedHotKeyMonitorTests: XCTestCase {
         let monitor = makeMonitor()
         monitor.update(bindings: [rightShiftEBinding])
         let leftShiftEvent = TappedKeyEvent(
-            keyCode: Key.e.carbonKeyCode, flags: ModifierFlagBits.leftShiftHeld,
+            keyCode: Key.e.carbonKeyCode, flags: ModifierFlagBits.leftShiftHeld | ModifierFlagBits.genericShift,
             isAutorepeat: false)
 
         XCTAssertEqual(installer.handler?(leftShiftEvent), false)

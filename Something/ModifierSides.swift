@@ -46,7 +46,7 @@ struct ModifierSides: Equatable, Codable {
 
     /// Reads the side of each modifier that `flags` holds. A modifier with both
     /// sides held, or with no device bit (a synthetic event), stays `.either`.
-    static func fromHeldFlags(_ flags: UInt64) -> ModifierSides {
+    static func readHeldSides(fromFlags flags: UInt64) -> ModifierSides {
         func readSide(_ modifier: ModifierFlagBits.Modifier) -> ModifierSide {
             let isLeftHeld = flags & modifier.leftBit != 0
             let isRightHeld = flags & modifier.rightBit != 0
@@ -131,14 +131,14 @@ enum HotKeyEventMatcher {
             let isRequired = keyCombo.modifiers.contains(modifier.flag)
             let isLeftHeld = flags & modifier.bits.leftBit != 0
             let isRightHeld = flags & modifier.bits.rightBit != 0
-            let isAnyHeld = flags & modifier.bits.genericBit != 0 || isLeftHeld || isRightHeld
-            // A modifier outside the combination counts as held only by its generic
-            // bit, because a device bit can outlive the release of the key.
-            guard isRequired else { return flags & modifier.bits.genericBit == 0 }
+            // The generic bit says whether the key is down. A device bit can outlive
+            // the release of the key, so it only tells the side.
+            let isHeld = flags & modifier.bits.genericBit != 0
+            guard isRequired else { return !isHeld }
             switch sides.side(of: modifier.flag) {
-            case .either: return isAnyHeld
-            case .left: return isLeftHeld && !isRightHeld
-            case .right: return isRightHeld && !isLeftHeld
+            case .either: return isHeld
+            case .left: return isHeld && isLeftHeld && !isRightHeld
+            case .right: return isHeld && isRightHeld && !isLeftHeld
             }
         }
     }
