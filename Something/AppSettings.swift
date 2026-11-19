@@ -130,8 +130,8 @@ final class AppSettings: ObservableObject {
         hotKeyBindings[index].command = command
     }
 
-    /// Sets the combination of a binding. Returns false and changes nothing
-    /// when another binding already holds it.
+    /// Sets the combination and the modifier sides of a binding. Returns false and changes
+    /// nothing when another binding overlaps it, that is, when one key press could trigger both.
     @discardableResult
     func assignKeyCombo(
         _ keyCombo: KeyCombo,

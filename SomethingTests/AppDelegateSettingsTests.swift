@@ -74,7 +74,7 @@ final class AppDelegateSettingsTests: XCTestCase {
         XCTAssertEqual(appDelegate.registeredHotKeys.map(\.isPaused), [true])
     }
 
-    func test_should_leave_sided_binding_to_the_event_tap() {
+    func test_should_not_register_sided_binding_with_carbon() {
         let appDelegate = makeAppDelegate()
         appDelegate.startObservingSettings()
         let bindingID = appDelegate.settings.hotKeyBindings[0].id

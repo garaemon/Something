@@ -14,7 +14,8 @@ enum HotKeyRecording {
         .command, .option, .control, .shift,
     ]
     /// A hot key needs one of these, because Shift alone or no modifier would
-    /// swallow ordinary typing in every application.
+    /// swallow ordinary typing in every application. A sided Shift is the exception,
+    /// because the other Shift keeps typing.
     private static let requiredModifiers: NSEvent.ModifierFlags = [.command, .option, .control]
 
     /// Returns the shortcut for a key press. With `keepsSides`, each modifier
