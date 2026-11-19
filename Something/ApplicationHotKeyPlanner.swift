@@ -30,6 +30,8 @@ enum ApplicationHotKeyPlanner {
     ///
     /// The Accessibility API lists windows front to back. Raising the rearmost
     /// window on each press therefore walks through every window in turn.
+    /// Minimized windows count and sort last, so the cycle restores them one
+    /// by one.
     static func plan(
         isRunning: Bool,
         isFrontmost: Bool,
