@@ -41,11 +41,14 @@ final class SidedHotKeyMonitorTests: XCTestCase {
         ranCommands = []
     }
 
-    private func makeMonitor() -> SidedHotKeyMonitor {
+    private func makeMonitor(onCommand: @escaping () -> Void = {}) -> SidedHotKeyMonitor {
         SidedHotKeyMonitor(
             installer: installer,
             isAccessibilityTrusted: { [unowned self] in isTrusted },
-            runCommand: { [unowned self] in ranCommands.append($0) })
+            runCommand: { [unowned self] command in
+                ranCommands.append(command)
+                onCommand()
+            })
     }
 
     private func makeRightShiftEvent(isAutorepeat: Bool = false) -> TappedKeyEvent {
@@ -121,12 +124,24 @@ final class SidedHotKeyMonitorTests: XCTestCase {
         XCTAssertEqual(monitor.status, .tapUnavailable)
     }
 
-    func test_should_swallow_matching_event_and_run_command() async {
+    func test_should_remove_tap_when_permission_is_revoked() {
         let monitor = makeMonitor()
         monitor.update(bindings: [rightShiftEBinding])
 
+        isTrusted = false
+        monitor.refresh()
+
+        XCTAssertEqual(installer.uninstallCount, 1)
+        XCTAssertEqual(monitor.status, .needsAccessibility)
+    }
+
+    func test_should_swallow_matching_event_and_run_command() async {
+        let commandRan = expectation(description: "command ran")
+        let monitor = makeMonitor(onCommand: { commandRan.fulfill() })
+        monitor.update(bindings: [rightShiftEBinding])
+
         let isSwallowed = installer.handler?(makeRightShiftEvent())
-        await Task.yield()
+        await fulfillment(of: [commandRan], timeout: 2)
 
         XCTAssertEqual(isSwallowed, true)
         XCTAssertEqual(ranCommands, [.openScratch])
@@ -144,14 +159,16 @@ final class SidedHotKeyMonitorTests: XCTestCase {
     }
 
     func test_should_swallow_autorepeat_without_running_command_again() async {
-        let monitor = makeMonitor()
+        let commandRan = expectation(description: "command ran")
+        let monitor = makeMonitor(onCommand: { commandRan.fulfill() })
         monitor.update(bindings: [rightShiftEBinding])
 
-        let isSwallowed = installer.handler?(makeRightShiftEvent(isAutorepeat: true))
-        await Task.yield()
+        let isRepeatSwallowed = installer.handler?(makeRightShiftEvent(isAutorepeat: true))
+        _ = installer.handler?(makeRightShiftEvent())
+        await fulfillment(of: [commandRan], timeout: 2)
 
-        XCTAssertEqual(isSwallowed, true)
-        XCTAssertEqual(ranCommands, [])
+        XCTAssertEqual(isRepeatSwallowed, true)
+        XCTAssertEqual(ranCommands, [.openScratch])
     }
 
     func test_should_pass_events_through_while_paused() {

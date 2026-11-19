@@ -17,15 +17,6 @@ enum HotKeyRecording {
     /// swallow ordinary typing in every application.
     private static let requiredModifiers: NSEvent.ModifierFlags = [.command, .option, .control]
 
-    /// Returns the hot key for a key press, or nil when the press lacks Command,
-    /// Option, or Control.
-    static func makeKeyCombo(
-        carbonKeyCode: UInt32,
-        modifierFlags: NSEvent.ModifierFlags
-    ) -> KeyCombo? {
-        makeKeyCombo(carbonKeyCode: carbonKeyCode, modifierFlags: modifierFlags, isSided: false)
-    }
-
     /// Returns the shortcut for a key press. With `keepsSides`, each modifier
     /// keeps the side that was held, read from the device-dependent bits of
     /// `modifierFlags.rawValue`. A press that holds a sided modifier may use

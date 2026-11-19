@@ -79,14 +79,26 @@ final class HotKeyBindingTests: XCTestCase {
         XCTAssertEqual(decoded.command, .openScratch)
     }
 
-    func test_should_accept_same_combo_with_different_sides() {
-        let existing = HotKeyBinding(keyCombo: comboA, command: .openLauncher)
+    func test_should_accept_same_combo_on_opposite_sides() {
+        let existing = HotKeyBinding(
+            keyCombo: comboA, modifierSides: ModifierSides(shift: .left), command: .openLauncher)
 
         let isAvailable = HotKeyBindingValidator.isAvailable(
             comboA, modifierSides: ModifierSides(shift: .right), forBindingID: UUID(),
             among: [existing])
 
         XCTAssertTrue(isAvailable)
+    }
+
+    // One press of Left Shift + Command + A would trigger both bindings.
+    func test_should_reject_sided_combo_that_overlaps_either_side_binding() {
+        let existing = HotKeyBinding(keyCombo: comboA, command: .openLauncher)
+
+        let isAvailable = HotKeyBindingValidator.isAvailable(
+            comboA, modifierSides: ModifierSides(shift: .right), forBindingID: UUID(),
+            among: [existing])
+
+        XCTAssertFalse(isAvailable)
     }
 
     func test_should_reject_same_combo_with_same_sides() {

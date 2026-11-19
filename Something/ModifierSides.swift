@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import HotKey
 
 /// Which physical key of a modifier a hot key needs.
@@ -22,6 +23,8 @@ struct ModifierSides: Equatable, Codable {
         [command, option, control, shift].contains { $0 != .either }
     }
 
+    /// Returns the side for one of Command, Option, Control, or Shift. Any other
+    /// flag reads as Shift, because the callers only pass those four.
     func side(of modifier: NSEvent.ModifierFlags) -> ModifierSide {
         switch modifier {
         case .command: return command
@@ -60,9 +63,9 @@ enum ModifierFlagBits {
         let rightBit: UInt64
     }
 
-    static let genericShift: UInt64 = 0x2_0000
-    static let capsLock: UInt64 = 0x1_0000
-    static let function: UInt64 = 0x80_0000
+    static let genericShift = CGEventFlags.maskShift.rawValue
+    static let capsLock = CGEventFlags.maskAlphaShift.rawValue
+    static let function = CGEventFlags.maskSecondaryFn.rawValue
 
     static let leftControlHeld: UInt64 = 0x1
     static let leftShiftHeld: UInt64 = 0x2
@@ -79,17 +82,17 @@ enum ModifierFlagBits {
         rightBit: rightShiftHeld
     )
     static let controlKey = Modifier(
-        genericBit: 0x4_0000,
+        genericBit: CGEventFlags.maskControl.rawValue,
         leftBit: leftControlHeld,
         rightBit: rightControlHeld
     )
     static let optionKey = Modifier(
-        genericBit: 0x8_0000,
+        genericBit: CGEventFlags.maskAlternate.rawValue,
         leftBit: leftOptionHeld,
         rightBit: rightOptionHeld
     )
     static let commandKey = Modifier(
-        genericBit: 0x10_0000,
+        genericBit: CGEventFlags.maskCommand.rawValue,
         leftBit: leftCommandHeld,
         rightBit: rightCommandHeld
     )

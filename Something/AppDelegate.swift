@@ -11,7 +11,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // developer's keystrokes.
     var keyEventTapInstaller: KeyEventTapInstalling = CGKeyEventTapInstaller()
     // The bindings that need a left or right modifier go through this monitor
-    // instead of Carbon.
+    // instead of Carbon. The lazy monitor takes the installer on first use, so
+    // tests must replace the installer before they touch the monitor.
     private(set) lazy var sidedHotKeyMonitor = SidedHotKeyMonitor(
         installer: keyEventTapInstaller,
         isAccessibilityTrusted: CGKeyEventTapInstaller.isAccessibilityTrusted,

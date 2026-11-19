@@ -107,8 +107,10 @@ enum HotKeyBindingValidator {
         KeyCombo(key: $0, modifiers: [.control, .option, .command])
     }
 
-    /// Returns true when no other binding holds `keyCombo` with the same sides. A binding never
-    /// clashes with itself, so that recording the same key again is harmless.
+    /// Returns true when no other binding overlaps `keyCombo` with `modifierSides`. Two
+    /// bindings overlap when one key press can trigger both, such as Command + E (either side)
+    /// and Left Command + E. A binding never clashes with itself, so that recording the same
+    /// key again is harmless.
     static func isAvailable(
         _ keyCombo: KeyCombo,
         modifierSides: ModifierSides = ModifierSides(),
@@ -116,12 +118,30 @@ enum HotKeyBindingValidator {
         among bindings: [HotKeyBinding]
     ) -> Bool {
         !bindings.contains {
-            $0.id != bindingID && $0.keyCombo == keyCombo && $0.modifierSides == modifierSides
+            $0.id != bindingID
+                && overlaps(keyCombo, modifierSides, $0.keyCombo, $0.modifierSides)
+        }
+    }
+
+    private static func overlaps(
+        _ firstCombo: KeyCombo,
+        _ firstSides: ModifierSides,
+        _ secondCombo: KeyCombo,
+        _ secondSides: ModifierSides
+    ) -> Bool {
+        guard firstCombo == secondCombo else { return false }
+        return ModifierFlagBits.allModifiers.allSatisfy { modifier in
+            guard firstCombo.modifiers.contains(modifier.flag) else { return true }
+            let firstSide = firstSides.side(of: modifier.flag)
+            let secondSide = secondSides.side(of: modifier.flag)
+            return firstSide == .either || secondSide == .either || firstSide == secondSide
         }
     }
 
     /// Returns the first suggested combination that no binding holds, or nil.
     static func suggestFreeCombo(among bindings: [HotKeyBinding]) -> KeyCombo? {
-        suggestedCombos.first { combo in !bindings.contains { $0.keyCombo == combo } }
+        suggestedCombos.first { combo in
+            isAvailable(combo, forBindingID: UUID(), among: bindings)
+        }
     }
 }

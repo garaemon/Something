@@ -6,29 +6,30 @@ import XCTest
 
 final class HotKeyRecordingTests: XCTestCase {
     func test_should_accept_key_with_command_modifier() {
-        let keyCombo = HotKeyRecording.makeKeyCombo(
-            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.command])
+        let keyCombo = HotKeyRecording.makeShortcut(
+            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.command], keepsSides: false)?.keyCombo
 
         XCTAssertEqual(keyCombo, KeyCombo(key: .k, modifiers: [.command]))
     }
 
     // A bare letter would fire on every keystroke typed into any application.
     func test_should_reject_key_without_modifier() {
-        let keyCombo = HotKeyRecording.makeKeyCombo(carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [])
+        let keyCombo = HotKeyRecording.makeShortcut(
+            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [], keepsSides: false)?.keyCombo
 
         XCTAssertNil(keyCombo)
     }
 
     func test_should_reject_key_with_only_shift() {
-        let keyCombo = HotKeyRecording.makeKeyCombo(
-            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.shift])
+        let keyCombo = HotKeyRecording.makeShortcut(
+            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.shift], keepsSides: false)?.keyCombo
 
         XCTAssertNil(keyCombo)
     }
 
     func test_should_drop_modifiers_that_carbon_cannot_register() {
-        let keyCombo = HotKeyRecording.makeKeyCombo(
-            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.control, .capsLock, .function])
+        let keyCombo = HotKeyRecording.makeShortcut(
+            carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.control, .capsLock, .function], keepsSides: false)?.keyCombo
 
         XCTAssertEqual(keyCombo, KeyCombo(key: .k, modifiers: [.control]))
     }

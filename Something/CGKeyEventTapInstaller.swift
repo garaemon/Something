@@ -35,6 +35,9 @@ final class CGKeyEventTapInstaller: KeyEventTapInstalling {
             box.release()
             return false
         }
+        // The main run loop serves the callback so that the handler can touch
+        // main-actor state. A stalled main thread delays key input system-wide
+        // while the tap is on, and macOS then disables the tap after a timeout.
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
