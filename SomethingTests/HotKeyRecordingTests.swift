@@ -77,7 +77,12 @@ final class HotKeyRecordingSidesTests: XCTestCase {
             [.shift], deviceBits: ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftCommandHeld)
 
         XCTAssertEqual(makeShortcut(flags)?.modifierSides, ModifierSides(shift: .right))
-        XCTAssertNil(makeShortcut(makeFlags([.shift], deviceBits: ModifierFlagBits.leftCommandHeld)))
+    }
+
+    func test_should_reject_shift_alone_when_only_a_stale_bit_is_sided() {
+        let flags = makeFlags([.shift], deviceBits: ModifierFlagBits.leftCommandHeld)
+
+        XCTAssertNil(makeShortcut(flags))
     }
 
     func test_should_reject_shift_alone_when_sides_are_not_kept() {

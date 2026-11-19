@@ -74,6 +74,7 @@ enum ModifierFlagBits {
     }
 
     static let genericShift = CGEventFlags.maskShift.rawValue
+    static let genericCommand = CGEventFlags.maskCommand.rawValue
     static let capsLock = CGEventFlags.maskAlphaShift.rawValue
     static let function = CGEventFlags.maskSecondaryFn.rawValue
 
@@ -102,7 +103,7 @@ enum ModifierFlagBits {
         rightBit: rightOptionHeld
     )
     static let commandKey = Modifier(
-        genericBit: CGEventFlags.maskCommand.rawValue,
+        genericBit: genericCommand,
         leftBit: leftCommandHeld,
         rightBit: rightCommandHeld
     )
@@ -131,7 +132,9 @@ enum HotKeyEventMatcher {
             let isLeftHeld = flags & modifier.bits.leftBit != 0
             let isRightHeld = flags & modifier.bits.rightBit != 0
             let isAnyHeld = flags & modifier.bits.genericBit != 0 || isLeftHeld || isRightHeld
-            guard isRequired else { return !isAnyHeld }
+            // A modifier outside the combination counts as held only by its generic
+            // bit, because a device bit can outlive the release of the key.
+            guard isRequired else { return flags & modifier.bits.genericBit == 0 }
             switch sides.side(of: modifier.flag) {
             case .either: return isAnyHeld
             case .left: return isLeftHeld && !isRightHeld

@@ -61,9 +61,17 @@ final class HotKeyEventMatcherTests: XCTestCase {
     }
 
     func test_should_not_match_when_extra_modifier_is_held() {
-        let shiftAndCommand = ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftCommandHeld
+        let shiftAndCommand =
+            ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftCommandHeld
+            | ModifierFlagBits.genericCommand
 
         XCTAssertFalse(matches(shiftE, rightShift, flags: shiftAndCommand))
+    }
+
+    func test_should_ignore_stale_device_bit_of_modifier_outside_the_combination() {
+        let staleCommand = ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftCommandHeld
+
+        XCTAssertTrue(matches(shiftE, rightShift, flags: staleCommand))
     }
 
     func test_should_match_mixed_sides_for_two_modifiers() {
