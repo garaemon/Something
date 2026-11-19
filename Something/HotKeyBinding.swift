@@ -24,12 +24,12 @@ enum HotKeyCommand: Codable, Hashable {
         }
     }
 
-    private var plainName: String? {
+    private var plainName: String {
         switch self {
         case .openLauncher: return "openLauncher"
         case .openScratch: return "openScratch"
         case .openSettings: return "openSettings"
-        case .openApplication: return nil
+        case .openApplication: return "openApplication"
         }
     }
 
@@ -54,12 +54,13 @@ enum HotKeyCommand: Codable, Hashable {
     }
 
     func encode(to encoder: Encoder) throws {
-        if let plainName {
-            var container = encoder.singleValueContainer()
-            try container.encode(plainName)
-        } else if case .openApplication(let target) = self {
+        switch self {
+        case .openApplication(let target):
             var container = encoder.container(keyedBy: ApplicationKeys.self)
             try container.encode(target, forKey: .openApplication)
+        case .openLauncher, .openScratch, .openSettings:
+            var container = encoder.singleValueContainer()
+            try container.encode(plainName)
         }
     }
 }

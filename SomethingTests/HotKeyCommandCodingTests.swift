@@ -49,4 +49,17 @@ final class HotKeyCommandCodingTests: XCTestCase {
                 ApplicationTarget(
                     path: "/Applications/Safari.app", bundleIdentifier: "com.apple.Safari")))
     }
+
+    func test_should_drop_only_binding_with_unknown_command() throws {
+        let json = """
+            [{"id":"\(UUID().uuidString)","carbonKeyCode":0,"carbonModifiers":256,\
+            "command":"futureCommand"},\
+            {"id":"\(UUID().uuidString)","carbonKeyCode":1,"carbonModifiers":256,\
+            "command":"openScratch"}]
+            """
+
+        let decoded = try JSONDecoder().decode([LossyBinding].self, from: Data(json.utf8))
+
+        XCTAssertEqual(decoded.compactMap(\.binding).map(\.command), [.openScratch])
+    }
 }

@@ -5,7 +5,12 @@ extension AppDelegate {
     /// `ApplicationHotKeyPlanner` decides.
     func openApplication(_ target: ApplicationTarget) {
         guard let runningApplication = Self.findRunningApplication(for: target) else {
-            perform(.launch, target: target, windows: [])
+            let action = ApplicationHotKeyPlanner.plan(
+                isRunning: false,
+                isFrontmost: false,
+                windowCount: 0
+            )
+            runApplicationHotKeyAction(action, target: target, windows: [])
             return
         }
         let isFrontmost = NSWorkspace.shared.frontmostApplication == runningApplication
@@ -20,10 +25,9 @@ extension AppDelegate {
                 windowCount: windows.count
             )
             DispatchQueue.main.async {
-                self?.perform(
+                self?.runApplicationHotKeyAction(
                     action,
                     target: target,
-                    runningApplication: runningApplication,
                     windows: windows
                 )
             }
@@ -61,10 +65,9 @@ extension AppDelegate {
             }
     }
 
-    private func perform(
+    private func runApplicationHotKeyAction(
         _ action: ApplicationHotKeyAction,
         target: ApplicationTarget,
-        runningApplication: NSRunningApplication? = nil,
         windows: [SwitchableWindow]
     ) {
         switch action {
@@ -76,7 +79,9 @@ extension AppDelegate {
             if let frontWindow = windows.first {
                 WindowRaiser.raiseWindow(frontWindow)
             } else {
-                runningApplication?.activate()
+                // activate() alone neither fronts the application under cooperative
+                // activation nor reopens a window, so reopen it through NSWorkspace.
+                launchApplication(target)
             }
         case .raiseWindow(let index):
             guard windows.indices.contains(index) else { return }
