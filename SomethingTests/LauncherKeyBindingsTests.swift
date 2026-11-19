@@ -74,6 +74,27 @@ final class LauncherKeyBindingsTests: XCTestCase {
         XCTAssertEqual(command, .swallow)
     }
 
+    func test_should_show_actions_on_tab() {
+        let command = LauncherKeyBindings.resolve(
+            key: .tab, isControlPressed: false, isRepeat: false)
+
+        XCTAssertEqual(command, .showActions)
+    }
+
+    func test_should_show_actions_on_control_z() {
+        let command = LauncherKeyBindings.resolve(
+            key: KeyEquivalent("z"), isControlPressed: true, isRepeat: false)
+
+        XCTAssertEqual(command, .showActions)
+    }
+
+    func test_should_ignore_z_without_control() {
+        let command = LauncherKeyBindings.resolve(
+            key: KeyEquivalent("z"), isControlPressed: false, isRepeat: false)
+
+        XCTAssertNil(command)
+    }
+
     func test_should_ignore_n_without_control() {
         let command = LauncherKeyBindings.resolve(
             key: KeyEquivalent("n"), isControlPressed: false, isRepeat: false)
