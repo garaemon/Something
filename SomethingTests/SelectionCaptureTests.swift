@@ -64,7 +64,7 @@ final class SelectionCaptureTests: XCTestCase {
                 return true
             })
 
-        let selection = capturer.captureSelection()
+        let selection = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertEqual(selection, CapturedSelection(sourceApplication: safari, text: "hello"))
         XCTAssertFalse(didPostKey)
@@ -81,10 +81,36 @@ final class SelectionCaptureTests: XCTestCase {
                 return true
             })
 
-        let selection = capturer.captureSelection()
+        let selection = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertNil(selection.text)
         XCTAssertFalse(didPostKey)
+    }
+
+    func test_should_not_post_copy_key_when_fallback_is_none() {
+        let pasteboard = FakePasteboard()
+        var didPostKey = false
+        let capturer = makeCapturer(
+            frontmost: safari, accessibilityText: nil, pasteboard: pasteboard,
+            postCopyKey: {
+                didPostKey = true
+                return true
+            })
+
+        _ = capturer.captureSelection(fallback: .none)
+
+        XCTAssertFalse(didPostKey)
+    }
+
+    func test_should_keep_source_application_when_fallback_is_none() {
+        let pasteboard = FakePasteboard()
+        let capturer = makeCapturer(
+            frontmost: safari, accessibilityText: nil, pasteboard: pasteboard,
+            postCopyKey: { true })
+
+        let selection = capturer.captureSelection(fallback: .none)
+
+        XCTAssertEqual(selection, CapturedSelection(sourceApplication: safari, text: nil))
     }
 
     func test_should_copy_through_pasteboard_when_accessibility_is_unavailable() {
@@ -96,7 +122,7 @@ final class SelectionCaptureTests: XCTestCase {
                 return true
             })
 
-        XCTAssertEqual(capturer.captureSelection().text, "copied")
+        XCTAssertEqual(capturer.captureSelection(fallback: .copyKey).text, "copied")
     }
 
     func test_should_restore_previous_pasteboard_after_fallback() {
@@ -109,7 +135,7 @@ final class SelectionCaptureTests: XCTestCase {
                 return true
             })
 
-        _ = capturer.captureSelection()
+        _ = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertEqual(pasteboard.restoredSnapshots, [originalSnapshot])
     }
@@ -120,7 +146,7 @@ final class SelectionCaptureTests: XCTestCase {
             frontmost: safari, accessibilityText: nil, pasteboard: pasteboard,
             postCopyKey: { true })
 
-        let selection = capturer.captureSelection()
+        let selection = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertNil(selection.text)
         XCTAssertTrue(pasteboard.restoredSnapshots.isEmpty)
@@ -137,7 +163,7 @@ final class SelectionCaptureTests: XCTestCase {
                 if pauseCount == 2 { pasteboard.simulateCopy("late") }
             })
 
-        XCTAssertEqual(capturer.captureSelection().text, "late")
+        XCTAssertEqual(capturer.captureSelection(fallback: .copyKey).text, "late")
     }
 
     func test_should_not_wait_when_posting_the_copy_key_fails() {
@@ -148,7 +174,7 @@ final class SelectionCaptureTests: XCTestCase {
             postCopyKey: { false },
             pauseBetweenPolls: { pauseCount += 1 })
 
-        XCTAssertNil(capturer.captureSelection().text)
+        XCTAssertNil(capturer.captureSelection(fallback: .copyKey).text)
         XCTAssertEqual(pauseCount, 0)
     }
 
@@ -164,7 +190,7 @@ final class SelectionCaptureTests: XCTestCase {
                 return true
             })
 
-        XCTAssertEqual(capturer.captureSelection(), .empty)
+        XCTAssertEqual(capturer.captureSelection(fallback: .copyKey), .empty)
         XCTAssertFalse(didPostKey)
     }
 
@@ -173,7 +199,7 @@ final class SelectionCaptureTests: XCTestCase {
             frontmost: safari, accessibilityText: "", pasteboard: FakePasteboard(),
             postCopyKey: { true })
 
-        XCTAssertEqual(capturer.captureSelection().sourceApplication, safari)
+        XCTAssertEqual(capturer.captureSelection(fallback: .copyKey).sourceApplication, safari)
     }
 
     func test_should_stop_polling_after_maximum_poll_count() {
@@ -183,7 +209,7 @@ final class SelectionCaptureTests: XCTestCase {
             postCopyKey: { true },
             pauseBetweenPolls: { pauseCount += 1 })
 
-        _ = capturer.captureSelection()
+        _ = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertEqual(pauseCount, 5)
     }
@@ -196,7 +222,7 @@ final class SelectionCaptureTests: XCTestCase {
             frontmost: safari, accessibilityText: nil, pasteboard: pasteboard,
             canPostCopyKey: false, postCopyKey: { true })
 
-        _ = capturer.captureSelection()
+        _ = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertFalse(didReadSnapshot)
     }
@@ -212,7 +238,7 @@ final class SelectionCaptureTests: XCTestCase {
                 return true
             })
 
-        let selection = capturer.captureSelection()
+        let selection = capturer.captureSelection(fallback: .copyKey)
 
         XCTAssertNil(selection.text)
         XCTAssertEqual(pasteboard.restoredSnapshots, [originalSnapshot])

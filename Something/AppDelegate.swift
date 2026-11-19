@@ -62,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         let selectionCapturer = SelectionCapturer.makeDefault()
-        captureSelection = { selectionCapturer.captureSelection() }
+        captureSelection = { selectionCapturer.captureSelection(fallback: .none) }
         refreshApplicationsInBackground()
         repositoryLoader.refresh()
         fileLoader.refresh()
