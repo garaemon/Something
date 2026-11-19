@@ -75,9 +75,13 @@ struct SettingsView: View {
             ForEach(settings.hotKeyBindings) { binding in
                 HStack {
                     if case .openApplication(let target) = binding.command {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: target.path))
-                            .resizable()
-                            .frame(width: 16, height: 16)
+                        Image(
+                            nsImage: ApplicationIconCache.shared.loadIcon(
+                                for: LaunchableApplication(name: target.name, url: target.url)
+                            )
+                        )
+                        .resizable()
+                        .frame(width: 16, height: 16)
                     }
                     Picker("Command", selection: makeCommandBinding(for: binding.id)) {
                         ForEach(HotKeyCommand.plainCommands, id: \.title) { command in
@@ -130,13 +134,13 @@ struct SettingsView: View {
     }
 
     private func chooseApplication(forBindingID bindingID: UUID) {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.applicationBundle]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.prompt = "Choose"
-        guard panel.runModal() == .OK, let applicationURL = panel.url else { return }
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.applicationBundle]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.directoryURL = URL(fileURLWithPath: "/Applications")
+        openPanel.prompt = "Choose"
+        guard openPanel.runModal() == .OK, let applicationURL = openPanel.url else { return }
         let target = ApplicationTarget(
             path: applicationURL.path,
             bundleIdentifier: Bundle(url: applicationURL)?.bundleIdentifier

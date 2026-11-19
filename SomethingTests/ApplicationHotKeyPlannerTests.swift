@@ -37,4 +37,10 @@ final class ApplicationHotKeyPlannerTests: XCTestCase {
 
         XCTAssertEqual(action, .activate)
     }
+
+    func test_should_name_application_after_bundle_file() {
+        let target = ApplicationTarget(path: "/Applications/Safari.app", bundleIdentifier: nil)
+
+        XCTAssertEqual(target.name, "Safari")
+    }
 }

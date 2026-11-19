@@ -4,16 +4,15 @@ extension AppDelegate {
     /// Launches, activates, or cycles the windows of an application, as
     /// `ApplicationHotKeyPlanner` decides.
     func openApplication(_ target: ApplicationTarget) {
-        let runningApplication = Self.findRunningApplication(for: target)
-        guard let runningApplication else {
-            launchApplication(target)
+        guard let runningApplication = Self.findRunningApplication(for: target) else {
+            perform(.launch, target: target, windows: [])
             return
         }
         let isFrontmost = NSWorkspace.shared.frontmostApplication == runningApplication
         let catalog = windowCatalog
         let processIdentifier = runningApplication.processIdentifier
         // The Accessibility calls can block, so they stay off the main thread.
-        windowListQueue.async {
+        windowListQueue.async { [weak self] in
             let windows = catalog.loadWindows().filter { $0.processIdentifier == processIdentifier }
             let action = ApplicationHotKeyPlanner.plan(
                 isRunning: true,
@@ -21,14 +20,31 @@ extension AppDelegate {
                 windowCount: windows.count
             )
             DispatchQueue.main.async {
-                Self.perform(action, on: runningApplication, windows: windows)
+                self?.perform(
+                    action,
+                    target: target,
+                    runningApplication: runningApplication,
+                    windows: windows
+                )
             }
         }
     }
 
     private func launchApplication(_ target: ApplicationTarget) {
+        // The bundle identifier finds an application that moved since the
+        // user picked it.
+        let applicationURL =
+            FileManager.default.fileExists(atPath: target.path)
+            ? target.url
+            : target.bundleIdentifier.flatMap {
+                NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0)
+            }
+        guard let applicationURL else {
+            NSLog("Application not found: %@", target.path)
+            return
+        }
         NSWorkspace.shared.openApplication(
-            at: target.url,
+            at: applicationURL,
             configuration: NSWorkspace.OpenConfiguration()
         ) { _, error in
             if let error { NSLog("Failed to launch %@: %@", target.path, "\(error)") }
@@ -45,19 +61,22 @@ extension AppDelegate {
             }
     }
 
-    private static func perform(
+    private func perform(
         _ action: ApplicationHotKeyAction,
-        on application: NSRunningApplication,
+        target: ApplicationTarget,
+        runningApplication: NSRunningApplication? = nil,
         windows: [SwitchableWindow]
     ) {
         switch action {
-        case .launch, .activate:
+        case .launch:
+            launchApplication(target)
+        case .activate:
             // WindowRaiser switches applications more reliably than activate()
             // under cooperative activation, so it handles a first window too.
             if let frontWindow = windows.first {
                 WindowRaiser.raiseWindow(frontWindow)
             } else {
-                application.activate()
+                runningApplication?.activate()
             }
         case .raiseWindow(let index):
             guard windows.indices.contains(index) else { return }

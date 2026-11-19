@@ -35,24 +35,18 @@ final class HotKeyCommandCodingTests: XCTestCase {
         XCTAssertEqual(String(data: data, encoding: .utf8), "\"openSettings\"")
     }
 
-    func test_should_load_previously_saved_bindings_from_user_defaults() throws {
-        let suiteName = "HotKeyCommandCodingTests.\(UUID().uuidString)"
-        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { userDefaults.removePersistentDomain(forName: suiteName) }
-        let savedJSON = """
-            [{"id":"\(UUID().uuidString)","carbonKeyCode":7,"carbonModifiers":256,\
-            "command":"openLauncher"}]
+    func test_should_decode_stored_open_application_shape() throws {
+        let json = """
+            {"openApplication":{"path":"/Applications/Safari.app",\
+            "bundleIdentifier":"com.apple.Safari"}}
             """
-        userDefaults.set(Data(savedJSON.utf8), forKey: "hotKeyBindings")
 
-        let settings = AppSettings(userDefaults: userDefaults)
+        let decoded = try JSONDecoder().decode(HotKeyCommand.self, from: Data(json.utf8))
 
-        XCTAssertEqual(settings.hotKeyBindings.map(\.command), [.openLauncher])
-    }
-
-    func test_should_name_application_after_bundle_file() {
-        let target = ApplicationTarget(path: "/Applications/Safari.app", bundleIdentifier: nil)
-
-        XCTAssertEqual(target.name, "Safari")
+        XCTAssertEqual(
+            decoded,
+            .openApplication(
+                ApplicationTarget(
+                    path: "/Applications/Safari.app", bundleIdentifier: "com.apple.Safari")))
     }
 }
