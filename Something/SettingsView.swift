@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 
 /// The settings window: the global hot keys, the git repositories folder, the
-/// Dock icon, the folders whose files the launcher lists, and the mascot's skin colors.
+/// Dock icon, the folders whose files the launcher lists, the local language model, and the
+/// mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
@@ -24,6 +25,7 @@ struct SettingsView: View {
             }
             hotKeysSection
             fileFoldersSection
+            languageModelSection
             Section {
                 HStack {
                     Spacer()
@@ -131,6 +133,19 @@ struct SettingsView: View {
             Text("File Folders")
         } footer: {
             Text("The launcher lists the files under these folders when you type a query.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var languageModelSection: some View {
+        Section {
+            TextField("Base URL", text: $settings.llmBaseURL)
+            TextField("Model", text: $settings.llmModelName, prompt: Text("gemma3"))
+        } header: {
+            Text("Language Model")
+        } footer: {
+            Text("An OpenAI-compatible server on this Mac, such as Ollama or LM Studio.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

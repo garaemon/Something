@@ -14,6 +14,13 @@ final class AppSettings: ObservableObject {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent($0).path
     }
 
+    /// Ollama's OpenAI-compatible endpoint.
+    static let defaultLLMBaseURL = "http://localhost:11434/v1"
+    // Empty until the user picks a model, because each runtime lists its own.
+    // TODO(garaemon): Report a missing model before the request, instead of
+    // the server's HTTP error, once an AI command calls LocalLLMProvider.
+    static let defaultLLMModelName = ""
+
     private enum StorageKey {
         // Before bindings existed, the settings held this single launcher hot key.
         static let legacyHotKey = "hotKey"
@@ -23,6 +30,8 @@ final class AppSettings: ObservableObject {
         static let repositoryRootPath = "repositoryRootPath"
         static let fileFolderPaths = "fileFolderPaths"
         static let shouldShowDockIcon = "shouldShowDockIcon"
+        static let llmBaseURL = "llmBaseURL"
+        static let llmModelName = "llmModelName"
     }
 
     /// Global hot keys and the commands they run.
@@ -51,6 +60,14 @@ final class AppSettings: ObservableObject {
     @Published var shouldShowDockIcon: Bool {
         didSet { userDefaults.set(shouldShowDockIcon, forKey: StorageKey.shouldShowDockIcon) }
     }
+    /// Base URL of the local OpenAI-compatible server that AI commands call.
+    @Published var llmBaseURL: String {
+        didSet { userDefaults.set(llmBaseURL, forKey: StorageKey.llmBaseURL) }
+    }
+    /// Model that the local server runs, such as "gemma3".
+    @Published var llmModelName: String {
+        didSet { userDefaults.set(llmModelName, forKey: StorageKey.llmModelName) }
+    }
     /// True while the settings window waits for a new hot key. Every binding
     /// must be paused meanwhile, or Carbon takes the press before the window sees it.
     @Published var recordingBindingID: UUID?
@@ -74,6 +91,9 @@ final class AppSettings: ObservableObject {
             ?? Self.defaultFileFolderPaths
         shouldShowDockIcon =
             userDefaults.object(forKey: StorageKey.shouldShowDockIcon) as? Bool ?? true
+        llmBaseURL = userDefaults.string(forKey: StorageKey.llmBaseURL) ?? Self.defaultLLMBaseURL
+        llmModelName =
+            userDefaults.string(forKey: StorageKey.llmModelName) ?? Self.defaultLLMModelName
     }
 
     private static func loadHotKeyBindings(from userDefaults: UserDefaults) -> [HotKeyBinding] {
@@ -146,5 +166,7 @@ final class AppSettings: ObservableObject {
         repositoryRootPath = Self.defaultRepositoryRootPath
         fileFolderPaths = Self.defaultFileFolderPaths
         shouldShowDockIcon = true
+        llmBaseURL = Self.defaultLLMBaseURL
+        llmModelName = Self.defaultLLMModelName
     }
 }
