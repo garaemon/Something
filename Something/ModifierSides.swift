@@ -34,6 +34,16 @@ struct ModifierSides: Equatable, Codable {
         }
     }
 
+    /// Returns these sides with every modifier outside `modifiers` reset to either.
+    func restricted(to modifiers: NSEvent.ModifierFlags) -> ModifierSides {
+        ModifierSides(
+            command: modifiers.contains(.command) ? command : .either,
+            option: modifiers.contains(.option) ? option : .either,
+            control: modifiers.contains(.control) ? control : .either,
+            shift: modifiers.contains(.shift) ? shift : .either
+        )
+    }
+
     /// Reads the side of each modifier that `flags` holds. A modifier with both
     /// sides held, or with no device bit (a synthetic event), stays `.either`.
     static func fromHeldFlags(_ flags: UInt64) -> ModifierSides {

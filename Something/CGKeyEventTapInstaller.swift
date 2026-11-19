@@ -48,7 +48,10 @@ final class CGKeyEventTapInstaller: KeyEventTapInstalling {
     }
 
     func uninstall() {
-        if let eventTap { CGEvent.tapEnable(tap: eventTap, enable: false) }
+        if let eventTap {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+            CFMachPortInvalidate(eventTap)
+        }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }

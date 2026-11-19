@@ -27,9 +27,13 @@ enum HotKeyRecording {
         modifierFlags: NSEvent.ModifierFlags,
         keepsSides: Bool
     ) -> RecordedShortcut? {
+        // A stale device bit of a modifier outside the combination must not make
+        // the shortcut sided, so only the held modifiers keep their side.
         let heldSides =
             keepsSides
-            ? ModifierSides.fromHeldFlags(UInt64(modifierFlags.rawValue)) : ModifierSides()
+            ? ModifierSides.fromHeldFlags(UInt64(modifierFlags.rawValue))
+                .restricted(to: modifierFlags.intersection(registrableModifiers))
+            : ModifierSides()
         guard
             let keyCombo = makeKeyCombo(
                 carbonKeyCode: carbonKeyCode,

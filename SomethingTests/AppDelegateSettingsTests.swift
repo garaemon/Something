@@ -87,6 +87,22 @@ final class AppDelegateSettingsTests: XCTestCase {
         XCTAssertEqual(appDelegate.registeredHotKeys.count, 0)
     }
 
+    func test_should_hand_sided_binding_to_the_event_tap() {
+        let appDelegate = makeAppDelegate()
+        let installer = FakeKeyEventTapInstaller()
+        appDelegate.keyEventTapInstaller = installer
+        appDelegate.isAccessibilityTrusted = { true }
+        appDelegate.startObservingSettings()
+        let bindingID = appDelegate.settings.hotKeyBindings[0].id
+
+        appDelegate.settings.assignKeyCombo(
+            KeyCombo(key: .e, modifiers: [.shift]),
+            modifierSides: ModifierSides(shift: .right),
+            toBindingID: bindingID)
+
+        XCTAssertEqual(installer.installCount, 1)
+    }
+
     func test_should_pause_sided_hot_keys_while_recording() {
         let appDelegate = makeAppDelegate()
         appDelegate.startObservingSettings()
