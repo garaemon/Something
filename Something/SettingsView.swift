@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The settings window: the global hot keys, the git repositories folder, the
 /// Dock icon, the folders whose files the launcher lists, the local language model, and the
@@ -73,10 +74,20 @@ struct SettingsView: View {
         Section {
             ForEach(settings.hotKeyBindings) { binding in
                 HStack {
+                    if case .openApplication(let target) = binding.command {
+                        Image(nsImage: NSWorkspace.shared.icon(forFile: target.path))
+                            .resizable()
+                            .frame(width: 16, height: 16)
+                    }
                     Picker("Command", selection: makeCommandBinding(for: binding.id)) {
-                        ForEach(HotKeyCommand.allCases) { command in
-                            Text(command.title).tag(command)
+                        ForEach(HotKeyCommand.plainCommands, id: \.title) { command in
+                            Text(command.title).tag(Optional(command))
                         }
+                        if case .openApplication = binding.command {
+                            Text(binding.command.title).tag(Optional(binding.command))
+                        }
+                        Divider()
+                        Text("Open Application…").tag(HotKeyCommand?.none)
                     }
                     .labelsHidden()
                     HotKeyRecorderView(settings: settings, bindingID: binding.id)
@@ -101,13 +112,36 @@ struct SettingsView: View {
         }
     }
 
-    private func makeCommandBinding(for bindingID: UUID) -> Binding<HotKeyCommand> {
+    // A nil selection is the "Open Application…" entry. It opens a chooser
+    // instead of changing the command, so that cancelling keeps the old one.
+    private func makeCommandBinding(for bindingID: UUID) -> Binding<HotKeyCommand?> {
         Binding(
             get: {
                 settings.hotKeyBindings.first { $0.id == bindingID }?.command ?? .openLauncher
             },
-            set: { settings.updateCommand($0, forBindingID: bindingID) }
+            set: { selectedCommand in
+                if let selectedCommand {
+                    settings.updateCommand(selectedCommand, forBindingID: bindingID)
+                } else {
+                    chooseApplication(forBindingID: bindingID)
+                }
+            }
         )
+    }
+
+    private func chooseApplication(forBindingID bindingID: UUID) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.applicationBundle]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = "Choose"
+        guard panel.runModal() == .OK, let applicationURL = panel.url else { return }
+        let target = ApplicationTarget(
+            path: applicationURL.path,
+            bundleIdentifier: Bundle(url: applicationURL)?.bundleIdentifier
+        )
+        settings.updateCommand(.openApplication(target), forBindingID: bindingID)
     }
 
     private var fileFoldersSection: some View {

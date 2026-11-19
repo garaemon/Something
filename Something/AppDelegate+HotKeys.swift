@@ -21,6 +21,7 @@ extension AppDelegate {
         case .openLauncher: openWindow()
         case .openScratch: openScratch()
         case .openSettings: openSettings()
+        case .openApplication(let target): openApplication(target)
         }
     }
 }
