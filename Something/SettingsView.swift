@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 /// mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    @State private var commandPickerGeneration = 0
 
     private static let previewSize: CGFloat = 160
 
@@ -94,6 +95,7 @@ struct SettingsView: View {
                         Text("Open Application…").tag(HotKeyCommand?.none)
                     }
                     .labelsHidden()
+                    .id(commandPickerGeneration)
                     HotKeyRecorderView(settings: settings, bindingID: binding.id)
                     Button {
                         settings.removeHotKeyBinding(id: binding.id)
@@ -127,7 +129,8 @@ struct SettingsView: View {
                 if let selectedCommand {
                     settings.updateCommand(selectedCommand, forBindingID: bindingID)
                 } else {
-                    chooseApplication(forBindingID: bindingID)
+                    // Run the modal panel after this view update, not inside it.
+                    DispatchQueue.main.async { chooseApplication(forBindingID: bindingID) }
                 }
             }
         )
@@ -140,6 +143,9 @@ struct SettingsView: View {
         openPanel.canChooseDirectories = false
         openPanel.directoryURL = URL(fileURLWithPath: "/Applications")
         openPanel.prompt = "Choose"
+        // The picker still shows "Open Application…" after a cancel, because
+        // no setting changed; a new identity makes it show the saved command.
+        defer { commandPickerGeneration += 1 }
         guard openPanel.runModal() == .OK, let applicationURL = openPanel.url else { return }
         let target = ApplicationTarget(
             path: applicationURL.path,

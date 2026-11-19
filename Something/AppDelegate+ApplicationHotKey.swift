@@ -45,13 +45,16 @@ extension AppDelegate {
             }
         guard let applicationURL else {
             NSLog("Application not found: %@", target.path)
+            NSSound.beep()
             return
         }
         NSWorkspace.shared.openApplication(
             at: applicationURL,
             configuration: NSWorkspace.OpenConfiguration()
         ) { _, error in
-            if let error { NSLog("Failed to launch %@: %@", target.path, "\(error)") }
+            guard let error else { return }
+            NSLog("Failed to launch %@: %@", target.path, "\(error)")
+            DispatchQueue.main.async { NSSound.beep() }
         }
     }
 
