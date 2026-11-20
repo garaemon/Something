@@ -48,14 +48,14 @@ final class OrgTaskCaptureTests: XCTestCase {
 
         XCTAssertEqual(
             entry,
-            "* TODO buy milk\n:PROPERTIES:\n:CREATED:  [2026-11-17 Tue 21:04]\n:END:\n")
+            "* TODO buy milk :something:\n:PROPERTIES:\n:CREATED:  [2026-11-17 Tue 21:04]\n:END:\n")
     }
 
     func test_should_collapse_line_breaks_in_title() {
         let entry = OrgTaskFormat(calendar: utcCalendar).makeEntry(
             title: "  buy\nmilk\t now ", at: captureDate)
 
-        XCTAssertTrue(entry.hasPrefix("* TODO buy milk now\n"))
+        XCTAssertTrue(entry.hasPrefix("* TODO buy milk now :something:\n"))
     }
 
     func test_should_name_daily_note_after_capture_day() {
@@ -92,7 +92,7 @@ final class OrgTaskCaptureTests: XCTestCase {
         XCTAssertEqual(
             fileSystem.files[dailyNotePath],
             ":PROPERTIES:\n:ID:       11111111-2222-3333-4444-555555555555\n:END:\n#+title: 2026-11-17\n"
-                + "* TODO buy milk\n:PROPERTIES:\n:CREATED:  [2026-11-17 Tue 21:04]\n:END:\n")
+                + "* TODO buy milk :something:\n:PROPERTIES:\n:CREATED:  [2026-11-17 Tue 21:04]\n:END:\n")
     }
 
     func test_should_append_to_existing_note_without_new_header() {
@@ -104,7 +104,7 @@ final class OrgTaskCaptureTests: XCTestCase {
 
         XCTAssertEqual(
             fileSystem.files[dailyNotePath],
-            "#+title: 2026-11-17\n* first\n* TODO buy milk\n:PROPERTIES:\n"
+            "#+title: 2026-11-17\n* first\n* TODO buy milk :something:\n:PROPERTIES:\n"
                 + ":CREATED:  [2026-11-17 Tue 21:04]\n:END:\n")
     }
 
@@ -115,7 +115,7 @@ final class OrgTaskCaptureTests: XCTestCase {
 
         _ = capturer.capture(title: "buy milk")
 
-        XCTAssertTrue(fileSystem.files[dailyNotePath]!.hasPrefix("* first\n* TODO buy milk\n"))
+        XCTAssertTrue(fileSystem.files[dailyNotePath]!.hasPrefix("* first\n* TODO buy milk :something:\n"))
     }
 
     func test_should_report_failure_when_file_write_fails() {

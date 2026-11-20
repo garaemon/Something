@@ -15,12 +15,17 @@ struct OrgFileSystem {
 struct OrgTaskFormat {
     let calendar: Calendar
 
+    /// The Org tag on every captured heading, so that an agenda search such as
+    /// `+something` finds the tasks that came from the launcher.
+    static let captureTag = "something"
+
     /// The top-level heading of a captured task, in the shape of the other
     /// entries of a daily note. The title is one line.
     func makeEntry(title: String, at date: Date) -> String {
         let oneLineTitle = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         let createdTimestamp = format(date, pattern: "yyyy-MM-dd EEE HH:mm")
-        return "* TODO \(oneLineTitle)\n:PROPERTIES:\n:CREATED:  [\(createdTimestamp)]\n:END:\n"
+        return "* TODO \(oneLineTitle) :\(Self.captureTag):\n"
+            + ":PROPERTIES:\n:CREATED:  [\(createdTimestamp)]\n:END:\n"
     }
 
     /// `<org directory>/org-roam/daily/YYYY-MM-DD.org` of the day of `date`.
