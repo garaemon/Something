@@ -1,11 +1,13 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The settings window: the global hot keys, the git repositories folder, the
 /// Dock icon, the folders whose files the launcher lists, the local language model, and the
 /// mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    @State private var commandPickerGeneration = 0
 
     private static let previewSize: CGFloat = 160
 
@@ -73,12 +75,27 @@ struct SettingsView: View {
         Section {
             ForEach(settings.hotKeyBindings) { binding in
                 HStack {
+                    if case .openApplication(let target) = binding.command {
+                        Image(
+                            nsImage: ApplicationIconCache.shared.loadIcon(
+                                for: LaunchableApplication(name: target.name, url: target.url)
+                            )
+                        )
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                    }
                     Picker("Command", selection: makeCommandBinding(for: binding.id)) {
-                        ForEach(HotKeyCommand.allCases) { command in
-                            Text(command.title).tag(command)
+                        ForEach(HotKeyCommand.plainCommands, id: \.title) { command in
+                            Text(command.title).tag(Optional(command))
                         }
+                        if case .openApplication = binding.command {
+                            Text(binding.command.title).tag(Optional(binding.command))
+                        }
+                        Divider()
+                        Text("Open Application…").tag(HotKeyCommand?.none)
                     }
                     .labelsHidden()
+                    .id(commandPickerGeneration)
                     HotKeyRecorderView(settings: settings, bindingID: binding.id)
                     Button {
                         settings.removeHotKeyBinding(id: binding.id)
@@ -101,13 +118,40 @@ struct SettingsView: View {
         }
     }
 
-    private func makeCommandBinding(for bindingID: UUID) -> Binding<HotKeyCommand> {
+    // A nil selection is the "Open Application…" entry. It opens a chooser
+    // instead of changing the command, so that cancelling keeps the old one.
+    private func makeCommandBinding(for bindingID: UUID) -> Binding<HotKeyCommand?> {
         Binding(
             get: {
                 settings.hotKeyBindings.first { $0.id == bindingID }?.command ?? .openLauncher
             },
-            set: { settings.updateCommand($0, forBindingID: bindingID) }
+            set: { selectedCommand in
+                if let selectedCommand {
+                    settings.updateCommand(selectedCommand, forBindingID: bindingID)
+                } else {
+                    // Run the modal panel after this view update, not inside it.
+                    DispatchQueue.main.async { chooseApplication(forBindingID: bindingID) }
+                }
+            }
         )
+    }
+
+    private func chooseApplication(forBindingID bindingID: UUID) {
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.applicationBundle]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.directoryURL = URL(fileURLWithPath: "/Applications")
+        openPanel.prompt = "Choose"
+        // The picker still shows "Open Application…" after a cancel, because
+        // no setting changed; a new identity makes it show the saved command.
+        defer { commandPickerGeneration += 1 }
+        guard openPanel.runModal() == .OK, let applicationURL = openPanel.url else { return }
+        let target = ApplicationTarget(
+            path: applicationURL.path,
+            bundleIdentifier: Bundle(url: applicationURL)?.bundleIdentifier
+        )
+        settings.updateCommand(.openApplication(target), forBindingID: bindingID)
     }
 
     private var fileFoldersSection: some View {
