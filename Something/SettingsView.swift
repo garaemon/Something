@@ -6,6 +6,7 @@ import SwiftUI
 /// mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject var sidedHotKeyMonitor: SidedHotKeyMonitor
 
     private static let previewSize: CGFloat = 160
 
@@ -95,9 +96,30 @@ struct SettingsView: View {
         } header: {
             Text("Hot Keys")
         } footer: {
-            Text("Each hot key runs its command from any application. Bind a combination once.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    "Each hot key runs its command from any application. Bind a combination "
+                        + "once. Turn on Left/Right, then record the shortcut, to bind one side "
+                        + "of a modifier."
+                )
+                if let statusMessage = sidedHotKeyStatusMessage {
+                    Text(statusMessage).foregroundStyle(.orange)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private var sidedHotKeyStatusMessage: String? {
+        switch sidedHotKeyMonitor.status {
+        case .inactive, .active:
+            return nil
+        case .needsAccessibility:
+            return "Left/Right hot keys are off until you allow Something in System Settings > "
+                + "Privacy & Security > Accessibility."
+        case .tapUnavailable:
+            return "Left/Right hot keys are off because macOS refused the keyboard event tap."
         }
     }
 
