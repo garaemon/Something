@@ -124,8 +124,10 @@ struct LauncherView: View {
 
     // Keep the window open when no action runs, such as on an empty list or
     // a row without actions, so the user can keep typing.
+    // An action that opens the result panel, such as an AI command, keeps the
+    // launcher open so that the panel stays visible.
     private func activateAndDismiss() {
-        guard viewModel.activateSelection() else { return }
+        guard viewModel.activateSelection(), viewModel.resultPanel == nil else { return }
         dismiss()
     }
 }
