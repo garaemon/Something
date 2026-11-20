@@ -21,6 +21,15 @@ struct SettingsView: View {
                         Button("Choose…", action: chooseRepositoryRoot)
                     }
                 }
+                LabeledContent("Org directory") {
+                    HStack {
+                        Text((settings.orgDirectoryPath as NSString).abbreviatingWithTildeInPath)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(settings.orgDirectoryPath)
+                        Button("Choose…", action: chooseOrgDirectory)
+                    }
+                }
                 Toggle("Show icon in Dock", isOn: $settings.shouldShowDockIcon)
             }
             hotKeysSection
@@ -163,16 +172,24 @@ struct SettingsView: View {
     }
 
     private func chooseRepositoryRoot() {
+        chooseDirectory(for: \.repositoryRootPath)
+    }
+
+    private func chooseOrgDirectory() {
+        chooseDirectory(for: \.orgDirectoryPath)
+    }
+
+    private func chooseDirectory(for pathKeyPath: ReferenceWritableKeyPath<AppSettings, String>) {
         let openPanel = NSOpenPanel()
         openPanel.canChooseDirectories = true
         openPanel.canChooseFiles = false
         openPanel.allowsMultipleSelection = false
         openPanel.directoryURL = URL(
-            fileURLWithPath: settings.repositoryRootPath,
+            fileURLWithPath: settings[keyPath: pathKeyPath],
             isDirectory: true
         )
         guard openPanel.runModal() == .OK, let chosenDirectory = openPanel.url else { return }
-        settings.repositoryRootPath = chosenDirectory.path
+        settings[keyPath: pathKeyPath] = chosenDirectory.path
     }
 
     /// Bridges a "#RRGGBB" setting to the `Color` that `ColorPicker` edits.
