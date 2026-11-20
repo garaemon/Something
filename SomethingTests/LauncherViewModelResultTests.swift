@@ -75,7 +75,7 @@ final class LauncherViewModelResultTests: XCTestCase {
         let viewModel = makeViewModel(onLaunch: { didLaunch = true })
         viewModel.showResult(title: "T", stream: makeIdleStream(), actions: [])
 
-        let didRun = viewModel.activateSelectedCandidate()
+        let didRun = viewModel.activateSelection()
 
         XCTAssertFalse(didRun)
         XCTAssertFalse(didLaunch)
@@ -93,5 +93,23 @@ final class LauncherViewModelResultTests: XCTestCase {
 
         XCTAssertEqual(firstPanel?.state, .idle)
         XCTAssertEqual(viewModel.resultPanel?.title, "Second")
+    }
+
+    func test_should_not_show_actions_while_a_result_is_shown() {
+        let viewModel = makeViewModel()
+        viewModel.showResult(title: "T", stream: makeIdleStream(), actions: [])
+
+        let didShow = viewModel.showActions()
+
+        XCTAssertFalse(didShow)
+    }
+
+    func test_should_close_the_action_list_when_a_result_is_shown() {
+        let viewModel = makeViewModel()
+        viewModel.showActions()
+
+        viewModel.showResult(title: "T", stream: makeIdleStream(), actions: [])
+
+        XCTAssertFalse(viewModel.isShowingActions)
     }
 }

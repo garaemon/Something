@@ -132,7 +132,7 @@ final class LauncherViewModelTests: XCTestCase {
     func test_should_report_activation_when_a_candidate_is_selected() {
         let viewModel = makeViewModel(["Safari"])
 
-        let didActivate = viewModel.activateSelectedCandidate()
+        let didActivate = viewModel.activateSelection()
 
         XCTAssertTrue(didActivate)
     }
@@ -141,7 +141,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(["Safari"])
         viewModel.query = "zzz"
 
-        let didActivate = viewModel.activateSelectedCandidate()
+        let didActivate = viewModel.activateSelection()
 
         XCTAssertFalse(didActivate)
     }
@@ -169,7 +169,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(["Safari", "Mail"]) { launchedName = $0.name }
         viewModel.moveSelection(by: 1)
 
-        viewModel.activateSelectedCandidate()
+        viewModel.activateSelection()
 
         XCTAssertEqual(launchedName, "Safari")
     }
@@ -179,7 +179,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(["Safari"]) { _ in launchCount += 1 }
         viewModel.query = "zzz"
 
-        viewModel.activateSelectedCandidate()
+        viewModel.activateSelection()
 
         XCTAssertEqual(launchCount, 0)
     }
@@ -266,7 +266,7 @@ final class LauncherViewModelTests: XCTestCase {
             applications: ["Mail"], windows: [makeWindow("Safari", "GitHub")],
             onRaise: { raisedTitle = $0.title })
 
-        viewModel.activateSelectedCandidate()
+        viewModel.activateSelection()
 
         XCTAssertEqual(raisedTitle, "GitHub")
     }
@@ -326,7 +326,7 @@ final class LauncherViewModelTests: XCTestCase {
             applications: [], webSearchEngines: [.google], onOpenURL: { openedURL = $0 })
         viewModel.query = "swift"
 
-        viewModel.activateSelectedCandidate()
+        viewModel.activateSelection()
 
         XCTAssertEqual(openedURL?.absoluteString, "https://www.google.com/search?q=swift")
     }
@@ -338,7 +338,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(applications: [], webSearchEngines: [malformedEngine])
         viewModel.query = "swift"
 
-        let didActivate = viewModel.activateSelectedCandidate()
+        let didActivate = viewModel.activateSelection()
 
         XCTAssertFalse(didActivate)
     }
@@ -393,7 +393,7 @@ final class LauncherViewModelTests: XCTestCase {
         let viewModel = makeViewModel(
             applications: [], repositories: ["github.com/a/b"], onOpen: { openedName = $0.name })
 
-        viewModel.activateSelectedCandidate()
+        viewModel.activateSelection()
 
         XCTAssertEqual(openedName, "github.com/a/b")
     }

@@ -28,7 +28,7 @@ final class AppDelegateSettingsTests: XCTestCase {
 
         appDelegate.startObservingSettings()
 
-        XCTAssertEqual(appDelegate.myHotKey?.keyCombo, AppSettings.defaultHotKeyCombo)
+        XCTAssertEqual(appDelegate.registeredHotKeys.map(\.keyCombo), [AppSettings.defaultHotKeyCombo])
     }
 
     func test_should_register_new_hot_key_when_setting_changes() {
@@ -36,18 +36,40 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.startObservingSettings()
         let newCombo = KeyCombo(key: .j, modifiers: [.control, .option, .command])
 
-        appDelegate.settings.hotKeyCombo = newCombo
+        let bindingID = appDelegate.settings.hotKeyBindings[0].id
+        appDelegate.settings.assignKeyCombo(newCombo, toBindingID: bindingID)
 
-        XCTAssertEqual(appDelegate.myHotKey?.keyCombo, newCombo)
+        XCTAssertEqual(appDelegate.registeredHotKeys.map(\.keyCombo), [newCombo])
+    }
+
+    func test_should_register_every_binding() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+
+        appDelegate.settings.addHotKeyBinding()
+
+        XCTAssertEqual(appDelegate.registeredHotKeys.count, 2)
+    }
+
+    func test_should_run_command_of_binding() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        appDelegate.settings.addHotKeyBinding()
+        let bindingID = appDelegate.settings.hotKeyBindings[1].id
+        appDelegate.settings.updateCommand(.openSettings, forBindingID: bindingID)
+
+        appDelegate.registeredHotKeys[1].keyDownHandler?()
+
+        XCTAssertEqual(appDelegate.settingsWindow?.isVisible, true)
     }
 
     func test_should_pause_hot_key_while_recording() {
         let appDelegate = makeAppDelegate()
         appDelegate.startObservingSettings()
 
-        appDelegate.settings.isRecordingHotKey = true
+        appDelegate.settings.recordingBindingID = appDelegate.settings.hotKeyBindings[0].id
 
-        XCTAssertEqual(appDelegate.myHotKey?.isPaused, true)
+        XCTAssertEqual(appDelegate.registeredHotKeys.map(\.isPaused), [true])
     }
 
     func test_should_show_settings_window() {
