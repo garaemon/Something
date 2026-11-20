@@ -25,7 +25,9 @@ final class AppSettings: ObservableObject {
     static let defaultLLMModelName = ""
 
     private enum StorageKey {
-        static let hotKey = "hotKey"
+        // Before bindings existed, the settings held this single launcher hot key.
+        static let legacyHotKey = "hotKey"
+        static let hotKeyBindings = "hotKeyBindings"
         static let mascotHeadColor = "mascotHeadColor"
         static let mascotBodyColor = "mascotBodyColor"
         static let repositoryRootPath = "repositoryRootPath"
@@ -36,8 +38,9 @@ final class AppSettings: ObservableObject {
         static let llmModelName = "llmModelName"
     }
 
-    @Published var hotKeyCombo: KeyCombo {
-        didSet { userDefaults.set(hotKeyCombo.dictionary, forKey: StorageKey.hotKey) }
+    /// Global hot keys and the commands they run.
+    @Published var hotKeyBindings: [HotKeyBinding] {
+        didSet { saveHotKeyBindings() }
     }
     /// "#RRGGBB".
     @Published var mascotHeadColor: String {
@@ -74,18 +77,17 @@ final class AppSettings: ObservableObject {
     @Published var llmModelName: String {
         didSet { userDefaults.set(llmModelName, forKey: StorageKey.llmModelName) }
     }
-    /// True while the settings window waits for a new hot key. The current hot
-    /// key must be paused meanwhile, or Carbon takes the press before the window sees it.
-    @Published var isRecordingHotKey = false
+    /// True while the settings window waits for a new hot key. Every binding
+    /// must be paused meanwhile, or Carbon takes the press before the window sees it.
+    @Published var recordingBindingID: UUID?
+
+    var isRecordingHotKey: Bool { recordingBindingID != nil }
 
     private let userDefaults: UserDefaults
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
-        let savedHotKey = (userDefaults.dictionary(forKey: StorageKey.hotKey)).flatMap(
-            KeyCombo.init(dictionary:)
-        )
-        hotKeyCombo = savedHotKey ?? Self.defaultHotKeyCombo
+        hotKeyBindings = Self.loadHotKeyBindings(from: userDefaults)
         mascotHeadColor =
             userDefaults.string(forKey: StorageKey.mascotHeadColor) ?? MascotModel.defaultHeadColor
         mascotBodyColor =
@@ -106,6 +108,52 @@ final class AppSettings: ObservableObject {
             userDefaults.string(forKey: StorageKey.llmModelName) ?? Self.defaultLLMModelName
     }
 
+    private static func loadHotKeyBindings(from userDefaults: UserDefaults) -> [HotKeyBinding] {
+        let savedBindings = userDefaults.data(forKey: StorageKey.hotKeyBindings).flatMap {
+            try? JSONDecoder().decode([LossyBinding].self, from: $0)
+        }
+        if let savedBindings { return savedBindings.compactMap(\.binding) }
+        let legacyCombo = userDefaults.dictionary(forKey: StorageKey.legacyHotKey).flatMap(
+            KeyCombo.init(dictionary:)
+        )
+        return [HotKeyBinding(keyCombo: legacyCombo ?? defaultHotKeyCombo, command: .openLauncher)]
+    }
+
+    private func saveHotKeyBindings() {
+        guard let data = try? JSONEncoder().encode(hotKeyBindings) else { return }
+        userDefaults.set(data, forKey: StorageKey.hotKeyBindings)
+    }
+
+    /// Appends a binding that opens the launcher on a combination that no
+    /// binding holds. Does nothing when every suggestion is taken.
+    func addHotKeyBinding() {
+        guard let keyCombo = HotKeyBindingValidator.suggestFreeCombo(among: hotKeyBindings) else {
+            return
+        }
+        hotKeyBindings.append(HotKeyBinding(keyCombo: keyCombo, command: .openLauncher))
+    }
+
+    func removeHotKeyBinding(id: UUID) {
+        hotKeyBindings.removeAll { $0.id == id }
+    }
+
+    func updateCommand(_ command: HotKeyCommand, forBindingID id: UUID) {
+        guard let index = hotKeyBindings.firstIndex(where: { $0.id == id }) else { return }
+        hotKeyBindings[index].command = command
+    }
+
+    /// Sets the combination of a binding. Returns false and changes nothing
+    /// when another binding already holds it.
+    @discardableResult
+    func assignKeyCombo(_ keyCombo: KeyCombo, toBindingID id: UUID) -> Bool {
+        guard
+            HotKeyBindingValidator.isAvailable(keyCombo, forBindingID: id, among: hotKeyBindings),
+            let index = hotKeyBindings.firstIndex(where: { $0.id == id })
+        else { return false }
+        hotKeyBindings[index].keyCombo = keyCombo
+        return true
+    }
+
     /// The robot painted with the chosen skin colors.
     var mascotModel: MascotModel {
         MascotModel.default.recolored(headColor: mascotHeadColor, bodyColor: mascotBodyColor)
@@ -122,7 +170,9 @@ final class AppSettings: ObservableObject {
     }
 
     func resetToDefaults() {
-        hotKeyCombo = Self.defaultHotKeyCombo
+        hotKeyBindings = [
+            HotKeyBinding(keyCombo: Self.defaultHotKeyCombo, command: .openLauncher)
+        ]
         mascotHeadColor = MascotModel.defaultHeadColor
         mascotBodyColor = MascotModel.defaultBodyColor
         repositoryRootPath = Self.defaultRepositoryRootPath
