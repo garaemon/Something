@@ -53,9 +53,15 @@ struct OrgTaskFormat {
 /// Captures a task into the org-roam daily note of the current day.
 ///
 /// The capturer appends to the file itself instead of going through Emacs, so
-/// that a capture works the same whether Emacs runs or not. An Emacs buffer of
-/// the note picks up the heading through `global-auto-revert-mode`, and Emacs
-/// warns before saving a modified buffer over it.
+/// that a capture works the same whether Emacs runs or not. The trade-offs:
+///
+/// - An unmodified Emacs buffer of the note shows the heading only with
+///   `global-auto-revert-mode` on.
+/// - A modified buffer does not revert. Saving it asks for confirmation, and
+///   answering yes drops the captured heading.
+/// - A new note reaches the org-roam database only on the next
+///   `org-roam-db-sync`, because no Emacs save hook runs. Until then,
+///   `org-roam-node-find` does not list the note.
 struct OrgTaskCapturer {
     let orgDirectory: URL
     let calendar: Calendar
