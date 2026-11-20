@@ -72,14 +72,14 @@ struct OrgTaskCapturer {
         }
         let format = OrgTaskFormat(calendar: calendar)
         let captureDate = now()
-        return appendDirectly(
+        return appendEntry(
             entry: format.makeEntry(title: title, at: captureDate),
             newNoteHeader: format.makeNewNoteHeader(noteID: makeNoteID(), at: captureDate),
             to: format.makeDailyNoteURL(orgDirectory: orgDirectory, at: captureDate)
         )
     }
 
-    private func appendDirectly(
+    private func appendEntry(
         entry: String,
         newNoteHeader: String,
         to noteURL: URL
