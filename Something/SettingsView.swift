@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// The settings window: the launcher hot key, the git repositories folder, the
+/// The settings window: the global hot keys, the git repositories folder, the
 /// Dock icon, the folders whose files the launcher lists, the local language model, and the
 /// mascot's skin colors.
 struct SettingsView: View {
@@ -12,9 +12,6 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Launcher") {
-                LabeledContent("Hot key") {
-                    HotKeyRecorderView(settings: settings)
-                }
                 LabeledContent("Repositories folder") {
                     HStack {
                         Text((settings.repositoryRootPath as NSString).abbreviatingWithTildeInPath)
@@ -26,6 +23,7 @@ struct SettingsView: View {
                 }
                 Toggle("Show icon in Dock", isOn: $settings.shouldShowDockIcon)
             }
+            hotKeysSection
             fileFoldersSection
             languageModelSection
             Section {
@@ -69,6 +67,47 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var hotKeysSection: some View {
+        Section {
+            ForEach(settings.hotKeyBindings) { binding in
+                HStack {
+                    Picker("Command", selection: makeCommandBinding(for: binding.id)) {
+                        ForEach(HotKeyCommand.allCases) { command in
+                            Text(command.title).tag(command)
+                        }
+                    }
+                    .labelsHidden()
+                    HotKeyRecorderView(settings: settings, bindingID: binding.id)
+                    Button {
+                        settings.removeHotKeyBinding(id: binding.id)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    // Without the last binding, an app with no Dock icon has no way in.
+                    .disabled(settings.hotKeyBindings.count <= 1)
+                    .help("Remove")
+                }
+            }
+            Button("Add Hot Key", action: settings.addHotKeyBinding)
+        } header: {
+            Text("Hot Keys")
+        } footer: {
+            Text("Each hot key runs its command from any application. Bind a combination once.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func makeCommandBinding(for bindingID: UUID) -> Binding<HotKeyCommand> {
+        Binding(
+            get: {
+                settings.hotKeyBindings.first { $0.id == bindingID }?.command ?? .openLauncher
+            },
+            set: { settings.updateCommand($0, forBindingID: bindingID) }
+        )
     }
 
     private var fileFoldersSection: some View {

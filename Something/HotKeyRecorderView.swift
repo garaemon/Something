@@ -1,18 +1,27 @@
 import AppKit
 import Carbon.HIToolbox
+import HotKey
 import SwiftUI
 
-/// A button that shows the current hot key and, once clicked, records the next
+/// A button that shows the hot key of one binding and, once clicked, records the next
 /// key press with Command, Option, or Control as the new hot key. Escape cancels.
 struct HotKeyRecorderView: View {
     @ObservedObject var settings: AppSettings
+    let bindingID: UUID
     // The token that NSEvent returns for the local key monitor; nil while idle.
     @State private var keyDownMonitor: Any?
 
+    private var keyCombo: KeyCombo? {
+        settings.hotKeyBindings.first { $0.id == bindingID }?.keyCombo
+    }
+
     var body: some View {
         Button(action: toggleRecording) {
-            Text(settings.isRecordingHotKey ? "Type a shortcut…" : settings.hotKeyCombo.description)
-                .frame(minWidth: 120)
+            Text(
+                settings.recordingBindingID == bindingID
+                    ? "Type a shortcut…" : keyCombo?.description ?? ""
+            )
+            .frame(minWidth: 120)
         }
         .onDisappear(perform: stopRecording)
     }
@@ -26,7 +35,7 @@ struct HotKeyRecorderView: View {
     }
 
     private func startRecording() {
-        settings.isRecordingHotKey = true
+        settings.recordingBindingID = bindingID
         keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             MainActor.assumeIsolated { handleRecordedKeyDown(event) }
             // Swallow the press so that it does not also type into the window.
@@ -49,7 +58,11 @@ struct HotKeyRecorderView: View {
             NSSound.beep()
             return
         }
-        settings.hotKeyCombo = keyCombo
+        guard settings.assignKeyCombo(keyCombo, toBindingID: bindingID) else {
+            // Another binding holds the combination.
+            NSSound.beep()
+            return
+        }
         stopRecording()
     }
 
@@ -58,6 +71,9 @@ struct HotKeyRecorderView: View {
             NSEvent.removeMonitor(keyDownMonitor)
         }
         keyDownMonitor = nil
-        settings.isRecordingHotKey = false
+        // Another row may have started recording since; leave its state alone.
+        if settings.recordingBindingID == bindingID {
+            settings.recordingBindingID = nil
+        }
     }
 }
