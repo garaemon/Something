@@ -56,6 +56,7 @@ enum LauncherCandidateKind: CaseIterable {
     case calculator
     case unit
     case scratch
+    case capture
 
     /// The short text of the badge, such as "Window".
     var label: String {
@@ -69,6 +70,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .calculator: "Calc"
         case .unit: "Unit"
         case .scratch: "Scratch"
+        case .capture: "Capture"
         }
     }
 
@@ -85,12 +87,11 @@ enum LauncherCandidateKind: CaseIterable {
         case .calculator: "function"
         case .unit: "ruler"
         case .scratch: "text.cursor"
+        case .capture: "camera.viewfinder"
         }
     }
 }
 
-// TODO(garaemon): Let the user pick a non-default action and show `title` in
-// that list, for example with Tab. https://github.com/garaemon/Something/issues/20
 /// One thing that the user can do with a candidate, such as opening it.
 struct LauncherAction {
     /// The label of the action, such as "Open in Finder".
