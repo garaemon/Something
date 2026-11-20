@@ -8,15 +8,15 @@ extension AppDelegate {
     )
 
     /// Captures `title` as a task into the daily note of the org directory.
-    /// `emacsclient` blocks until Emacs answers, so the capture runs off the
-    /// main thread while the launcher closes at once.
+    /// The capture reads and writes the note off the main thread, so that the
+    /// launcher closes at once.
     func captureTask(titled title: String) {
         let capturer = OrgTaskCapturer.makeLive(
             orgDirectory: URL(fileURLWithPath: settings.orgDirectoryPath, isDirectory: true)
         )
         Self.orgCaptureQueue.async {
-            let result = capturer.capture(title: title)
-            if result == .failed {
+            let didCapture = capturer.capture(title: title)
+            if !didCapture {
                 NSLog("Something: could not capture the task \"%@\"", title)
                 // The launcher is already closed, so a beep is the only signal.
                 DispatchQueue.main.async { NSSound.beep() }

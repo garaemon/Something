@@ -1,27 +1,5 @@
 import Foundation
 
-/// What `emacsclient` reported.
-enum EmacsclientOutcome: Equatable {
-    case succeeded
-    /// No server answered, so nothing reached Emacs.
-    case serverUnavailable
-    /// A server received the request but did not finish it, for example when
-    /// the elisp signaled an error or the request timed out. The heading may
-    /// sit in an unsaved buffer, so the capturer must not write the file too.
-    case evaluationFailed
-}
-
-/// How a capture ended.
-enum OrgCaptureResult: Equatable {
-    /// A running Emacs appended the heading to its buffer and saved it.
-    case sentToEmacs
-    /// No Emacs server answered, so the heading went into the file directly.
-    case wroteFile
-    /// Nothing was captured, or the capture may have reached Emacs only in
-    /// part. The caller tells the user.
-    case failed
-}
-
 /// Reads and writes the text files of the org directory.
 struct OrgFileSystem {
     /// Returns the text of the file, or nil when the file does not exist.
@@ -72,89 +50,40 @@ struct OrgTaskFormat {
     }
 }
 
-/// Builds the Emacs Lisp that `emacsclient --eval` runs.
-enum OrgElisp {
-    /// Returns `text` as an Emacs Lisp string literal. Only the backslash and
-    /// the double quote need escaping; a newline may stay in the literal.
-    static func makeStringLiteral(_ text: String) -> String {
-        let escaped =
-            text
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-        return "\"\(escaped)\""
-    }
-
-    /// Returns an expression that appends `entry` to the buffer of the file
-    /// and saves it. Going through the buffer keeps unsaved edits of the
-    /// user. An empty buffer, which is a missing note, gets `newNoteHeader`
-    /// first.
-    static func makeAppendExpression(
-        filePath: String,
-        entry: String,
-        newNoteHeader: String
-    ) -> String {
-        [
-            "(let ((file \(makeStringLiteral(filePath))))",
-            "(make-directory (file-name-directory file) t)",
-            "(with-current-buffer (find-file-noselect file)",
-            "(save-restriction (widen)",
-            "(save-excursion (goto-char (point-max))",
-            "(when (= (buffer-size) 0) (insert \(makeStringLiteral(newNoteHeader))))",
-            "(unless (or (bobp) (bolp)) (insert \"\\n\"))",
-            "(insert \(makeStringLiteral(entry)))))",
-            "(save-buffer)))",
-        ].joined(separator: "\n")
-    }
-}
-
 /// Captures a task into the org-roam daily note of the current day.
 ///
-/// A running Emacs gets the heading through `emacsclient`, so that an unsaved
-/// buffer of the note is not overwritten. Without a server, the capturer
-/// writes the file itself, so that a capture never fails just because Emacs
-/// is closed.
+/// The capturer appends to the file itself instead of going through Emacs, so
+/// that a capture works the same whether Emacs runs or not. An Emacs buffer of
+/// the note picks up the heading through `global-auto-revert-mode`, and Emacs
+/// warns before saving a modified buffer over it.
 struct OrgTaskCapturer {
     let orgDirectory: URL
     let calendar: Calendar
     let now: () -> Date
     let makeNoteID: () -> String
-    /// Runs `emacsclient` with the arguments. A missing program counts as an
-    /// unavailable server.
-    let runEmacsclient: ([String]) -> EmacsclientOutcome
     let fileSystem: OrgFileSystem
 
-    /// Appends `title` as a TODO heading to the daily note of the capture day.
-    /// Returns `.failed` for a blank title, an unreadable or unwritable note,
-    /// or an Emacs that accepted the request but did not finish it.
-    func capture(title: String) -> OrgCaptureResult {
+    /// Appends `title` as a TODO heading to the daily note of the capture day,
+    /// and creates the note when it is missing. Returns false for a blank
+    /// title or an unreadable or unwritable note.
+    func capture(title: String) -> Bool {
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return .failed
+            return false
         }
         let format = OrgTaskFormat(calendar: calendar)
         let captureDate = now()
-        let entry = format.makeEntry(title: title, at: captureDate)
-        let noteURL = format.makeDailyNoteURL(orgDirectory: orgDirectory, at: captureDate)
-        let newNoteHeader = format.makeNewNoteHeader(noteID: makeNoteID(), at: captureDate)
-        let expression = OrgElisp.makeAppendExpression(
-            filePath: noteURL.path,
-            entry: entry,
-            newNoteHeader: newNoteHeader
+        return appendDirectly(
+            entry: format.makeEntry(title: title, at: captureDate),
+            newNoteHeader: format.makeNewNoteHeader(noteID: makeNoteID(), at: captureDate),
+            to: format.makeDailyNoteURL(orgDirectory: orgDirectory, at: captureDate)
         )
-        switch runEmacsclient(["--eval", expression]) {
-        case .succeeded:
-            return .sentToEmacs
-        case .evaluationFailed:
-            return .failed
-        case .serverUnavailable:
-            return appendDirectly(entry: entry, newNoteHeader: newNoteHeader, to: noteURL)
-        }
     }
 
     private func appendDirectly(
         entry: String,
         newNoteHeader: String,
         to noteURL: URL
-    ) -> OrgCaptureResult {
+    ) -> Bool {
         do {
             let existingText = try fileSystem.readText(noteURL)
             let updatedText = Self.makeUpdatedText(
@@ -163,9 +92,9 @@ struct OrgTaskCapturer {
                 newNoteHeader: newNoteHeader
             )
             try fileSystem.writeText(updatedText, noteURL)
-            return .wroteFile
+            return true
         } catch {
-            return .failed
+            return false
         }
     }
 
