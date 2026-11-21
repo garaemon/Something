@@ -247,6 +247,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // The result comes first, as in Raycast: an expression rarely
             // matches a window or an application, and Return copies it.
             CalculatorSource(copyText: PasteboardWriter.copyText),
+            UnitConversionSource(copyText: PasteboardWriter.copyText),
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),

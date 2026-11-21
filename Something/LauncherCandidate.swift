@@ -54,6 +54,7 @@ enum LauncherCandidateKind: CaseIterable {
     case webSearch
     case settings
     case calculator
+    case unit
     case scratch
     case capture
     case task
@@ -68,6 +69,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .webSearch: "Web"
         case .settings: "Settings"
         case .calculator: "Calc"
+        case .unit: "Unit"
         case .scratch: "Scratch"
         case .capture: "Capture"
         case .task: "Task"
@@ -85,6 +87,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .webSearch: "globe"
         case .settings: "slider.horizontal.3"
         case .calculator: "function"
+        case .unit: "ruler"
         case .scratch: "text.cursor"
         case .capture: "camera.viewfinder"
         case .task: "checklist"
