@@ -250,6 +250,32 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertTrue(settings.shouldShowDockIcon)
     }
 
+    func test_should_default_org_directory_to_home_org() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        XCTAssertEqual(
+            settings.orgDirectoryPath,
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("org").path)
+    }
+
+    func test_should_restore_saved_org_directory() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).orgDirectoryPath = "/tmp/notes"
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.orgDirectoryPath, "/tmp/notes")
+    }
+
+    func test_should_reset_org_directory_to_default() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.orgDirectoryPath = "/tmp/notes"
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.orgDirectoryPath, AppSettings.defaultOrgDirectoryPath)
+    }
+
     func test_should_use_local_ollama_defaults_for_llm_settings() {
         let settings = AppSettings(userDefaults: makeUserDefaults())
 

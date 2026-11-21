@@ -57,6 +57,7 @@ enum LauncherCandidateKind: CaseIterable {
     case unit
     case scratch
     case capture
+    case task
 
     /// The short text of the badge, such as "Window".
     var label: String {
@@ -71,6 +72,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .unit: "Unit"
         case .scratch: "Scratch"
         case .capture: "Capture"
+        case .task: "Task"
         }
     }
 
@@ -88,6 +90,7 @@ enum LauncherCandidateKind: CaseIterable {
         case .unit: "ruler"
         case .scratch: "text.cursor"
         case .capture: "camera.viewfinder"
+        case .task: "checklist"
         }
     }
 }
