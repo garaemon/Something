@@ -21,6 +21,10 @@ final class LauncherViewModel: ObservableObject {
     /// list shows.
     @Published private(set) var resultPanel: ResultPanelModel?
 
+    /// The selection of the frontmost application from before the launcher
+    /// opened. Later commands, such as paste back, read it.
+    var capturedSelection = CapturedSelection.empty
+
     /// The query that narrows the action list. Empty each time the list opens.
     @Published var actionQuery = "" {
         didSet {

@@ -124,6 +124,20 @@ final class AppDelegateTests: XCTestCase {
         wait(for: [twoScans], timeout: 5)
     }
 
+    func test_should_hand_selection_captured_before_opening_to_launcher() throws {
+        let appDelegate = makeAppDelegate()
+        let selection = CapturedSelection(
+            sourceApplication: SourceApplication(
+                processIdentifier: 100, bundleIdentifier: nil, name: "Safari"),
+            text: "selected")
+        appDelegate.captureSelection = { selection }
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+
+        appDelegate.openWindow()
+
+        XCTAssertEqual(appDelegate.launcherViewModel?.capturedSelection, selection)
+    }
+
     func test_should_show_listed_windows_in_open_launcher() throws {
         let appDelegate = makeAppDelegate()
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [makeWindow("Safari", "GitHub")] })
