@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// The settings window: the launcher hot key, the git repositories folder, the
-/// Dock icon, the folders whose files the launcher lists, and the mascot's skin colors.
+/// The settings window: the global hot keys, the git repositories folder, the
+/// Dock icon, the folders whose files the launcher lists, the local language model, and the
+/// mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
 
@@ -11,9 +12,6 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Launcher") {
-                LabeledContent("Hot key") {
-                    HotKeyRecorderView(settings: settings)
-                }
                 LabeledContent("Repositories folder") {
                     HStack {
                         Text((settings.repositoryRootPath as NSString).abbreviatingWithTildeInPath)
@@ -23,9 +21,20 @@ struct SettingsView: View {
                         Button("Choose…", action: chooseRepositoryRoot)
                     }
                 }
+                LabeledContent("Org directory") {
+                    HStack {
+                        Text((settings.orgDirectoryPath as NSString).abbreviatingWithTildeInPath)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(settings.orgDirectoryPath)
+                        Button("Choose…", action: chooseOrgDirectory)
+                    }
+                }
                 Toggle("Show icon in Dock", isOn: $settings.shouldShowDockIcon)
             }
+            hotKeysSection
             fileFoldersSection
+            languageModelSection
             Section {
                 HStack {
                     Spacer()
@@ -69,6 +78,47 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    private var hotKeysSection: some View {
+        Section {
+            ForEach(settings.hotKeyBindings) { binding in
+                HStack {
+                    Picker("Command", selection: makeCommandBinding(for: binding.id)) {
+                        ForEach(HotKeyCommand.allCases) { command in
+                            Text(command.title).tag(command)
+                        }
+                    }
+                    .labelsHidden()
+                    HotKeyRecorderView(settings: settings, bindingID: binding.id)
+                    Button {
+                        settings.removeHotKeyBinding(id: binding.id)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    // Without the last binding, an app with no Dock icon has no way in.
+                    .disabled(settings.hotKeyBindings.count <= 1)
+                    .help("Remove")
+                }
+            }
+            Button("Add Hot Key", action: settings.addHotKeyBinding)
+        } header: {
+            Text("Hot Keys")
+        } footer: {
+            Text("Each hot key runs its command from any application. Bind a combination once.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func makeCommandBinding(for bindingID: UUID) -> Binding<HotKeyCommand> {
+        Binding(
+            get: {
+                settings.hotKeyBindings.first { $0.id == bindingID }?.command ?? .openLauncher
+            },
+            set: { settings.updateCommand($0, forBindingID: bindingID) }
+        )
+    }
+
     private var fileFoldersSection: some View {
         Section {
             ForEach(settings.fileFolderPaths, id: \.self) { folderPath in
@@ -97,6 +147,19 @@ struct SettingsView: View {
         }
     }
 
+    private var languageModelSection: some View {
+        Section {
+            TextField("Base URL", text: $settings.llmBaseURL)
+            TextField("Model", text: $settings.llmModelName, prompt: Text("gemma3"))
+        } header: {
+            Text("Language Model")
+        } footer: {
+            Text("An OpenAI-compatible server on this Mac, such as Ollama or LM Studio.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private func addFileFolder() {
         let openPanel = NSOpenPanel()
         openPanel.canChooseDirectories = true
@@ -109,16 +172,24 @@ struct SettingsView: View {
     }
 
     private func chooseRepositoryRoot() {
+        chooseDirectory(for: \.repositoryRootPath)
+    }
+
+    private func chooseOrgDirectory() {
+        chooseDirectory(for: \.orgDirectoryPath)
+    }
+
+    private func chooseDirectory(for pathKeyPath: ReferenceWritableKeyPath<AppSettings, String>) {
         let openPanel = NSOpenPanel()
         openPanel.canChooseDirectories = true
         openPanel.canChooseFiles = false
         openPanel.allowsMultipleSelection = false
         openPanel.directoryURL = URL(
-            fileURLWithPath: settings.repositoryRootPath,
+            fileURLWithPath: settings[keyPath: pathKeyPath],
             isDirectory: true
         )
         guard openPanel.runModal() == .OK, let chosenDirectory = openPanel.url else { return }
-        settings.repositoryRootPath = chosenDirectory.path
+        settings[keyPath: pathKeyPath] = chosenDirectory.path
     }
 
     /// Bridges a "#RRGGBB" setting to the `Color` that `ColorPicker` edits.
