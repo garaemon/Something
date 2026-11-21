@@ -6,7 +6,7 @@ import SwiftUI
 // Remove NSWindowDelegate conformance from AppDelegate
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private(set) var myHotKey: HotKey?
+    var registeredHotKeys: [HotKey] = []
     // Tests replace the settings to keep off the user's real UserDefaults.
     var settings = AppSettings()
     private(set) var settingsWindow: NSWindow?
@@ -69,21 +69,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         startObservingSettings()
     }
 
-    /// Registers the hot key from the settings, and registers it again whenever
-    /// the settings change it or start recording a new one. Also rescans the
-    /// repositories or the files whenever the settings change their folders,
-    /// and shows or hides the Dock icon as the settings say.
+    /// Registers the hot key bindings from the settings, registers them again
+    /// whenever the settings change them, and pauses them while recording a new
+    /// one. Also rescans the repositories or the files whenever the settings
+    /// change their folders, and shows or hides the Dock icon as the settings say.
     func startObservingSettings() {
         settingsSubscriptions.removeAll()
         // @Published emits before the property changes, so the sinks use the
         // emitted value instead of reading the settings back.
-        settings.$hotKeyCombo
+        settings.$hotKeyBindings
             .removeDuplicates()
-            .sink { [weak self] keyCombo in self?.registerHotKey(keyCombo) }
+            .sink { [weak self] bindings in self?.registerHotKeys(bindings) }
             .store(in: &settingsSubscriptions)
-        settings.$isRecordingHotKey
+        settings.$recordingBindingID
+            .map { $0 != nil }
             .removeDuplicates()
-            .sink { [weak self] isRecording in self?.myHotKey?.isPaused = isRecording }
+            .sink { [weak self] isRecording in
+                for hotKey in self?.registeredHotKeys ?? [] { hotKey.isPaused = isRecording }
+            }
             .store(in: &settingsSubscriptions)
         settings.$shouldShowDockIcon
             .removeDuplicates()
@@ -101,19 +104,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .dropFirst()
             .sink { [weak self] folderPaths in self?.fileLoader.refresh(pendingKey: folderPaths) }
             .store(in: &settingsSubscriptions)
-    }
-
-    private func registerHotKey(_ keyCombo: KeyCombo) {
-        // Releasing the old HotKey unregisters it from Carbon.
-        myHotKey = nil
-        let hotKey = HotKey(keyCombo: keyCombo)
-        hotKey.keyDownHandler = { [weak self] in
-            self?.openWindow()
-        }
-        if settings.isRecordingHotKey {
-            hotKey.isPaused = true
-        }
-        myHotKey = hotKey
     }
 
     /// Shows the settings window, creating it on first use.
@@ -259,13 +249,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
-            Self.makeFileSource(fileLoader.cachedItems),
+            // The commands match only their own names, so they would sit
+            // below up to 50 file rows if they came after the files.
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
+            CaptureSource(startCapture: { [weak self] in self?.startCapture($0) }),
+            Self.makeFileSource(fileLoader.cachedItems),
             WebSearchSource(
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
             ),
+            AddTaskSource(captureTask: { [weak self] in self?.captureTask(titled: $0) }),
         ])
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })

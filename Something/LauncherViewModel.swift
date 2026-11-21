@@ -1,6 +1,8 @@
 import Foundation
 
 /// Holds the launcher's query, the narrowed candidates, and the selection.
+/// The launcher can also list the actions of one candidate in place of the
+/// candidates, with its own query and selection.
 @MainActor
 final class LauncherViewModel: ObservableObject {
     @Published var query = "" {
@@ -18,6 +20,19 @@ final class LauncherViewModel: ObservableObject {
     /// opened. Later commands, such as paste back, read it.
     var capturedSelection = CapturedSelection.empty
 
+    /// The query that narrows the action list. Empty each time the list opens.
+    @Published var actionQuery = "" {
+        didSet {
+            guard actionQuery != oldValue else { return }
+            updateActions()
+        }
+    }
+    /// The candidate whose actions the launcher lists, or nil while it lists
+    /// candidates.
+    @Published private(set) var actionTarget: LauncherCandidate?
+    @Published private(set) var actions: [LauncherAction] = []
+    @Published private(set) var selectedActionIndex = 0
+
     private var sources: [any CandidateSource]
 
     /// Creates a view model that lists the candidates of `sources`, one source
@@ -32,10 +47,64 @@ final class LauncherViewModel: ObservableObject {
         candidates.indices.contains(selectedIndex) ? candidates[selectedIndex] : nil
     }
 
-    /// Moves the highlight by `offset` rows, stopping at the first and last rows.
+    var isShowingActions: Bool { actionTarget != nil }
+
+    /// The highlighted action, or nil when the action list is closed or empty.
+    var selectedAction: LauncherAction? {
+        actions.indices.contains(selectedActionIndex) ? actions[selectedActionIndex] : nil
+    }
+
+    /// Lists the actions of the selected candidate in place of the candidates.
+    ///
+    /// - Returns: Whether the action list is open now. False when no candidate
+    ///   is selected or the candidate has no action.
+    @discardableResult
+    func showActions() -> Bool {
+        if isShowingActions { return true }
+        guard let candidate = selectedCandidate, !candidate.actions.isEmpty else { return false }
+        actionTarget = candidate
+        actionQuery = ""
+        updateActions()
+        return true
+    }
+
+    /// Highlights the action at `index` of the action list. Ignores an index
+    /// outside the list.
+    func selectAction(at index: Int) {
+        guard actions.indices.contains(index) else { return }
+        selectedActionIndex = index
+    }
+
+    /// Goes back from the action list to the candidates, which keep their
+    /// query and highlight.
+    ///
+    /// - Returns: Whether the action list was open.
+    @discardableResult
+    func hideActions() -> Bool {
+        guard isShowingActions else { return false }
+        actionTarget = nil
+        actionQuery = ""
+        actions = []
+        return true
+    }
+
+    /// Moves the highlight by `offset` rows, stopping at the first and last
+    /// rows. Moves in the action list while it is open.
     func moveSelection(by offset: Int) {
+        if isShowingActions {
+            guard !actions.isEmpty else { return }
+            selectedActionIndex = Self.clampIndex(
+                selectedActionIndex + offset,
+                count: actions.count
+            )
+            return
+        }
         guard !candidates.isEmpty else { return }
-        selectedIndex = min(max(selectedIndex + offset, 0), candidates.count - 1)
+        selectedIndex = Self.clampIndex(selectedIndex + offset, count: candidates.count)
+    }
+
+    private static func clampIndex(_ index: Int, count: Int) -> Int {
+        min(max(index, 0), count - 1)
     }
 
     /// Highlights `candidate`. Keeps the current highlight when `candidate`
@@ -58,16 +127,42 @@ final class LauncherViewModel: ObservableObject {
         selectedIndex = candidates.firstIndex { $0 == previouslySelectedCandidate } ?? 0
     }
 
-    /// Runs the default action of the selected candidate synchronously.
-    /// Does nothing when no candidate matches the query or the selected
-    /// candidate has no action.
+    /// Runs the default action of the selected candidate synchronously, or
+    /// the highlighted action while the action list is open.
+    /// Does nothing when no candidate or action matches the query or the
+    /// selected candidate has no action.
     ///
     /// - Returns: Whether an action ran.
     @discardableResult
-    func activateSelectedCandidate() -> Bool {
-        guard let action = selectedCandidate?.defaultAction else { return false }
+    func activateSelection() -> Bool {
+        let action = isShowingActions ? selectedAction : selectedCandidate?.defaultAction
+        guard let action else { return false }
         action.perform()
         return true
+    }
+
+    /// Runs the "Add task" row for the current query, whichever row is
+    /// highlighted. Does nothing for an empty query.
+    ///
+    /// - Returns: Whether a task was captured.
+    @discardableResult
+    func activateTaskCapture() -> Bool {
+        let addTaskCandidate = candidates.first {
+            $0.id.sourceID == AddTaskSource.addTaskSourceID
+        }
+        guard let action = addTaskCandidate?.defaultAction else { return false }
+        action.perform()
+        return true
+    }
+
+    // Keeps the order of the actions, unlike the candidate matcher, so that
+    // the default action stays first.
+    private func updateActions() {
+        let patterns = ApplicationMatcher.splitPatterns(actionQuery)
+        actions = (actionTarget?.actions ?? []).filter {
+            ApplicationMatcher.containsAllPatterns($0.title.lowercased(), patterns: patterns)
+        }
+        selectedActionIndex = 0
     }
 
     private func updateCandidates() {

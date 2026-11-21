@@ -21,10 +21,14 @@ struct MascotOverlayView: View {
     }
 
     private var mascotState: MascotState {
-        // Web searches are listed for every non-empty query, so they do not count
-        // as a match. Counting them would keep the robot from ever showing "?".
+        // Web searches and "Add task" are listed for every non-empty query, so they
+        // do not count as a match. Counting them would keep the robot from ever
+        // showing "?".
+        let alwaysListedSourceIDs = [
+            WebSearchSource.webSearchSourceID, AddTaskSource.addTaskSourceID,
+        ]
         let matchCount = viewModel.candidates.filter {
-            $0.id.sourceID != WebSearchSource.webSearchSourceID
+            !alwaysListedSourceIDs.contains($0.id.sourceID)
         }.count
         return MascotState.derive(
             query: viewModel.query,
