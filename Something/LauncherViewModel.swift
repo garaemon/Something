@@ -10,11 +10,16 @@ final class LauncherViewModel: ObservableObject {
             // SwiftUI's TextField writes the unchanged text back, for example
             // on Return, and rebuilding the candidates resets the highlight.
             guard query != oldValue else { return }
+            // Typing while a result shows starts a new search, so the list returns.
+            closeResult()
             updateCandidates()
         }
     }
     @Published private(set) var candidates: [LauncherCandidate] = []
     @Published private(set) var selectedIndex = 0
+    /// The result panel that replaces the candidate list, or nil while the
+    /// list shows.
+    @Published private(set) var resultPanel: ResultPanelModel?
 
     /// The query that narrows the action list. Empty each time the list opens.
     @Published var actionQuery = "" {
@@ -53,11 +58,12 @@ final class LauncherViewModel: ObservableObject {
     /// Lists the actions of the selected candidate in place of the candidates.
     ///
     /// - Returns: Whether the action list is open now. False when no candidate
-    ///   is selected or the candidate has no action.
+    ///   is selected, the candidate has no action, or a result panel shows.
     @discardableResult
     func showActions() -> Bool {
         if isShowingActions { return true }
-        guard let candidate = selectedCandidate, !candidate.actions.isEmpty else { return false }
+        guard resultPanel == nil, let candidate = selectedCandidate, !candidate.actions.isEmpty
+        else { return false }
         actionTarget = candidate
         actionQuery = ""
         updateActions()
@@ -87,6 +93,7 @@ final class LauncherViewModel: ObservableObject {
     /// Moves the highlight by `offset` rows, stopping at the first and last
     /// rows. Moves in the action list while it is open.
     func moveSelection(by offset: Int) {
+        guard resultPanel == nil else { return }
         if isShowingActions {
             guard !actions.isEmpty else { return }
             selectedActionIndex = Self.clampIndex(
@@ -131,18 +138,43 @@ final class LauncherViewModel: ObservableObject {
     /// - Returns: Whether an action ran.
     @discardableResult
     func activateSelection() -> Bool {
+        guard resultPanel == nil else { return false }
         let action = isShowingActions ? selectedAction : selectedCandidate?.defaultAction
         guard let action else { return false }
         action.perform()
         return true
     }
 
+    /// Replaces the candidate list with a panel that shows the text of
+    /// `stream` as it arrives, with `actions` in its footer. Shows progress
+    /// at once and a failure in the panel. Replaces a panel that is open.
+    func showResult(
+        title: String,
+        stream: AsyncThrowingStream<String, Error>,
+        actions: [ResultAction]
+    ) {
+        resultPanel?.cancel()
+        hideActions()
+        let panel = ResultPanelModel(title: title, actions: actions)
+        panel.start(stream: stream)
+        resultPanel = panel
+    }
+
+    /// Stops the stream of the result panel and brings the candidate list
+    /// back. Does nothing when no panel is open.
+    func closeResult() {
+        resultPanel?.cancel()
+        resultPanel = nil
+    }
+
     /// Runs the "Add task" row for the current query, whichever row is
-    /// highlighted. Does nothing for an empty query.
+    /// highlighted. Does nothing for an empty query or while a result panel
+    /// shows.
     ///
     /// - Returns: Whether a task was captured.
     @discardableResult
     func activateTaskCapture() -> Bool {
+        guard resultPanel == nil else { return false }
         let addTaskCandidate = candidates.first {
             $0.id.sourceID == AddTaskSource.addTaskSourceID
         }

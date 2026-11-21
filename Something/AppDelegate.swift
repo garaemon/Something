@@ -172,6 +172,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.window?.orderOut(nil)  // Ensure it's hidden if not already
             self?.window = nil
             self?.windowController = nil  // Release the strong reference to the controller
+            self?.launcherViewModel?.closeResult()
             self?.launcherViewModel = nil
         }
 
@@ -234,7 +235,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = LauncherViewModel(sources: [
             // The result comes first, as in Raycast: an expression rarely
             // matches a window or an application, and Return copies it.
-            CalculatorSource(copyText: Self.copyTextToPasteboard),
+            CalculatorSource(copyText: PasteboardWriter.copyText),
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
@@ -251,7 +252,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             AddTaskSource(captureTask: { [weak self] in self?.captureTask(titled: $0) }),
         ])
         launcherViewModel = viewModel
-        return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
+        return Self.makeLauncherView(viewModel: viewModel, window: window)
     }
 
     private func refreshApplicationsInBackground() {
@@ -322,9 +323,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 // Sources and actions of launcher candidates. They keep no state of the delegate.
 extension AppDelegate {
-    private static func copyTextToPasteboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+    private static func makeLauncherView(
+        viewModel: LauncherViewModel,
+        window: NSWindow
+    ) -> LauncherView {
+        LauncherView(
+            viewModel: viewModel,
+            dismiss: { [weak window] in window?.close() },
+            copyText: PasteboardWriter.copyText
+        )
     }
 
     private static func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
