@@ -238,13 +238,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
-            Self.makeFileSource(fileLoader.cachedItems),
+            // The commands match only their own names, so they would sit
+            // below up to 50 file rows if they came after the files.
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
+            CaptureSource(startCapture: { [weak self] in self?.startCapture($0) }),
+            Self.makeFileSource(fileLoader.cachedItems),
             WebSearchSource(
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
             ),
+            AddTaskSource(captureTask: { [weak self] in self?.captureTask(titled: $0) }),
         ])
         launcherViewModel = viewModel
         return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
