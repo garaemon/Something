@@ -249,6 +249,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
             ),
+            AddTaskSource(captureTask: { [weak self] in self?.captureTask(titled: $0) }),
         ])
         launcherViewModel = viewModel
         return Self.makeLauncherView(viewModel: viewModel, window: window)

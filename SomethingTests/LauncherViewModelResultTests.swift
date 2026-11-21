@@ -112,4 +112,17 @@ final class LauncherViewModelResultTests: XCTestCase {
 
         XCTAssertFalse(viewModel.isShowingActions)
     }
+
+    func test_should_not_capture_a_task_while_a_result_is_shown() {
+        var capturedTitles: [String] = []
+        let viewModel = LauncherViewModel(sources: [
+            AddTaskSource(captureTask: { capturedTitles.append($0) })
+        ])
+        viewModel.query = "buy milk"
+        viewModel.showResult(title: "T", stream: makeIdleStream(), actions: [])
+
+        viewModel.activateTaskCapture()
+
+        XCTAssertTrue(capturedTitles.isEmpty)
+    }
 }
