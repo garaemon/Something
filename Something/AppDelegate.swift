@@ -12,8 +12,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var settingsWindow: NSWindow?
     private var settingsWindowCloseObserver: NSObjectProtocol?
     private var settingsSubscriptions: Set<AnyCancellable> = []
-    // Tests replace the store to keep off the user's real scratch file.
+    // Tests replace the stores to keep off the user's real scratch and quicklinks files.
     var scratchStore = ScratchStore.makeDefault()
+    var quicklinkStore = QuicklinkStore.makeDefault()
     private(set) var scratchWindowController: ScratchWindowController?
     var window: NSWindow?  // Keep a reference to the window
     // Add a strong reference to the new window controller
@@ -248,6 +249,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // matches a window or an application, and Return copies it.
             CalculatorSource(copyText: PasteboardWriter.copyText),
             UnitConversionSource(copyText: PasteboardWriter.copyText),
+            // A quicklink the user named comes before partial matches, so that `gh` opens it.
+            QuicklinkSource.makeDefault(store: quicklinkStore),
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
