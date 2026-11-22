@@ -175,6 +175,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Without the wait, the first frame lists only the applications with
         // the first one selected, and the windows push it down a moment later.
+        // The transparent launcher is key meanwhile, so that it takes the keys
+        // typed right after the hot key.
+        newWindow.alphaValue = 0
+        // Activate before ordering the window front so that the window becomes
+        // key and the query field can take keyboard focus.
+        NSApplication.shared.activate()
+        newWindow.makeKeyAndOrderFront(nil)
         let reveal = makeLauncherReveal(newWindow, controller: newWindowController)
         revealPendingLauncher = reveal
         refreshWindowsInBackground(onLoaded: reveal)
@@ -183,8 +190,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // The returned closure shows the launcher at most once, and never after the
-    // launcher was closed or replaced by another one.
+    // The returned closure makes the launcher opaque at most once, and never
+    // after the launcher was closed or replaced by another one.
     private func makeLauncherReveal(
         _ launcher: NSWindow,
         controller: SomethingWindowController
@@ -194,10 +201,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.revealPendingLauncher != nil
             else { return }
             self.revealPendingLauncher = nil
-            // Activate before ordering the window front so that the window becomes
-            // key and the query field can take keyboard focus.
-            NSApplication.shared.activate()
-            launcher.makeKeyAndOrderFront(nil)
+            launcher.alphaValue = 1
             self.attachMascotPanel(to: launcher, controller: controller)
         }
     }

@@ -190,7 +190,7 @@ mise run link-local-config
 - **Cached Application Scan**: AppDelegate shows the previous scan immediately and rescans on a serial background queue at launch and on every open. A finished scan updates the open launcher.
 - **Cached Repository List**: AppDelegate shows the previous repository scan immediately and rescans the repositories folder from `AppSettings` on a serial background queue at launch, on every open, and when the folder changes. An open skips the refresh while a previous one is still running. A scan of a folder that changed meanwhile is dropped and the new folder is scanned.
 - **Cached File List**: Like the repository list, through `BackgroundListLoader`: the previous scan shows immediately, and the file folders from `AppSettings` are rescanned at launch, on every open, and when the folders change. `~/Documents` and `~/Downloads` are protected folders, so macOS asks for access on the first scan.
-- **Fresh Window List**: AppDelegate lists windows on its own background queue on every open without caching. The Accessibility API returns only windows on the current Space. The launcher stays hidden until the window list arrives, for at most 0.15 s, so that its first frame already lists the windows. A hot key press during the wait shows the launcher at once.
+- **Fresh Window List**: AppDelegate lists windows on its own background queue on every open without caching. The Accessibility API returns only windows on the current Space. The launcher stays transparent until the window list arrives, for at most 0.15 s, so that its first visible frame already lists the windows. The transparent launcher is already key, so that it takes the keys typed during the wait. A hot key press during the wait shows the launcher at once.
 
 ### Dependencies
 

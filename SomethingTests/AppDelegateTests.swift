@@ -185,8 +185,8 @@ final class AppDelegateTests: XCTestCase {
         addTeardownBlock { @MainActor in appDelegate.window?.close() }
 
         _ = appDelegate.applicationShouldHandleReopen(NSApplication.shared, hasVisibleWindows: false)
-        runMainLoop { appDelegate.window?.isVisible == true }
+        runMainLoop { appDelegate.window?.alphaValue == 1 }
 
-        XCTAssertEqual(appDelegate.window?.isVisible, true)
+        XCTAssertEqual(appDelegate.window?.alphaValue, 1)
     }
 }
