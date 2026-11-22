@@ -12,9 +12,15 @@ struct MascotView: NSViewRepresentable {
     /// The shapes are read once, when the scene is built. Later changes repaint
     /// the colors only.
     let model: MascotModel
+    /// Called once on the main thread after SceneKit renders the first frame.
+    var onFirstFrameRendered: (@MainActor () -> Void)?
 
     func makeCoordinator() -> MascotRenderer {
-        MascotRenderer(model: model, placement: placement)
+        MascotRenderer(
+            model: model,
+            placement: placement,
+            onFirstFrameRendered: onFirstFrameRendered
+        )
     }
 
     func makeNSView(context: Context) -> SCNView {
@@ -53,9 +59,16 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     private var lastTime: TimeInterval?
     private var shownText: String?
     private var paintedModel: MascotModel
+    private let firstFrameLatch = OnceLatch()
+    private let onFirstFrameRendered: (@MainActor () -> Void)?
 
-    init(model: MascotModel, placement: MascotPlacement) {
+    init(
+        model: MascotModel,
+        placement: MascotPlacement,
+        onFirstFrameRendered: (@MainActor () -> Void)? = nil
+    ) {
         self.placement = placement
+        self.onFirstFrameRendered = onFirstFrameRendered
         paintedModel = model
         animator = MascotAnimator(placement: placement)
         rig = MascotSceneBuilder.build(model, placement: placement)
@@ -71,6 +84,15 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
         guard model != paintedModel else { return }
         paintedModel = model
         MascotSceneBuilder.applyColors(of: model, to: rig)
+    }
+
+    func renderer(
+        _ renderer: SCNSceneRenderer,
+        didRenderScene scene: SCNScene,
+        atTime time: TimeInterval
+    ) {
+        guard let onFirstFrameRendered, firstFrameLatch.claim() else { return }
+        DispatchQueue.main.async { MainActor.assumeIsolated { onFirstFrameRendered() } }
     }
 
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
@@ -153,5 +175,20 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
         context.textPosition = CGPoint(x: 26, y: baseline)
         CTLineDraw(line, context)
         return context.makeImage()
+    }
+}
+
+/// Lets exactly one caller through, from any thread.
+private final class OnceLatch: @unchecked Sendable {
+    private let lock = NSLock()
+    private var isClaimed = false
+
+    /// Returns true to the first caller only.
+    func claim() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !isClaimed else { return false }
+        isClaimed = true
+        return true
     }
 }
