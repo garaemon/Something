@@ -77,7 +77,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420)
+        .frame(width: 560)
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -85,15 +85,9 @@ struct SettingsView: View {
         Section {
             ForEach(settings.hotKeyBindings) { binding in
                 HStack {
-                    if case .openApplication(let target) = binding.command {
-                        Image(
-                            nsImage: ApplicationIconCache.shared.loadIcon(
-                                for: LaunchableApplication(name: target.name, url: target.url)
-                            )
-                        )
-                        .resizable()
-                        .frame(width: 16, height: 16)
-                    }
+                    // The icon slot and the fixed picker width line up the recorders
+                    // whether or not a row shows an icon.
+                    HotKeyCommandIcon(command: binding.command)
                     Picker("Command", selection: makeCommandBinding(for: binding.id)) {
                         ForEach(HotKeyCommand.plainCommands, id: \.title) { command in
                             Text(command.title).tag(Optional(command))
@@ -105,8 +99,10 @@ struct SettingsView: View {
                         Text("Open Application…").tag(HotKeyCommand?.none)
                     }
                     .labelsHidden()
+                    .frame(width: 180, alignment: .leading)
                     .id(commandPickerGeneration)
                     HotKeyRecorderView(settings: settings, bindingID: binding.id)
+                    Spacer(minLength: 0)
                     Button {
                         settings.removeHotKeyBinding(id: binding.id)
                     } label: {
@@ -280,5 +276,27 @@ struct SettingsView: View {
                 settings[keyPath: keyPath] = hex
             }
         )
+    }
+}
+
+/// The 16 pt icon of the application that a hot key opens, or an empty slot of
+/// the same size for any other command.
+private struct HotKeyCommandIcon: View {
+    let command: HotKeyCommand
+
+    var body: some View {
+        Group {
+            if case .openApplication(let target) = command {
+                Image(
+                    nsImage: ApplicationIconCache.shared.loadIcon(
+                        for: LaunchableApplication(name: target.name, url: target.url)
+                    )
+                )
+                .resizable()
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: 16, height: 16)
     }
 }

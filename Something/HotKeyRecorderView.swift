@@ -28,8 +28,11 @@ struct HotKeyRecorderView: View {
                 )
                 .frame(minWidth: 120)
             }
+            // The settings row is narrow, and without a fixed size SwiftUI wraps
+            // the label one letter per line.
             Toggle("Left/Right", isOn: $keepsSides)
                 .toggleStyle(.checkbox)
+                .fixedSize()
                 .help("Tell the left and right modifier keys apart the next time you record")
         }
         .onAppear { keepsSides = binding?.modifierSides.isSided ?? false }
