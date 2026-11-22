@@ -26,6 +26,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var windowCatalog = WindowCatalog.makeDefault()
     var repositoryCatalog = RepositoryCatalog.makeDefault()
     var fileCatalog = FileCatalog.makeDefault()
+    // The launcher waits up to this many seconds for the window list before it
+    // shows, so that its first frame already lists the windows (issue #76).
+    var windowListWaitTimeout: TimeInterval = 0.15
+    // Set while the launcher waits for the window list. A second hot key press
+    // shows the waiting launcher at once instead of opening another one.
+    private var revealPendingLauncher: (() -> Void)?
     // Tests replace the random pick to get a fixed placement.
     var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = {
         $0.randomElement() ?? .top
@@ -111,6 +117,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func openWindow() {
+        if let revealPendingLauncher {
+            revealPendingLauncher()
+            return
+        }
         if let existingWindow = window, existingWindow.isVisible {
             NSApplication.shared.activate()
             existingWindow.makeKeyAndOrderFront(nil)
@@ -145,24 +155,46 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.window = nil
             self?.windowController = nil  // Release the strong reference to the controller
             self?.launcherViewModel = nil
+            self?.revealPendingLauncher = nil
         }
 
         newWindow.contentView = NSHostingView(rootView: makeLauncherView(in: newWindow))
         // Rescan on every open so that newly installed applications reach the
         // open launcher when the scan finishes.
         refreshApplicationsInBackground()
-        refreshWindowsInBackground()
         repositoryLoader.refresh()
         fileLoader.refresh()
 
-        // Activate before ordering the window front so that the window becomes
-        // key and the query field can take keyboard focus.
-        NSApplication.shared.activate()
-        newWindow.makeKeyAndOrderFront(nil)
-        attachMascotPanel(to: newWindow, controller: newWindowController)
-
         self.window = newWindow  // Store reference to the new window
         self.windowController = newWindowController  // Store strong reference to the controller
+
+        // Without the wait, the first frame lists only the applications with
+        // the first one selected, and the windows push it down a moment later.
+        let reveal = makeLauncherReveal(newWindow, controller: newWindowController)
+        revealPendingLauncher = reveal
+        refreshWindowsInBackground(onLoaded: reveal)
+        DispatchQueue.main.asyncAfter(deadline: .now() + windowListWaitTimeout) {
+            MainActor.assumeIsolated { reveal() }
+        }
+    }
+
+    // The returned closure shows the launcher at most once, and never after the
+    // launcher was closed or replaced by another one.
+    private func makeLauncherReveal(
+        _ launcher: NSWindow,
+        controller: SomethingWindowController
+    ) -> () -> Void {
+        { [weak self, weak launcher] in
+            guard let self, let launcher, self.window === launcher,
+                self.revealPendingLauncher != nil
+            else { return }
+            self.revealPendingLauncher = nil
+            // Activate before ordering the window front so that the window becomes
+            // key and the query field can take keyboard focus.
+            NSApplication.shared.activate()
+            launcher.makeKeyAndOrderFront(nil)
+            self.attachMascotPanel(to: launcher, controller: controller)
+        }
     }
 
     // Attached after the launcher is ordered front so that the panel never competes
@@ -273,7 +305,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Windows are not cached, because they open, close, and change titles
     // far more often than applications are installed. A load that outlives
     // its launcher is dropped, because its windows may have closed since.
-    private func refreshWindowsInBackground() {
+    private func refreshWindowsInBackground(onLoaded: @escaping @MainActor () -> Void) {
         let catalog = windowCatalog
         let targetViewModel = launcherViewModel
         windowListQueue.async { [weak self] in
@@ -283,6 +315,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     self.launcherViewModel === targetViewModel
                 else { return }
                 targetViewModel.replaceSource(Self.makeWindowSource(windows))
+                onLoaded()
             }
         }
     }

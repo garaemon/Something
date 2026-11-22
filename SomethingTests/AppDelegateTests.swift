@@ -175,6 +175,7 @@ final class AppDelegateTests: XCTestCase {
         addTeardownBlock { @MainActor in appDelegate.window?.close() }
 
         appDelegate.openWindow()
+        runMainLoop { appDelegate.mascotPanel != nil }
 
         XCTAssertEqual(try XCTUnwrap(appDelegate.mascotPanel).placement, .left)
     }
@@ -184,6 +185,7 @@ final class AppDelegateTests: XCTestCase {
         addTeardownBlock { @MainActor in appDelegate.window?.close() }
 
         _ = appDelegate.applicationShouldHandleReopen(NSApplication.shared, hasVisibleWindows: false)
+        runMainLoop { appDelegate.window?.isVisible == true }
 
         XCTAssertEqual(appDelegate.window?.isVisible, true)
     }
