@@ -56,7 +56,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     )
     // Windows get their own queue so that a slow folder scan does not delay
     // the window list, which the user expects right after the hotkey.
-    private let windowListQueue = DispatchQueue(
+    let windowListQueue = DispatchQueue(
         label: "com.garaemon.Something.windowList",
         qos: .userInitiated
     )
