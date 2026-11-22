@@ -40,7 +40,8 @@ final class AppDelegateLauncherRevealTests: XCTestCase {
         XCTAssertEqual(appDelegate.window?.alphaValue, 0)
     }
 
-    // Keystrokes typed during the wait reach the launcher, not the app in front.
+    // The test host never becomes the active app, so the test checks that the
+    // launcher is ordered front, not that it is key.
     func test_should_order_launcher_front_before_window_list_arrives() {
         let appDelegate = makeAppDelegateWithStalledWindowList()
         appDelegate.windowListWaitTimeout = Self.unreachedTimeout

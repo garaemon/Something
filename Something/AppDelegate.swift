@@ -170,10 +170,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.window = newWindow  // Store reference to the new window
         self.windowController = newWindowController  // Store strong reference to the controller
 
-        // Without the wait, the first frame lists only the applications with
-        // the first one selected, and the windows push it down a moment later.
-        // The transparent launcher is key meanwhile, so that it takes the keys
-        // typed right after the hot key.
+        // Keeps the launcher key but transparent until the window list arrives,
+        // so that its first visible frame lists the windows, and the keys typed
+        // meanwhile reach it instead of the app in front.
         newWindow.alphaValue = 0
         // Activate before ordering the window front so that the window becomes
         // key and the query field can take keyboard focus.
