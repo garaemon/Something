@@ -9,6 +9,9 @@ final class AppSettings: ObservableObject {
     /// `~/ghq`, the default root of ghq.
     static let defaultRepositoryRootPath = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("ghq").path
+    /// `~/org`, the default folder of the Org files.
+    static let defaultOrgDirectoryPath = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("org").path
     /// `~/Downloads` and `~/Documents`.
     static let defaultFileFolderPaths = ["Downloads", "Documents"].map {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent($0).path
@@ -29,6 +32,7 @@ final class AppSettings: ObservableObject {
         static let mascotBodyColor = "mascotBodyColor"
         static let repositoryRootPath = "repositoryRootPath"
         static let fileFolderPaths = "fileFolderPaths"
+        static let orgDirectoryPath = "orgDirectoryPath"
         static let shouldShowDockIcon = "shouldShowDockIcon"
         static let llmBaseURL = "llmBaseURL"
         static let llmModelName = "llmModelName"
@@ -54,6 +58,11 @@ final class AppSettings: ObservableObject {
     /// Absolute paths of the folders whose files the launcher lists.
     @Published var fileFolderPaths: [String] {
         didSet { userDefaults.set(fileFolderPaths, forKey: StorageKey.fileFolderPaths) }
+    }
+    /// Absolute path of the folder that holds the Org files. The launcher
+    /// captures tasks into `org-roam/daily/` under it.
+    @Published var orgDirectoryPath: String {
+        didSet { userDefaults.set(orgDirectoryPath, forKey: StorageKey.orgDirectoryPath) }
     }
     /// False keeps the app out of the Dock and the Command-Tab switcher, so
     /// that only the hot key reaches the launcher.
@@ -89,6 +98,9 @@ final class AppSettings: ObservableObject {
         fileFolderPaths =
             userDefaults.stringArray(forKey: StorageKey.fileFolderPaths)
             ?? Self.defaultFileFolderPaths
+        orgDirectoryPath =
+            userDefaults.string(forKey: StorageKey.orgDirectoryPath)
+            ?? Self.defaultOrgDirectoryPath
         shouldShowDockIcon =
             userDefaults.object(forKey: StorageKey.shouldShowDockIcon) as? Bool ?? true
         llmBaseURL = userDefaults.string(forKey: StorageKey.llmBaseURL) ?? Self.defaultLLMBaseURL
@@ -175,6 +187,7 @@ final class AppSettings: ObservableObject {
         mascotBodyColor = MascotModel.defaultBodyColor
         repositoryRootPath = Self.defaultRepositoryRootPath
         fileFolderPaths = Self.defaultFileFolderPaths
+        orgDirectoryPath = Self.defaultOrgDirectoryPath
         shouldShowDockIcon = true
         llmBaseURL = Self.defaultLLMBaseURL
         llmModelName = Self.defaultLLMModelName

@@ -24,8 +24,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var settingsWindow: NSWindow?
     private var settingsWindowCloseObserver: NSObjectProtocol?
     private var settingsSubscriptions: Set<AnyCancellable> = []
-    // Tests replace the store to keep off the user's real scratch file.
+    // Tests replace the stores to keep off the user's real scratch and quicklinks files.
     var scratchStore = ScratchStore.makeDefault()
+    var quicklinkStore = QuicklinkStore.makeDefault()
     private(set) var scratchWindowController: ScratchWindowController?
     var window: NSWindow?  // Keep a reference to the window
     // Add a strong reference to the new window controller
@@ -37,6 +38,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var windowCatalog = WindowCatalog.makeDefault()
     var repositoryCatalog = RepositoryCatalog.makeDefault()
     var fileCatalog = FileCatalog.makeDefault()
+    // Reads the selection of the frontmost application before the launcher
+    // takes focus. The default captures nothing, so that a test that opens the
+    // launcher never posts a synthetic Cmd+C to the developer's desktop;
+    // applicationDidFinishLaunching installs the real capturer.
+    var captureSelection: () -> CapturedSelection = { .empty }
     // Tests replace the random pick to get a fixed placement.
     var chooseMascotPlacement: ([MascotPlacement]) -> MascotPlacement = {
         $0.randomElement() ?? .top
@@ -62,12 +68,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     )
     // Windows get their own queue so that a slow folder scan does not delay
     // the window list, which the user expects right after the hotkey.
-    private let windowListQueue = DispatchQueue(
+    let windowListQueue = DispatchQueue(
         label: "com.garaemon.Something.windowList",
         qos: .userInitiated
     )
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        let selectionCapturer = SelectionCapturer.makeDefault()
+        captureSelection = { selectionCapturer.captureSelection(fallback: .none) }
         refreshApplicationsInBackground()
         repositoryLoader.refresh()
         fileLoader.refresh()
@@ -160,6 +168,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Read before the window takes the key focus, which hides the
+        // frontmost application and its selection.
+        let selectionBeforeOpening = captureSelection()
         let newWindow = NSWindow(
             contentRect: NSRect(origin: .zero, size: LauncherView.minimumSize),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
@@ -187,10 +198,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.window?.orderOut(nil)  // Ensure it's hidden if not already
             self?.window = nil
             self?.windowController = nil  // Release the strong reference to the controller
+            self?.launcherViewModel?.closeResult()
             self?.launcherViewModel = nil
         }
 
         newWindow.contentView = NSHostingView(rootView: makeLauncherView(in: newWindow))
+        launcherViewModel?.capturedSelection = selectionBeforeOpening
         // Rescan on every open so that newly installed applications reach the
         // open launcher when the scan finishes.
         refreshApplicationsInBackground()
@@ -249,20 +262,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = LauncherViewModel(sources: [
             // The result comes first, as in Raycast: an expression rarely
             // matches a window or an application, and Return copies it.
-            CalculatorSource(copyText: Self.copyTextToPasteboard),
+            CalculatorSource(copyText: PasteboardWriter.copyText),
+            UnitConversionSource(copyText: PasteboardWriter.copyText),
+            // A quicklink the user named comes before partial matches, so that `gh` opens it.
+            QuicklinkSource.makeDefault(store: quicklinkStore),
             Self.makeWindowSource([]),
             Self.makeApplicationSource(cachedApplications),
             Self.makeRepositorySource(repositoryLoader.cachedItems),
-            Self.makeFileSource(fileLoader.cachedItems),
+            // The commands match only their own names, so they would sit
+            // below up to 50 file rows if they came after the files.
             SettingsSource(openSettings: { [weak self] in self?.openSettings() }),
             ScratchSource(openScratch: { [weak self] in self?.openScratch() }),
+            CaptureSource(startCapture: { [weak self] in self?.startCapture($0) }),
+            Self.makeFileSource(fileLoader.cachedItems),
             WebSearchSource(
                 engines: WebSearchEngine.launcherEngines,
                 openURL: { NSWorkspace.shared.open($0) }
             ),
+            AddTaskSource(captureTask: { [weak self] in self?.captureTask(titled: $0) }),
         ])
         launcherViewModel = viewModel
-        return LauncherView(viewModel: viewModel, dismiss: { [weak window] in window?.close() })
+        return Self.makeLauncherView(viewModel: viewModel, window: window)
     }
 
     private func refreshApplicationsInBackground() {
@@ -274,43 +294,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.launcherViewModel?.replaceSource(Self.makeApplicationSource(applications))
             }
         }
-    }
-
-    private func makeRepositoryLoader() -> BackgroundListLoader<String, GhqRepository> {
-        let loader = BackgroundListLoader<String, GhqRepository>(
-            queueLabel: "com.garaemon.Something.repositoryList",
-            readKey: { [weak self] in self?.settings.repositoryRootPath ?? "" },
-            makeLoadFunction: { [weak self] in
-                let catalog = self?.repositoryCatalog
-                return { rootPath in
-                    catalog?.loadRepositories(URL(fileURLWithPath: rootPath, isDirectory: true))
-                        ?? []
-                }
-            }
-        )
-        loader.onItemsLoaded = { [weak self] repositories in
-            self?.launcherViewModel?.replaceSource(Self.makeRepositorySource(repositories))
-        }
-        return loader
-    }
-
-    private func makeFileLoader() -> BackgroundListLoader<[String], LocalFile> {
-        let loader = BackgroundListLoader<[String], LocalFile>(
-            queueLabel: "com.garaemon.Something.fileList",
-            readKey: { [weak self] in self?.settings.fileFolderPaths ?? [] },
-            makeLoadFunction: { [weak self] in
-                let catalog = self?.fileCatalog
-                return { folderPaths in
-                    catalog?.loadFiles(
-                        folderPaths.map { URL(fileURLWithPath: $0, isDirectory: true) }
-                    ) ?? []
-                }
-            }
-        )
-        loader.onItemsLoaded = { [weak self] files in
-            self?.launcherViewModel?.replaceSource(Self.makeFileSource(files))
-        }
-        return loader
     }
 
     // Windows are not cached, because they open, close, and change titles
@@ -333,9 +316,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 // Sources and actions of launcher candidates. They keep no state of the delegate.
 extension AppDelegate {
-    private static func copyTextToPasteboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+    private static func makeLauncherView(
+        viewModel: LauncherViewModel,
+        window: NSWindow
+    ) -> LauncherView {
+        LauncherView(
+            viewModel: viewModel,
+            dismiss: { [weak window] in window?.close() },
+            copyText: PasteboardWriter.copyText
+        )
     }
 
     private static func makeWindowSource(_ windows: [SwitchableWindow]) -> WindowSource {
@@ -348,11 +337,11 @@ extension AppDelegate {
         ApplicationSource(applications: applications, launchApplication: launchApplication)
     }
 
-    private static func makeRepositorySource(_ repositories: [GhqRepository]) -> RepositorySource {
+    static func makeRepositorySource(_ repositories: [GhqRepository]) -> RepositorySource {
         RepositorySource(repositories: repositories, openRepository: openRepository)
     }
 
-    private static func makeFileSource(_ files: [LocalFile]) -> FileSource {
+    static func makeFileSource(_ files: [LocalFile]) -> FileSource {
         FileSource(
             files: files,
             openFile: openFile,

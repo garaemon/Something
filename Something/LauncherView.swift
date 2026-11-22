@@ -13,6 +13,7 @@ struct LauncherView: View {
     // AppDelegate owns the view model and pushes rescans into it.
     @ObservedObject var viewModel: LauncherViewModel
     let dismiss: () -> Void
+    let copyText: (String) -> Void
     @FocusState private var isQueryFieldFocused: Bool
 
     var body: some View {
@@ -28,15 +29,24 @@ struct LauncherView: View {
             .padding(12)
             .focused($isQueryFieldFocused)
             .onSubmit(activateAndDismiss)
-            // A held key sends repeat presses, so a held Down keeps moving.
             .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
             Divider()
-            if viewModel.isShowingActions {
+            if let resultPanel = viewModel.resultPanel {
+                ResultPanelView(
+                    panel: resultPanel,
+                    copyText: copyText,
+                    closePanel: viewModel.closeResult
+                )
+            } else if viewModel.isShowingActions {
                 actionList
             } else {
                 candidateList
             }
         }
+        // A held key sends repeat presses, so a held Down keeps moving. The
+        // handler sits on the container so that Esc still works after a click
+        // in the selectable result text moves the focus off the query field.
+        .onKeyPress(phases: [.down, .repeat], action: handleKeyPress)
         // NSHostingView shrinks the window to the view's minimum size, which
         // is tiny for a lazy list, so pin a usable minimum.
         .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
@@ -93,15 +103,20 @@ struct LauncherView: View {
         let command = LauncherKeyBindings.resolve(
             key: keyPress.key,
             isControlPressed: keyPress.modifiers.contains(.control),
+            isCommandPressed: keyPress.modifiers.contains(.command),
             isRepeat: keyPress.phase == .repeat
         )
         switch command {
+        case .dismiss where viewModel.resultPanel != nil:
+            viewModel.closeResult()
         case .moveSelection(let offset):
             viewModel.moveSelection(by: offset)
         case .dismiss:
             if !viewModel.hideActions() { dismiss() }
         case .showActions:
             viewModel.showActions()
+        case .captureTask:
+            if viewModel.activateTaskCapture() { dismiss() }
         case .swallow:
             break
         case nil:
@@ -112,8 +127,10 @@ struct LauncherView: View {
 
     // Keep the window open when no action runs, such as on an empty list or
     // a row without actions, so the user can keep typing.
+    // An action that opens the result panel, such as an AI command, keeps the
+    // launcher open so that the panel stays visible.
     private func activateAndDismiss() {
-        guard viewModel.activateSelection() else { return }
+        guard viewModel.activateSelection(), viewModel.resultPanel == nil else { return }
         dismiss()
     }
 }
@@ -189,5 +206,56 @@ private struct KindBadge: View {
             .labelStyle(.titleAndIcon)
             .font(.caption)
             .frame(width: Self.width, alignment: .leading)
+    }
+}
+
+/// The result panel: a scrolling, selectable text with a footer of actions.
+private struct ResultPanelView: View {
+    @ObservedObject var panel: ResultPanelModel
+    let copyText: (String) -> Void
+    let closePanel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+            }
+            Divider()
+            footer
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch panel.state {
+        case .idle:
+            EmptyView()
+        case .loading:
+            ProgressView().controlSize(.small)
+        case .streaming(let text), .finished(let text):
+            Text(text).textSelection(.enabled)
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(Color.red)
+                .textSelection(.enabled)
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            Text(panel.title)
+                .font(.caption)
+                .foregroundStyle(Color.secondary)
+            Spacer()
+            ForEach(panel.actions) { action in
+                Button(action.title) { panel.perform(action) }
+                    .disabled(panel.state.text == nil)
+            }
+            Button("Copy") { copyText(panel.state.text ?? "") }
+                .disabled(panel.state.text == nil)
+            Button("Back (Esc)", action: closePanel)
+        }
+        .padding(8)
     }
 }

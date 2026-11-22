@@ -415,4 +415,8 @@ final class LauncherViewModelTests: XCTestCase {
 
         XCTAssertNotEqual(applicationsID, repositoriesID)
     }
+
+    func test_should_start_with_empty_captured_selection() {
+        XCTAssertEqual(LauncherViewModel(sources: []).capturedSelection, .empty)
+    }
 }

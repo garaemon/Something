@@ -101,4 +101,25 @@ final class LauncherKeyBindingsTests: XCTestCase {
 
         XCTAssertNil(command)
     }
+
+    func test_should_capture_task_on_command_return() {
+        let command = LauncherKeyBindings.resolve(
+            key: .return, isControlPressed: false, isCommandPressed: true, isRepeat: false)
+
+        XCTAssertEqual(command, .captureTask)
+    }
+
+    func test_should_swallow_repeat_of_command_return() {
+        let command = LauncherKeyBindings.resolve(
+            key: .return, isControlPressed: false, isCommandPressed: true, isRepeat: true)
+
+        XCTAssertEqual(command, .swallow)
+    }
+
+    func test_should_leave_plain_return_to_query_field() {
+        let command = LauncherKeyBindings.resolve(
+            key: .return, isControlPressed: false, isCommandPressed: false, isRepeat: false)
+
+        XCTAssertNil(command)
+    }
 }

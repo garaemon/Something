@@ -13,6 +13,7 @@ final class AppDelegateTests: XCTestCase {
         appDelegate.windowCatalog = WindowCatalog(loadWindows: { [] })
         appDelegate.repositoryCatalog = RepositoryCatalog(loadRepositories: { _ in [] })
         appDelegate.fileCatalog = FileCatalog(loadFiles: { _ in [] })
+        appDelegate.quicklinkStore = QuicklinkStore(fileURL: URL(fileURLWithPath: "/nonexistent/quicklinks.json"))
         return appDelegate
     }
 
@@ -56,6 +57,27 @@ final class AppDelegateTests: XCTestCase {
 
         wait(for: [scanDelivered], timeout: 5)
         candidatesSubscription.cancel()
+    }
+
+    func test_should_list_quicklink_from_file_in_open_launcher() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let fileURL = directoryURL.appendingPathComponent("quicklinks.json")
+        try #"[{"name": "zzlink", "url": "https://example.com/{query}"}]"#
+            .write(to: fileURL, atomically: true, encoding: .utf8)
+        let appDelegate = makeAppDelegate()
+        appDelegate.quicklinkStore = QuicklinkStore(fileURL: fileURL)
+        addTeardownBlock { @MainActor in
+            appDelegate.window?.close()
+            try? FileManager.default.removeItem(at: directoryURL)
+        }
+
+        appDelegate.openWindow()
+        let launcherViewModel = try XCTUnwrap(appDelegate.launcherViewModel)
+        launcherViewModel.query = "zzlink"
+
+        XCTAssertEqual(launcherViewModel.candidates.first?.kind, .quicklink)
     }
 
     func test_should_show_listed_repositories_in_open_launcher() throws {
@@ -122,6 +144,20 @@ final class AppDelegateTests: XCTestCase {
         appDelegate.openWindow()
 
         wait(for: [twoScans], timeout: 5)
+    }
+
+    func test_should_hand_selection_captured_before_opening_to_launcher() throws {
+        let appDelegate = makeAppDelegate()
+        let selection = CapturedSelection(
+            sourceApplication: SourceApplication(
+                processIdentifier: 100, bundleIdentifier: nil, name: "Safari"),
+            text: "selected")
+        appDelegate.captureSelection = { selection }
+        addTeardownBlock { @MainActor in appDelegate.window?.close() }
+
+        appDelegate.openWindow()
+
+        XCTAssertEqual(appDelegate.launcherViewModel?.capturedSelection, selection)
     }
 
     func test_should_show_listed_windows_in_open_launcher() throws {

@@ -9,12 +9,22 @@ enum Calculator {
     /// arithmetic, applies no binary operator (as in `-5` or `(2024)`), looks
     /// like a date, or has a non-finite value such as a division by zero.
     static func evaluate(_ expression: String) -> Double? {
-        guard !isSeparatedNumberChain(expression), let tokens = tokenize(expression) else {
-            return nil
-        }
+        guard !isSeparatedNumberChain(expression) else { return nil }
+        return parse(expression, requiresBinaryOperator: true)
+    }
+
+    /// Returns the value of `text` as the number of a larger query, such as
+    /// the `10` of `10 km in miles`. Unlike `evaluate`, accepts a bare
+    /// number such as `-5` or `(2024)`.
+    static func evaluateOperand(_ text: String) -> Double? {
+        parse(text, requiresBinaryOperator: false)
+    }
+
+    private static func parse(_ expression: String, requiresBinaryOperator: Bool) -> Double? {
+        guard let tokens = tokenize(expression) else { return nil }
         var parser = CalculatorParser(tokens: tokens)
-        guard let value = parser.parseExpression(), parser.isAtEnd, parser.hasAppliedBinaryOperator,
-            value.isFinite
+        guard let value = parser.parseExpression(), parser.isAtEnd,
+            parser.hasAppliedBinaryOperator || !requiresBinaryOperator, value.isFinite
         else { return nil }
         return value
     }

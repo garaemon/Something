@@ -51,10 +51,14 @@ enum LauncherCandidateKind: CaseIterable {
     case application
     case repository
     case file
+    case quicklink
     case webSearch
     case settings
     case calculator
+    case unit
     case scratch
+    case capture
+    case task
 
     /// The short text of the badge, such as "Window".
     var label: String {
@@ -63,10 +67,14 @@ enum LauncherCandidateKind: CaseIterable {
         case .application: "App"
         case .repository: "Repo"
         case .file: "File"
+        case .quicklink: "Link"
         case .webSearch: "Web"
         case .settings: "Settings"
         case .calculator: "Calc"
+        case .unit: "Unit"
         case .scratch: "Scratch"
+        case .capture: "Capture"
+        case .task: "Task"
         }
     }
 
@@ -78,10 +86,14 @@ enum LauncherCandidateKind: CaseIterable {
         case .application: "app.badge"
         case .repository: "arrow.triangle.branch"
         case .file: "doc"
+        case .quicklink: "link"
         case .webSearch: "globe"
         case .settings: "slider.horizontal.3"
         case .calculator: "function"
+        case .unit: "ruler"
         case .scratch: "text.cursor"
+        case .capture: "camera.viewfinder"
+        case .task: "checklist"
         }
     }
 }

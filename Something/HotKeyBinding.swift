@@ -2,12 +2,17 @@ import AppKit
 import HotKey
 
 /// An action that a global hot key runs.
-enum HotKeyCommand: String, Codable, CaseIterable, Identifiable {
+///
+/// A command without data encodes as its plain name, as before applications
+/// existed, so that bindings saved earlier keep loading.
+enum HotKeyCommand: Codable, Hashable {
     case openLauncher
     case openScratch
     case openSettings
+    case openApplication(ApplicationTarget)
 
-    var id: String { rawValue }
+    /// The commands that carry no data, in the order of the command picker.
+    static let plainCommands: [HotKeyCommand] = [.openLauncher, .openScratch, .openSettings]
 
     /// The name that the settings window shows in the command picker.
     var title: String {
@@ -15,6 +20,47 @@ enum HotKeyCommand: String, Codable, CaseIterable, Identifiable {
         case .openLauncher: return "Open Launcher"
         case .openScratch: return "Open Python Scratch"
         case .openSettings: return "Open Settings"
+        case .openApplication(let target): return "Open \(target.name)"
+        }
+    }
+
+    private var plainName: String {
+        switch self {
+        case .openLauncher: return "openLauncher"
+        case .openScratch: return "openScratch"
+        case .openSettings: return "openSettings"
+        case .openApplication: return "openApplication"
+        }
+    }
+
+    private enum ApplicationKeys: String, CodingKey {
+        case openApplication
+    }
+
+    init(from decoder: Decoder) throws {
+        if let name = try? decoder.singleValueContainer().decode(String.self) {
+            guard let command = Self.plainCommands.first(where: { $0.plainName == name }) else {
+                throw DecodingError.dataCorrupted(
+                    .init(codingPath: decoder.codingPath, debugDescription: "Unknown command")
+                )
+            }
+            self = command
+            return
+        }
+        let container = try decoder.container(keyedBy: ApplicationKeys.self)
+        self = .openApplication(
+            try container.decode(ApplicationTarget.self, forKey: .openApplication)
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .openApplication(let target):
+            var container = encoder.container(keyedBy: ApplicationKeys.self)
+            try container.encode(target, forKey: .openApplication)
+        case .openLauncher, .openScratch, .openSettings:
+            var container = encoder.singleValueContainer()
+            try container.encode(plainName)
         }
     }
 }
