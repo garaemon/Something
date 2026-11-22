@@ -9,9 +9,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var myHotKey: HotKey?
     // Tests replace the settings to keep off the user's real UserDefaults.
     var settings = AppSettings()
-    // Written only by AppDelegate+Settings.swift.
-    var settingsWindow: NSWindow?
-    var settingsWindowCloseObserver: NSObjectProtocol?
+    private lazy var settingsWindowPresenter = SettingsWindowPresenter(
+        readSettings: { [unowned self] in self.settings })
+    var settingsWindow: NSWindow? { settingsWindowPresenter.window }
     private var settingsSubscriptions: Set<AnyCancellable> = []
     // Tests replace the store to keep off the user's real scratch file.
     var scratchStore = ScratchStore.makeDefault()
@@ -114,6 +114,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             hotKey.isPaused = true
         }
         myHotKey = hotKey
+    }
+
+    /// Shows the settings window, creating it on first use.
+    func openSettings() {
+        settingsWindowPresenter.show()
     }
 
     func openWindow() {
