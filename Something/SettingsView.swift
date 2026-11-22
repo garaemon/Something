@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 /// mascot's skin colors.
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject var sidedHotKeyMonitor: SidedHotKeyMonitor
     @State private var commandPickerGeneration = 0
 
     private static let previewSize: CGFloat = 160
@@ -76,7 +77,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420)
+        .frame(width: 560)
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -84,15 +85,9 @@ struct SettingsView: View {
         Section {
             ForEach(settings.hotKeyBindings) { binding in
                 HStack {
-                    if case .openApplication(let target) = binding.command {
-                        Image(
-                            nsImage: ApplicationIconCache.shared.loadIcon(
-                                for: LaunchableApplication(name: target.name, url: target.url)
-                            )
-                        )
-                        .resizable()
-                        .frame(width: 16, height: 16)
-                    }
+                    // The icon slot and the fixed picker width line up the recorders
+                    // whether or not a row shows an icon.
+                    HotKeyCommandIcon(command: binding.command)
                     Picker("Command", selection: makeCommandBinding(for: binding.id)) {
                         ForEach(HotKeyCommand.plainCommands, id: \.title) { command in
                             Text(command.title).tag(Optional(command))
@@ -104,8 +99,10 @@ struct SettingsView: View {
                         Text("Open Application…").tag(HotKeyCommand?.none)
                     }
                     .labelsHidden()
+                    .frame(width: 180, alignment: .leading)
                     .id(commandPickerGeneration)
                     HotKeyRecorderView(settings: settings, bindingID: binding.id)
+                    Spacer(minLength: 0)
                     Button {
                         settings.removeHotKeyBinding(id: binding.id)
                     } label: {
@@ -121,9 +118,30 @@ struct SettingsView: View {
         } header: {
             Text("Hot Keys")
         } footer: {
-            Text("Each hot key runs its command from any application. Bind a combination once.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    "Each hot key runs its command from any application. Bind a combination "
+                        + "once. Turn on Left/Right, then record the shortcut, to bind one side "
+                        + "of a modifier."
+                )
+                if let statusMessage = sidedHotKeyStatusMessage {
+                    Text(statusMessage).foregroundStyle(.orange)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private var sidedHotKeyStatusMessage: String? {
+        switch sidedHotKeyMonitor.status {
+        case .inactive, .active:
+            return nil
+        case .needsAccessibility:
+            return "Left/Right hot keys are off until you allow Something in System Settings > "
+                + "Privacy & Security > Accessibility."
+        case .tapUnavailable:
+            return "Left/Right hot keys are off because macOS refused the keyboard event tap."
         }
     }
 
@@ -258,5 +276,27 @@ struct SettingsView: View {
                 settings[keyPath: keyPath] = hex
             }
         )
+    }
+}
+
+/// The 16 pt icon of the application that a hot key opens, or an empty slot of
+/// the same size for any other command.
+private struct HotKeyCommandIcon: View {
+    let command: HotKeyCommand
+
+    var body: some View {
+        Group {
+            if case .openApplication(let target) = command {
+                Image(
+                    nsImage: ApplicationIconCache.shared.loadIcon(
+                        for: LaunchableApplication(name: target.name, url: target.url)
+                    )
+                )
+                .resizable()
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: 16, height: 16)
     }
 }

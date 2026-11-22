@@ -7,6 +7,18 @@ import SwiftUI
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     var registeredHotKeys: [HotKey] = []
+    // Tests replace the installer, because a real tap would swallow the
+    // developer's keystrokes.
+    var keyEventTapInstaller: KeyEventTapInstalling = CGKeyEventTapInstaller()
+    var isAccessibilityTrusted: () -> Bool = CGKeyEventTapInstaller.isAccessibilityTrusted
+    // The bindings that need a left or right modifier go through this monitor
+    // instead of Carbon. The lazy monitor takes the installer on first use, so
+    // tests must replace the installer before they touch the monitor.
+    private(set) lazy var sidedHotKeyMonitor = SidedHotKeyMonitor(
+        installer: keyEventTapInstaller,
+        isAccessibilityTrusted: isAccessibilityTrusted,
+        runCommand: { [weak self] in self?.run($0) }
+    )
     // Tests replace the settings to keep off the user's real UserDefaults.
     var settings = AppSettings()
     private(set) var settingsWindow: NSWindow?
@@ -87,6 +99,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .removeDuplicates()
             .sink { [weak self] isRecording in
                 for hotKey in self?.registeredHotKeys ?? [] { hotKey.isPaused = isRecording }
+                self?.sidedHotKeyMonitor.isPaused = isRecording
             }
             .store(in: &settingsSubscriptions)
         settings.$shouldShowDockIcon
@@ -143,7 +156,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeSettingsContentView() -> NSView {
-        NSHostingView(rootView: SettingsView(settings: settings))
+        NSHostingView(
+            rootView: SettingsView(settings: settings, sidedHotKeyMonitor: sidedHotKeyMonitor)
+        )
     }
 
     func openWindow() {

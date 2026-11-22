@@ -17,6 +17,8 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.settings = AppSettings(userDefaults: UserDefaults(suiteName: suiteName)!)
         // The real call would switch the test host's own Dock icon.
         appDelegate.applyActivationPolicy = { _ in }
+        // A real tap would swallow the developer's keystrokes.
+        appDelegate.keyEventTapInstaller = FakeKeyEventTapInstaller()
         addTeardownBlock { @MainActor in
             appDelegate.window?.close()
             appDelegate.settingsWindow?.close()
@@ -71,6 +73,44 @@ final class AppDelegateSettingsTests: XCTestCase {
         appDelegate.settings.recordingBindingID = appDelegate.settings.hotKeyBindings[0].id
 
         XCTAssertEqual(appDelegate.registeredHotKeys.map(\.isPaused), [true])
+    }
+
+    func test_should_not_register_sided_binding_with_carbon() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+        let bindingID = appDelegate.settings.hotKeyBindings[0].id
+
+        appDelegate.settings.assignKeyCombo(
+            KeyCombo(key: .e, modifiers: [.shift]),
+            modifierSides: ModifierSides(shift: .right),
+            toBindingID: bindingID)
+
+        XCTAssertEqual(appDelegate.registeredHotKeys.count, 0)
+    }
+
+    func test_should_hand_sided_binding_to_the_event_tap() {
+        let appDelegate = makeAppDelegate()
+        let installer = FakeKeyEventTapInstaller()
+        appDelegate.keyEventTapInstaller = installer
+        appDelegate.isAccessibilityTrusted = { true }
+        appDelegate.startObservingSettings()
+        let bindingID = appDelegate.settings.hotKeyBindings[0].id
+
+        appDelegate.settings.assignKeyCombo(
+            KeyCombo(key: .e, modifiers: [.shift]),
+            modifierSides: ModifierSides(shift: .right),
+            toBindingID: bindingID)
+
+        XCTAssertEqual(installer.installCount, 1)
+    }
+
+    func test_should_pause_sided_hot_keys_while_recording() {
+        let appDelegate = makeAppDelegate()
+        appDelegate.startObservingSettings()
+
+        appDelegate.settings.recordingBindingID = appDelegate.settings.hotKeyBindings[0].id
+
+        XCTAssertTrue(appDelegate.sidedHotKeyMonitor.isPaused)
     }
 
     func test_should_show_settings_window() {

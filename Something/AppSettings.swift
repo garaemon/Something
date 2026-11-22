@@ -142,15 +142,25 @@ final class AppSettings: ObservableObject {
         hotKeyBindings[index].command = command
     }
 
-    /// Sets the combination of a binding. Returns false and changes nothing
-    /// when another binding already holds it.
+    /// Sets the combination and the modifier sides of a binding. Returns false and changes
+    /// nothing when another binding overlaps it, that is, when one key press could trigger both.
     @discardableResult
-    func assignKeyCombo(_ keyCombo: KeyCombo, toBindingID id: UUID) -> Bool {
+    func assignKeyCombo(
+        _ keyCombo: KeyCombo,
+        modifierSides: ModifierSides = ModifierSides(),
+        toBindingID id: UUID
+    ) -> Bool {
         guard
-            HotKeyBindingValidator.isAvailable(keyCombo, forBindingID: id, among: hotKeyBindings),
+            HotKeyBindingValidator.isAvailable(
+                keyCombo,
+                modifierSides: modifierSides,
+                forBindingID: id,
+                among: hotKeyBindings
+            ),
             let index = hotKeyBindings.firstIndex(where: { $0.id == id })
         else { return false }
         hotKeyBindings[index].keyCombo = keyCombo
+        hotKeyBindings[index].modifierSides = modifierSides
         return true
     }
 
