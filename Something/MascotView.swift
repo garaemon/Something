@@ -59,7 +59,8 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     private var lastTime: TimeInterval?
     private var shownText: String?
     private var paintedModel: MascotModel
-    private let firstFrameLatch = OnceLatch()
+    // Touched only on the render thread, like `lastTime` and `shownText`.
+    private var hasReportedFirstFrame = false
     private let onFirstFrameRendered: (@MainActor () -> Void)?
 
     init(
@@ -91,7 +92,8 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
         didRenderScene scene: SCNScene,
         atTime time: TimeInterval
     ) {
-        guard let onFirstFrameRendered, firstFrameLatch.claim() else { return }
+        guard let onFirstFrameRendered, !hasReportedFirstFrame else { return }
+        hasReportedFirstFrame = true
         DispatchQueue.main.async { MainActor.assumeIsolated { onFirstFrameRendered() } }
     }
 
@@ -175,20 +177,5 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
         context.textPosition = CGPoint(x: 26, y: baseline)
         CTLineDraw(line, context)
         return context.makeImage()
-    }
-}
-
-/// Lets exactly one caller through, from any thread.
-private final class OnceLatch: @unchecked Sendable {
-    private let lock = NSLock()
-    private var isClaimed = false
-
-    /// Returns true to the first caller only.
-    func claim() -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard !isClaimed else { return false }
-        isClaimed = true
-        return true
     }
 }

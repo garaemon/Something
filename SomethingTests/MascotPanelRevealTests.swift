@@ -20,10 +20,11 @@ final class MascotPanelRevealTests: XCTestCase {
         XCTAssertEqual(panel.alphaValue, 0)
     }
 
-    func test_should_make_the_panel_opaque_when_revealed() {
+    func test_should_make_the_panel_opaque_when_the_reveal_handler_runs() {
         let panel = makePanel()
+        let revealPanel = MascotPanel.makeRevealHandler(for: panel)
 
-        panel.revealContent()
+        revealPanel()
 
         XCTAssertEqual(panel.alphaValue, 1)
     }
@@ -48,20 +49,21 @@ final class MascotPanelRevealTests: XCTestCase {
     }
 
     func test_should_report_only_the_first_rendered_frame() {
-        let frameReports = expectation(description: "frame reports")
-        frameReports.expectedFulfillmentCount = 1
-        frameReports.assertForOverFulfill = true
+        var reportCount = 0
         let renderer = MascotRenderer(
             model: .default,
             placement: .right,
-            onFirstFrameRendered: { frameReports.fulfill() }
+            onFirstFrameRendered: { reportCount += 1 }
         )
         let sceneRenderer = SCNRenderer(device: nil, options: nil)
-
         renderer.renderer(sceneRenderer, didRenderScene: renderer.rig.scene, atTime: 0)
         renderer.renderer(sceneRenderer, didRenderScene: renderer.rig.scene, atTime: 1)
 
-        wait(for: [frameReports], timeout: 1)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        // The main queue is FIFO, so every report block has run before this one.
+        let queueDrained = expectation(description: "main queue drained")
+        DispatchQueue.main.async { queueDrained.fulfill() }
+        wait(for: [queueDrained], timeout: 1)
+
+        XCTAssertEqual(reportCount, 1)
     }
 }
