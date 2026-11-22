@@ -4,9 +4,9 @@ import HotKey
 import SwiftUI
 
 /// A button that shows the hot key of one binding and, once clicked, records the next
-/// key press with Command, Option, or Control as the new hot key. Escape cancels. With the
-/// Left/Right checkbox on, the recording keeps the side of each held modifier, and a sided
-/// modifier may stand alone, such as Right Shift + E.
+/// key press with at least one modifier, Shift included, as the new hot key. Escape
+/// cancels. With the Left/Right checkbox on, the recording keeps the side of each held
+/// modifier, such as Right Shift + E.
 struct HotKeyRecorderView: View {
     @ObservedObject var settings: AppSettings
     let bindingID: UUID

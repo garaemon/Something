@@ -20,11 +20,11 @@ final class HotKeyRecordingTests: XCTestCase {
         XCTAssertNil(keyCombo)
     }
 
-    func test_should_reject_key_with_only_shift() {
+    func test_should_accept_key_with_only_shift() {
         let keyCombo = HotKeyRecording.makeShortcut(
             carbonKeyCode: Key.k.carbonKeyCode, modifierFlags: [.shift], keepsSides: false)?.keyCombo
 
-        XCTAssertNil(keyCombo)
+        XCTAssertEqual(keyCombo, KeyCombo(key: .k, modifiers: [.shift]))
     }
 
     func test_should_drop_modifiers_that_carbon_cannot_register() {
@@ -79,22 +79,22 @@ final class HotKeyRecordingSidesTests: XCTestCase {
         XCTAssertEqual(makeShortcut(flags)?.modifierSides, ModifierSides(shift: .right))
     }
 
-    func test_should_reject_shift_alone_when_only_a_stale_bit_is_sided() {
+    func test_should_keep_shift_on_either_side_when_only_a_stale_bit_is_sided() {
         let flags = makeFlags([.shift], deviceBits: ModifierFlagBits.leftCommandHeld)
 
-        XCTAssertNil(makeShortcut(flags))
+        XCTAssertEqual(makeShortcut(flags)?.modifierSides, ModifierSides())
     }
 
-    func test_should_reject_shift_alone_when_sides_are_not_kept() {
+    func test_should_keep_shift_on_either_side_when_sides_are_not_kept() {
         let flags = makeFlags([.shift], deviceBits: ModifierFlagBits.rightShiftHeld)
 
-        XCTAssertNil(makeShortcut(flags, keepsSides: false))
+        XCTAssertEqual(makeShortcut(flags, keepsSides: false)?.modifierSides, ModifierSides())
     }
 
-    func test_should_reject_shift_alone_when_both_sides_are_held() {
+    func test_should_keep_shift_on_either_side_when_both_sides_are_held() {
         let flags = makeFlags(
             [.shift], deviceBits: ModifierFlagBits.rightShiftHeld | ModifierFlagBits.leftShiftHeld)
 
-        XCTAssertNil(makeShortcut(flags))
+        XCTAssertEqual(makeShortcut(flags)?.modifierSides, ModifierSides())
     }
 }

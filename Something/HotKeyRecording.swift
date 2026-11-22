@@ -13,46 +13,31 @@ enum HotKeyRecording {
     private static let registrableModifiers: NSEvent.ModifierFlags = [
         .command, .option, .control, .shift,
     ]
-    /// A hot key needs one of these, because Shift alone or no modifier would
-    /// swallow ordinary typing in every application. A sided Shift is the exception,
-    /// because the other Shift keeps typing.
-    private static let requiredModifiers: NSEvent.ModifierFlags = [.command, .option, .control]
 
     /// Returns the shortcut for a key press. With `keepsSides`, each modifier
     /// keeps the side that was held, read from the device-dependent bits of
-    /// `modifierFlags.rawValue`. A press that holds a sided modifier may use
-    /// Shift alone, such as Right Shift + E, because the left Shift keeps
-    /// typing. Otherwise the press needs Command, Option, or Control.
+    /// `modifierFlags.rawValue`. Returns nil for a press without any modifier,
+    /// which would swallow ordinary typing in every application. Shift alone
+    /// is accepted, so a binding such as Shift + E takes over that capital
+    /// letter unless it keeps only one side.
     static func makeShortcut(
         carbonKeyCode: UInt32,
         modifierFlags: NSEvent.ModifierFlags,
         keepsSides: Bool
     ) -> RecordedShortcut? {
+        let modifiers = modifierFlags.intersection(registrableModifiers)
+        guard !modifiers.isEmpty else { return nil }
         // A stale device bit of a modifier outside the combination must not make
         // the shortcut sided, so only the held modifiers keep their side.
         let heldSides =
             keepsSides
             ? ModifierSides.readHeldSides(fromFlags: UInt64(modifierFlags.rawValue))
-                .restricted(to: modifierFlags.intersection(registrableModifiers))
+                .restricted(to: modifiers)
             : ModifierSides()
-        guard
-            let keyCombo = makeKeyCombo(
-                carbonKeyCode: carbonKeyCode,
-                modifierFlags: modifierFlags,
-                isSided: heldSides.isSided
-            )
-        else { return nil }
+        let keyCombo = KeyCombo(
+            carbonKeyCode: carbonKeyCode,
+            carbonModifiers: modifiers.carbonFlags
+        )
         return RecordedShortcut(keyCombo: keyCombo, modifierSides: heldSides)
-    }
-
-    private static func makeKeyCombo(
-        carbonKeyCode: UInt32,
-        modifierFlags: NSEvent.ModifierFlags,
-        isSided: Bool
-    ) -> KeyCombo? {
-        let modifiers = modifierFlags.intersection(registrableModifiers)
-        let hasRequiredModifier = !modifiers.isDisjoint(with: requiredModifiers)
-        guard hasRequiredModifier || (isSided && !modifiers.isEmpty) else { return nil }
-        return KeyCombo(carbonKeyCode: carbonKeyCode, carbonModifiers: modifiers.carbonFlags)
     }
 }
