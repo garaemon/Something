@@ -34,14 +34,29 @@ final class MascotPanel: NSPanel {
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.ignoresMouseEvents = true
+        // Hidden until SceneKit renders its first frame, because the empty SCNView shows
+        // as an opaque white square at first (https://github.com/garaemon/Something/issues/81).
+        // A panel that SceneKit never renders, such as without Metal, stays hidden.
+        panel.alphaValue = 0
 
         let hostingView = NSHostingView(
-            rootView: MascotOverlayView(viewModel: viewModel, placement: placement, model: model)
+            rootView: MascotOverlayView(
+                viewModel: viewModel,
+                placement: placement,
+                model: model,
+                onFirstFrameRendered: makeRevealHandler(for: panel)
+            )
         )
         // The panel's frame comes from the launcher layout, not from the SwiftUI content.
         hostingView.sizingOptions = []
         panel.contentView = hostingView
         return panel
+    }
+
+    /// Returns the action that shows `panel`, which `make` creates fully transparent.
+    /// The action holds the panel weakly, because the panel owns the view that calls it.
+    static func makeRevealHandler(for panel: MascotPanel) -> @MainActor () -> Void {
+        { [weak panel] in panel?.alphaValue = 1 }
     }
 
     func reposition(forLauncherFrame launcherFrame: CGRect) {

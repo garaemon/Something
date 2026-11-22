@@ -12,9 +12,15 @@ struct MascotView: NSViewRepresentable {
     /// The shapes are read once, when the scene is built. Later changes repaint
     /// the colors only.
     let model: MascotModel
+    /// Called once on the main thread after SceneKit renders the first frame.
+    var onFirstFrameRendered: (@MainActor () -> Void)?
 
     func makeCoordinator() -> MascotRenderer {
-        MascotRenderer(model: model, placement: placement)
+        MascotRenderer(
+            model: model,
+            placement: placement,
+            onFirstFrameRendered: onFirstFrameRendered
+        )
     }
 
     func makeNSView(context: Context) -> SCNView {
@@ -53,9 +59,17 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
     private var lastTime: TimeInterval?
     private var shownText: String?
     private var paintedModel: MascotModel
+    // Touched only on the render thread, like `lastTime` and `shownText`.
+    private var hasReportedFirstFrame = false
+    private let onFirstFrameRendered: (@MainActor () -> Void)?
 
-    init(model: MascotModel, placement: MascotPlacement) {
+    init(
+        model: MascotModel,
+        placement: MascotPlacement,
+        onFirstFrameRendered: (@MainActor () -> Void)? = nil
+    ) {
         self.placement = placement
+        self.onFirstFrameRendered = onFirstFrameRendered
         paintedModel = model
         animator = MascotAnimator(placement: placement)
         rig = MascotSceneBuilder.build(model, placement: placement)
@@ -71,6 +85,16 @@ final class MascotRenderer: NSObject, SCNSceneRendererDelegate, @unchecked Senda
         guard model != paintedModel else { return }
         paintedModel = model
         MascotSceneBuilder.applyColors(of: model, to: rig)
+    }
+
+    func renderer(
+        _ renderer: SCNSceneRenderer,
+        didRenderScene scene: SCNScene,
+        atTime time: TimeInterval
+    ) {
+        guard let onFirstFrameRendered, !hasReportedFirstFrame else { return }
+        hasReportedFirstFrame = true
+        DispatchQueue.main.async { MainActor.assumeIsolated { onFirstFrameRendered() } }
     }
 
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
