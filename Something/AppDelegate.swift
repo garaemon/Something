@@ -122,10 +122,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func openWindow() {
-        if let revealPendingLauncher {
-            revealPendingLauncher()
-            return
-        }
+        revealPendingLauncher?()
         if let existingWindow = window, existingWindow.isVisible {
             NSApplication.shared.activate()
             existingWindow.makeKeyAndOrderFront(nil)
