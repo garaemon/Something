@@ -34,6 +34,7 @@ final class AppSettings: ObservableObject {
         static let fileFolderPaths = "fileFolderPaths"
         static let orgDirectoryPath = "orgDirectoryPath"
         static let shouldShowDockIcon = "shouldShowDockIcon"
+        static let launcherScreenPlacement = "launcherScreenPlacement"
         static let llmBaseURL = "llmBaseURL"
         static let llmModelName = "llmModelName"
     }
@@ -69,6 +70,15 @@ final class AppSettings: ObservableObject {
     @Published var shouldShowDockIcon: Bool {
         didSet { userDefaults.set(shouldShowDockIcon, forKey: StorageKey.shouldShowDockIcon) }
     }
+    /// The screen that the launcher opens on.
+    @Published var launcherScreenPlacement: LauncherScreenPlacement {
+        didSet {
+            userDefaults.set(
+                launcherScreenPlacement.rawValue,
+                forKey: StorageKey.launcherScreenPlacement
+            )
+        }
+    }
     /// Base URL of the local OpenAI-compatible server that AI commands call.
     @Published var llmBaseURL: String {
         didSet { userDefaults.set(llmBaseURL, forKey: StorageKey.llmBaseURL) }
@@ -103,6 +113,10 @@ final class AppSettings: ObservableObject {
             ?? Self.defaultOrgDirectoryPath
         shouldShowDockIcon =
             userDefaults.object(forKey: StorageKey.shouldShowDockIcon) as? Bool ?? true
+        launcherScreenPlacement =
+            userDefaults.string(forKey: StorageKey.launcherScreenPlacement)
+            .flatMap(LauncherScreenPlacement.init(rawValue:))
+            ?? LauncherScreenPlacement.defaultPlacement
         llmBaseURL = userDefaults.string(forKey: StorageKey.llmBaseURL) ?? Self.defaultLLMBaseURL
         llmModelName =
             userDefaults.string(forKey: StorageKey.llmModelName) ?? Self.defaultLLMModelName
@@ -189,6 +203,7 @@ final class AppSettings: ObservableObject {
         fileFolderPaths = Self.defaultFileFolderPaths
         orgDirectoryPath = Self.defaultOrgDirectoryPath
         shouldShowDockIcon = true
+        launcherScreenPlacement = LauncherScreenPlacement.defaultPlacement
         llmBaseURL = Self.defaultLLMBaseURL
         llmModelName = Self.defaultLLMModelName
     }
