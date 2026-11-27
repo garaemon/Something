@@ -250,6 +250,39 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertTrue(settings.shouldShowDockIcon)
     }
 
+    func test_should_open_launcher_at_last_position_when_nothing_is_saved() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+
+        XCTAssertEqual(settings.launcherScreenPlacement, .lastPosition)
+    }
+
+    func test_should_restore_saved_launcher_screen_placement() {
+        let userDefaults = makeUserDefaults()
+        AppSettings(userDefaults: userDefaults).launcherScreenPlacement = .mouseScreen
+
+        let restoredSettings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(restoredSettings.launcherScreenPlacement, .mouseScreen)
+    }
+
+    func test_should_fall_back_to_last_position_for_an_unknown_saved_placement() {
+        let userDefaults = makeUserDefaults()
+        userDefaults.set("somewhere", forKey: "launcherScreenPlacement")
+
+        let settings = AppSettings(userDefaults: userDefaults)
+
+        XCTAssertEqual(settings.launcherScreenPlacement, .lastPosition)
+    }
+
+    func test_should_open_launcher_at_last_position_after_reset() {
+        let settings = AppSettings(userDefaults: makeUserDefaults())
+        settings.launcherScreenPlacement = .primaryScreen
+
+        settings.resetToDefaults()
+
+        XCTAssertEqual(settings.launcherScreenPlacement, .lastPosition)
+    }
+
     func test_should_default_org_directory_to_home_org() {
         let settings = AppSettings(userDefaults: makeUserDefaults())
 

@@ -33,6 +33,11 @@ struct SettingsView: View {
                         Button("Choose…", action: chooseOrgDirectory)
                     }
                 }
+                Picker("Open on", selection: $settings.launcherScreenPlacement) {
+                    ForEach(LauncherScreenPlacement.allCases) { placement in
+                        Text(placement.title).tag(placement)
+                    }
+                }
                 Toggle("Show icon in Dock", isOn: $settings.shouldShowDockIcon)
             }
             hotKeysSection

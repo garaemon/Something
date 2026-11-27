@@ -171,6 +171,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Read before the window takes the key focus, which hides the
         // frontmost application and its selection.
         let selectionBeforeOpening = captureSelection()
+        let targetScreen = launcherTargetScreen()
         let newWindow = NSWindow(
             contentRect: NSRect(origin: .zero, size: LauncherView.minimumSize),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
@@ -179,6 +180,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         newWindow.center()
         newWindow.setFrameAutosaveName("SomethingWindow")
+        // The autosave restores the last size, which the chosen screen keeps.
+        if let targetScreen { place(launcher: newWindow, on: targetScreen) }
         // ARC owns the window through `window`. Letting AppKit also release it on
         // close over-releases it and crashes when the autorelease pool drains.
         newWindow.isReleasedWhenClosed = false
